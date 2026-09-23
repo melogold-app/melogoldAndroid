@@ -1,0 +1,3 @@
+* Updated dependencies
+* Fixed an issue where some thumbnails were not resized properly
+* Fixed and issue where the 'Quick picks' tab would not load
