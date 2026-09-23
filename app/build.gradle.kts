@@ -65,6 +65,8 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-DEBUG"
             manifestPlaceholders["appName"] = "Melogold Debug"
+            // Account / sync screens are stubs until the Melogold server exists (REDESIGN-M3E §3.5)
+            buildConfigField("boolean", "ACCOUNT_UI", "true")
         }
 
         release {
@@ -72,6 +74,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             manifestPlaceholders["appName"] = "Melogold"
+            buildConfigField("boolean", "ACCOUNT_UI", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -85,6 +88,7 @@ android {
             applicationIdSuffix = ".nightly"
             versionNameSuffix = "-NIGHTLY"
             manifestPlaceholders["appName"] = "Melogold Nightly"
+            buildConfigField("boolean", "ACCOUNT_UI", "true")
             signingConfig = signingConfigs.findByName("ci")
         }
     }
@@ -197,11 +201,13 @@ dependencies {
     implementation(libs.compose.shimmer)
     implementation(libs.compose.lottie)
     implementation(libs.compose.material3)
+    implementation(libs.compose.adaptive)
 
     implementation(libs.coil.compose)
     implementation(libs.coil.ktor)
 
     implementation(libs.palette)
+    implementation(libs.material.color.utilities)
     implementation(libs.monet)
     runtimeOnly(projects.core.materialCompat)
 
@@ -215,6 +221,12 @@ dependencies {
 
     implementation(libs.credentials)
     implementation(libs.credentials.play)
+
+    // QR sign-in / device linking (task T2.5); the versions are owned by Phase 1
+    implementation(libs.zxing.core)
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
 
     implementation(libs.kotlin.coroutines)
     implementation(libs.kotlin.immutable)

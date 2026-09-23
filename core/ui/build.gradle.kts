@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.compose.ui.fonts)
     implementation(libs.compose.material3)
     implementation(libs.palette)
+    implementation(libs.material.color.utilities)
 }
 
 kotlin {

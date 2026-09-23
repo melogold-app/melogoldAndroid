@@ -13,6 +13,7 @@ detekt = "2.0.0-alpha.6"
 workmanager = "2.11.2"
 credentials = "1.6.0"
 coil = "3.6.3"
+camerax = "1.6.2"
 
 [plugins]
 android_application = { id = "com.android.application", version.ref = "agp" }
@@ -39,7 +40,10 @@ compose_foundation = { module = "androidx.compose.foundation:foundation" }
 compose_ui = { module = "androidx.compose.ui:ui" }
 compose_ui_util = { module = "androidx.compose.ui:ui-util" }
 compose_ui_fonts = { module = "androidx.compose.ui:ui-text-google-fonts" }
-compose_material3 = { module = "androidx.compose.material3:material3" }
+# Pinned explicitly over the BOM: alpha27 is the last alpha that resolves to stable
+# foundation 1.12.x (alpha28 pulls foundation 1.13.0-alpha01). See docs/REDESIGN-M3E.md §4.1
+compose_material3 = { module = "androidx.compose.material3:material3", version = "1.5.0-alpha27" }
+compose_adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
 
 compose_activity = { module = "androidx.activity:activity-compose", version = "1.13.0" }
 compose_shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version = "1.5.0" }
@@ -81,7 +85,13 @@ logback = { module = "com.github.tony19:logback-android", version = "3.0.0" }
 
 brotli = { module = "org.brotli:dec", version = "0.1.2" }
 palette = { module = "androidx.palette:palette", version = "1.0.0" }
+material_color_utilities = { module = "com.materialkolor:material-color-utilities", version = "5.0.1" }
 monet = { module = "com.github.KieronQuinn:MonetCompat", version = "0.4.1" }
+
+zxing_core = { module = "com.google.zxing:core", version = "3.5.3" }
+camera_camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+camera_lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+camera_view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
 
 desugaring = { module = "com.android.tools:desugar_jdk_libs", version = "2.1.5" }
 
