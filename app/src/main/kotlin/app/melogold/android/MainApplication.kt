@@ -11,6 +11,7 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.MediaStore
 import android.util.Log
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,8 +63,6 @@ import app.melogold.android.service.ServiceNotifications
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.screens.player.Thumbnail
 import app.melogold.android.ui.screens.searchResultRoute
-import android.view.KeyEvent
-import androidx.compose.runtime.DisposableEffect
 import app.melogold.android.ui.shell.AppShell
 import app.melogold.android.ui.shell.KeyboardShortcuts
 import app.melogold.android.ui.shell.LinkHandler
@@ -74,7 +74,6 @@ import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.ui.shell.rememberAppSnackbar
 import app.melogold.android.ui.shell.rememberMainNavState
 import app.melogold.android.ui.shell.rememberShellLayout
-import kotlinx.coroutines.flow.MutableStateFlow
 import app.melogold.android.ui.theme.rememberArtworkColorScheme
 import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
@@ -124,6 +123,7 @@ import com.kieronquinn.monetcompat.interfaces.MonetColorsChangedListener
 import com.valentinilk.shimmer.LocalShimmerTheme
 import dev.kdrag0n.monet.theme.ColorScheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -139,6 +139,7 @@ class MainViewModel : ViewModel() {
         binder ?: snapshotFlow { binder }.filterNotNull().first()
 }
 
+@Suppress("TooManyFunctions") // lifecycle callbacks
 class MainActivity : ComponentActivity(), MonetColorsChangedListener {
     private val vm: MainViewModel by viewModels()
 

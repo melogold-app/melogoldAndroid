@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
  * goes there, "back" from its root leaves the app. It is the section the user was in when they last
  * left the app (REDESIGN-M3E §8.1), [TopLevelDestination.FirstLaunch] on the very first launch.
  */
+@Suppress("TooManyFunctions") // the navigation API of the whole app
 @Stable
 class MainNavState internal constructor(
     initialTab: TopLevelDestination,

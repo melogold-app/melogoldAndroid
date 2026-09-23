@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -40,12 +41,15 @@ import kotlin.math.roundToInt
  *
  * @property useRail a [MainNavigationRail] at the start instead of the [MainNavigationBar] at the
  * bottom: everywhere but on phones in portrait (width under 600 dp, height from 480 dp)
- * @property railExpandable the rail can be expanded (width from 840 dp)
+ * @property railExpandable the rail can be expanded (width from 840 dp, unless the window is too
+ * low for the ≡ button above the five items, e.g. a phone in landscape)
+ * @property compactHeight the window is lower than 480 dp: the rail packs its items tighter
  */
 @Immutable
 data class ShellLayout(
     val useRail: Boolean,
-    val railExpandable: Boolean
+    val railExpandable: Boolean,
+    val compactHeight: Boolean = false
 ) {
     /**
      * The part of the bottom block below the mini player: the navigation bar, if any.
@@ -56,12 +60,16 @@ data class ShellLayout(
 @Composable
 fun rememberShellLayout(): ShellLayout {
     val sizeClass = currentWindowAdaptiveInfoV2().windowSizeClass
-    val phonePortrait = !sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) &&
-        sizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
+    val compactWidth = !sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+    val compactHeight = !sizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND)
     val wide = sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
-    return remember(phonePortrait, wide) {
-        ShellLayout(useRail = !phonePortrait, railExpandable = wide)
+    return remember(compactWidth, compactHeight, wide) {
+        ShellLayout(
+            useRail = !compactWidth || compactHeight,
+            railExpandable = wide && !compactHeight,
+            compactHeight = compactHeight
+        )
     }
 }
 
@@ -80,7 +88,12 @@ fun AppShell(
     playerSheetState: BottomSheetState,
     snackbar: AppSnackbar,
     modifier: Modifier = Modifier
-) = Box(modifier = modifier.fillMaxSize()) {
+) = Box(
+    modifier = modifier
+        .fillMaxSize()
+        // The rail slides out to the start as the player expands; keep it out of the cutout padding
+        .clipToBounds()
+) {
     val density = LocalDensity.current
     val insets = LocalPlayerAwareWindowInsets.current
     val isDownloading by downloadState.collectAsState()
@@ -135,6 +148,7 @@ fun AppShell(
     if (layout.useRail) MainNavigationRail(
         nav = nav,
         expandable = layout.railExpandable,
+        compact = layout.compactHeight,
         modifier = Modifier
             .align(Alignment.TopStart)
             .fillMaxHeight()

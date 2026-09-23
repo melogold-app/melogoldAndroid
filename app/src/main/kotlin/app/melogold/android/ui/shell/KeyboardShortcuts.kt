@@ -19,29 +19,50 @@ class KeyboardShortcuts(
     private val nav: () -> MainNavState?,
     private val player: () -> Player?
 ) {
+    private enum class Shortcut { Search, PlayPause, Next, Previous }
+
     fun handle(event: KeyEvent): Boolean {
         if (event.action != KeyEvent.ACTION_DOWN || event.repeatCount > 0) return false
 
-        val ctrl = event.isCtrlPressed
-        val plain = !ctrl && !event.isShiftPressed && !event.isAltPressed && !event.isMetaPressed
+        return when (shortcutOf(event)) {
+            Shortcut.Search -> nav()?.focusSearch() != null
+            Shortcut.PlayPause -> player()?.togglePlayback() != null
+            Shortcut.Next -> player()?.forceSeekToNext() != null
+            Shortcut.Previous -> player()?.forceSeekToPrevious() != null
+            null -> false
+        }
+    }
+
+    private fun shortcutOf(event: KeyEvent): Shortcut? {
+        val modifiers = event.metaState and KeyEvent.getModifierMetaStateMask()
 
         return when {
-            ctrl && event.keyCode == KeyEvent.KEYCODE_F ||
-                plain && event.keyCode == KeyEvent.KEYCODE_SLASH -> nav()?.focusSearch() != null
+            modifiers.isCtrlOnly -> when (event.keyCode) {
+                KeyEvent.KEYCODE_F -> Shortcut.Search
+                KeyEvent.KEYCODE_DPAD_RIGHT -> Shortcut.Next
+                KeyEvent.KEYCODE_DPAD_LEFT -> Shortcut.Previous
+                else -> null
+            }
 
-            plain && event.keyCode == KeyEvent.KEYCODE_SPACE -> player()?.let {
-                if (it.shouldBePlaying) it.pause()
-                else {
-                    if (it.playbackState == Player.STATE_IDLE) it.prepare()
-                    it.play()
-                }
-            } != null
+            modifiers == 0 -> when (event.keyCode) {
+                KeyEvent.KEYCODE_SLASH -> Shortcut.Search
+                KeyEvent.KEYCODE_SPACE -> Shortcut.PlayPause
+                else -> null
+            }
 
-            ctrl && event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT -> player()?.forceSeekToNext() != null
+            else -> null
+        }
+    }
 
-            ctrl && event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT -> player()?.forceSeekToPrevious() != null
+    /** Ctrl (left, right or both) and no other modifier */
+    private val Int.isCtrlOnly
+        get() = (this and KeyEvent.META_CTRL_ON) != 0 && (this and KeyEvent.META_CTRL_MASK.inv()) == 0
 
-            else -> false
+    private fun Player.togglePlayback() {
+        if (shouldBePlaying) pause()
+        else {
+            if (playbackState == Player.STATE_IDLE) prepare()
+            play()
         }
     }
 }

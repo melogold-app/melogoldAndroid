@@ -99,7 +99,9 @@ class LinkHandler internal constructor(
 
                 else -> when {
                     path == "watch" -> uri.getQueryParameter("v")
+
                     uri.host == "youtu.be" -> path
+
                     else -> {
                         showError(uri)
                         null

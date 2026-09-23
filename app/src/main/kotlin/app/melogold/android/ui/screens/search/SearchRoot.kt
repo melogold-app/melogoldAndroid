@@ -123,6 +123,13 @@ fun RouteHandlerScope.SearchRoot() {
             )
         }
 
+        val decorationBox: @Composable (@Composable () -> Unit) -> Unit = { innerTextField ->
+            SearchDecorationBox(
+                isEmpty = textFieldValue.text.isEmpty(),
+                innerTextField = innerTextField
+            )
+        }
+
         CompositionLocalProvider(
             LocalPlayerAwareWindowInsets provides insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
         ) {
@@ -134,14 +141,14 @@ fun RouteHandlerScope.SearchRoot() {
                             onTextFieldValueChange = { textFieldValue = it },
                             onSearch = { searchFor(it) },
                             onViewPlaylist = { links.open(it) },
-                            decorationBox = { SearchDecorationBox(isEmpty = textFieldValue.text.isEmpty(), innerTextField = it) },
+                            decorationBox = decorationBox,
                             focused = focused
                         )
 
                         else -> LocalSongSearch(
                             textFieldValue = textFieldValue,
                             onTextFieldValueChange = { textFieldValue = it },
-                            decorationBox = { SearchDecorationBox(isEmpty = textFieldValue.text.isEmpty(), innerTextField = it) }
+                            decorationBox = decorationBox
                         )
                     }
                 }
