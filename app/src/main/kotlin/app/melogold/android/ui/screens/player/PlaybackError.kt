@@ -21,8 +21,18 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import app.melogold.android.R
+import app.melogold.android.service.LoginRequiredException
+import app.melogold.android.service.PlayableFormatNotFoundException
+import app.melogold.android.service.RestrictedVideoException
+import app.melogold.android.service.UnplayableException
+import app.melogold.android.service.VideoIdMismatchException
+import app.melogold.android.service.isLocal
 import app.melogold.android.utils.center
 import app.melogold.android.utils.color
 import app.melogold.android.utils.isInPip
@@ -30,6 +40,8 @@ import app.melogold.android.utils.medium
 import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.onOverlay
 import app.melogold.core.ui.overlay
+import java.net.UnknownHostException
+import java.nio.channels.UnresolvedAddressException
 
 @Composable
 fun PlaybackError(
@@ -81,3 +93,26 @@ fun PlaybackError(
         )
     }
 }
+
+/**
+ * A user-facing message for a playback [error] of [mediaItem].
+ * Mirrors the mapping used by [Thumbnail].
+ */
+@Composable
+fun playbackErrorMessage(mediaItem: MediaItem, error: PlaybackException?): String =
+    if (mediaItem.isLocal) stringResource(R.string.error_local_music_deleted)
+    else when (error?.cause?.cause) {
+        is UnresolvedAddressException, is UnknownHostException ->
+            stringResource(R.string.error_network)
+
+        is PlayableFormatNotFoundException -> stringResource(R.string.error_unplayable)
+
+        is UnplayableException -> stringResource(R.string.error_source_deleted)
+
+        is LoginRequiredException, is RestrictedVideoException ->
+            stringResource(R.string.error_server_restrictions)
+
+        is VideoIdMismatchException -> stringResource(R.string.error_id_mismatch)
+
+        else -> stringResource(R.string.error_unknown_playback)
+    }

@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -143,35 +144,32 @@ fun AppearanceSettings() = with(AppearancePreferences) {
                 valueText = { it.displayName() }
             )
 
+            // The seek bar settings only apply to the classic layout; the new layout always uses
+            // its own Apple-style scrubber
             AnimatedVisibility(
-                visible = PlayerPreferences.playerLayout == PlayerPreferences.PlayerLayout.New,
+                visible = PlayerPreferences.playerLayout == PlayerPreferences.PlayerLayout.Classic,
                 label = ""
             ) {
-                SwitchSettingsEntry(
-                    title = stringResource(R.string.show_like_button),
-                    text = stringResource(R.string.show_like_button_description),
-                    isChecked = PlayerPreferences.showLike,
-                    onCheckedChange = { PlayerPreferences.showLike = it }
-                )
-            }
+                Column {
+                    EnumValueSelectorSettingsEntry(
+                        title = stringResource(R.string.seek_bar_style),
+                        selectedValue = PlayerPreferences.seekBarStyle,
+                        onValueSelect = { PlayerPreferences.seekBarStyle = it },
+                        valueText = { it.displayName() }
+                    )
 
-            EnumValueSelectorSettingsEntry(
-                title = stringResource(R.string.seek_bar_style),
-                selectedValue = PlayerPreferences.seekBarStyle,
-                onValueSelect = { PlayerPreferences.seekBarStyle = it },
-                valueText = { it.displayName() }
-            )
-
-            AnimatedVisibility(
-                visible = PlayerPreferences.seekBarStyle == PlayerPreferences.SeekBarStyle.Wavy,
-                label = ""
-            ) {
-                EnumValueSelectorSettingsEntry(
-                    title = stringResource(R.string.seek_bar_quality),
-                    selectedValue = PlayerPreferences.wavySeekBarQuality,
-                    onValueSelect = { PlayerPreferences.wavySeekBarQuality = it },
-                    valueText = { it.displayName() }
-                )
+                    AnimatedVisibility(
+                        visible = PlayerPreferences.seekBarStyle == PlayerPreferences.SeekBarStyle.Wavy,
+                        label = ""
+                    ) {
+                        EnumValueSelectorSettingsEntry(
+                            title = stringResource(R.string.seek_bar_quality),
+                            selectedValue = PlayerPreferences.wavySeekBarQuality,
+                            onValueSelect = { PlayerPreferences.wavySeekBarQuality = it },
+                            valueText = { it.displayName() }
+                        )
+                    }
+                }
             }
 
             SwitchSettingsEntry(
