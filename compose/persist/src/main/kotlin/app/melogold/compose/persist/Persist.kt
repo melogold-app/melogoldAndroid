@@ -17,9 +17,10 @@ fun <T> persist(
     policy: SnapshotMutationPolicy<T> = structuralEqualityPolicy()
 ): MutableState<T> {
     val persistMap = LocalPersistMap.current
+    val key = persistKey(namespace = LocalPersistNamespace.current, tag = tag)
 
-    return remember(persistMap) {
-        persistMap?.map?.getOrPut(tag) { mutableStateOf(initialValue, policy) } as? MutableState<T>
+    return remember(persistMap, key) {
+        persistMap?.map?.getOrPut(key) { mutableStateOf(initialValue, policy) } as? MutableState<T>
             ?: mutableStateOf(initialValue, policy)
     }
 }

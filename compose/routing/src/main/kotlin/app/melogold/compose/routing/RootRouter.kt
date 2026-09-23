@@ -129,8 +129,13 @@ fun ProvideRootRouter(content: @Composable RootRouterOwner.() -> Unit) {
     }
 }
 
+/**
+ * A [RouteHandler] whose current child is hoisted, so that the owner can read it (is the stack at
+ * its root?) and reset it (pop to the root) from outside, e.g. a tab host that keeps one stack per
+ * top-level section.
+ */
 @Composable
-private fun RouteHandler(
+fun RouteHandler(
     child: Route?,
     setChild: (Route?) -> Unit,
     modifier: Modifier = Modifier,
