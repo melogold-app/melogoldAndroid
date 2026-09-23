@@ -21,7 +21,8 @@
 
 Проект на ранней стадии. Сейчас приложение по функциям совпадает с ViTune; в работе:
 
-- [ ] Новое имя и иконка внутри приложения
+- [x] Новая иконка
+- [ ] Новое имя внутри приложения
 - [ ] Автообновление из GitHub Releases
 - [ ] Аккаунт: регистрация и вход по логину и паролю
 - [ ] Синхронизация избранного, библиотеки и плейлистов между устройствами
@@ -87,8 +88,6 @@ unzip -l app/build/outputs/apk/debug/*.apk | grep libqjs
 - [YouTube-Internal-Clients](https://github.com/zerodytrash/YouTube-Internal-Clients) — исследование
   внутренних клиентов YouTube API
 - [ionicons](https://github.com/ionic-team/ionicons) — иконки интерфейса
-- [Flaticon: Ilham Fitrotul Hayat](https://www.flaticon.com/authors/ilham-fitrotul-hayat) — иконка
-  ViTune, которая пока остаётся в приложении до замены
 
 ## Лицензия
 
