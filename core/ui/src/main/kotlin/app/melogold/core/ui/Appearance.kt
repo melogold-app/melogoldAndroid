@@ -1,15 +1,10 @@
 package app.melogold.core.ui
 
 import android.app.Activity
-import android.graphics.Bitmap
-import android.os.Parcelable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -17,86 +12,46 @@ import androidx.compose.ui.unit.Dp
 import androidx.core.view.WindowCompat
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 import app.melogold.core.ui.utils.isAtLeastAndroid8
-import app.melogold.core.ui.utils.isCompositionLaunched
 import app.melogold.core.ui.utils.roundedShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
+/**
+ * The legacy theme read by screens that are not migrated to Material 3 yet. It is a bridge: it is
+ * always derived from the Material theme by [app.melogold.core.ui.theme.MelogoldTheme] and never
+ * computed separately.
+ */
 @Immutable
 data class Appearance(
     val colorPalette: ColorPalette,
     val typography: Typography,
-    val thumbnailShapeCorners: ParcelableDp
-) : Parcelable {
-    @IgnoredOnParcel
+    val thumbnailShapeCorners: Dp
+) {
     val thumbnailShape = thumbnailShapeCorners.roundedShape
     operator fun component4() = thumbnailShape
+
+    companion object {
+        fun from(
+            scheme: ColorScheme,
+            thumbnailRoundness: Dp,
+            applyFontPadding: Boolean,
+            isBrandScheme: Boolean = false
+        ): Appearance {
+            val colorPalette = ColorPalette.from(scheme = scheme, isDefault = isBrandScheme)
+
+            return Appearance(
+                colorPalette = colorPalette,
+                typography = typographyOf(
+                    color = colorPalette.text,
+                    applyFontPadding = applyFontPadding
+                ),
+                thumbnailShapeCorners = thumbnailRoundness
+            )
+        }
+    }
 }
 
 val LocalAppearance = staticCompositionLocalOf<Appearance> { error("No appearance provided") }
-
-@Composable
-inline fun rememberAppearance(
-    vararg keys: Any = arrayOf(Unit),
-    isDark: Boolean = isSystemInDarkTheme(),
-    crossinline provide: (isSystemInDarkTheme: Boolean) -> Appearance
-) = rememberSaveable(keys, isCompositionLaunched(), isDark) {
-    mutableStateOf(provide(isDark))
-}
-
-@Composable
-fun appearance(
-    source: ColorSource,
-    mode: ColorMode,
-    darkness: Darkness,
-    materialAccentColor: Color?,
-    sampleBitmap: Bitmap?,
-    fontFamily: BuiltInFontFamily,
-    applyFontPadding: Boolean,
-    thumbnailRoundness: Dp,
-    isSystemInDarkTheme: Boolean = isSystemInDarkTheme()
-): Appearance {
-    val isDark = remember(mode, isSystemInDarkTheme) {
-        mode == ColorMode.Dark || (mode == ColorMode.System && isSystemInDarkTheme)
-    }
-
-    val colorPalette = rememberSaveable(
-        source,
-        darkness,
-        isDark,
-        materialAccentColor,
-        sampleBitmap
-    ) {
-        colorPaletteOf(
-            source = source,
-            darkness = darkness,
-            isDark = isDark,
-            materialAccentColor = materialAccentColor,
-            sampleBitmap = sampleBitmap
-        )
-    }
-
-    return rememberAppearance(
-        colorPalette,
-        fontFamily,
-        applyFontPadding,
-        thumbnailRoundness,
-        isDark = isDark
-    ) {
-        Appearance(
-            colorPalette = colorPalette,
-            typography = typographyOf(
-                color = colorPalette.text,
-                fontFamily = fontFamily,
-                applyFontPadding = applyFontPadding
-            ),
-            thumbnailShapeCorners = thumbnailRoundness
-        )
-    }.value
-}
 
 fun Activity.setSystemBarAppearance(isDark: Boolean) {
     with(WindowCompat.getInsetsController(window, window.decorView.rootView)) {
@@ -114,8 +69,11 @@ fun Activity.setSystemBarAppearance(isDark: Boolean) {
 }
 
 @Composable
-fun Activity.SystemBarAppearance(palette: ColorPalette) = LaunchedEffect(palette) {
+fun Activity.SystemBarAppearance(palette: ColorPalette) = SystemBarAppearance(isDark = palette.isDark)
+
+@Composable
+fun Activity.SystemBarAppearance(isDark: Boolean) = LaunchedEffect(isDark) {
     withContext(Dispatchers.Main) {
-        setSystemBarAppearance(palette.isDark)
+        setSystemBarAppearance(isDark)
     }
 }

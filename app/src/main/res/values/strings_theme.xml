@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Theme strings owned by the redesign Phase 1 (REDESIGN-M3E §6.0: one strings file per area) -->
+<resources>
+    <string name="color_source_system">System</string>
+    <string name="color_source_brand">Melogold</string>
+    <string name="color_source_custom">Custom color</string>
+</resources>

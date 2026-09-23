@@ -1,5 +1,6 @@
 package app.melogold.android
 
+import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentName
 import android.content.Context
@@ -17,8 +18,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
@@ -35,8 +36,6 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.material3.LocalRippleConfiguration
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -49,13 +48,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
+import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.credentials.CredentialManager
@@ -80,6 +79,10 @@ import app.melogold.android.ui.screens.player.Thumbnail
 import app.melogold.android.ui.screens.playlistRoute
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.screens.settingsRoute
+import app.melogold.android.ui.theme.rememberArtworkColorScheme
+import app.melogold.android.ui.theme.rememberContrastLevel
+import app.melogold.android.ui.theme.rememberMelogoldColorScheme
+import app.melogold.android.ui.theme.withDarkness
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.KeyedCrossfade
 import app.melogold.android.utils.LocalMonetCompat
@@ -91,20 +94,21 @@ import app.melogold.android.utils.invokeOnReady
 import app.melogold.android.utils.isInPip
 import app.melogold.android.utils.maybeEnterPip
 import app.melogold.android.utils.maybeExitPip
+import app.melogold.android.utils.rememberEffectiveMotionLevel
 import app.melogold.android.utils.setDefaultPalette
 import app.melogold.android.utils.shouldBePlaying
 import app.melogold.android.utils.toast
 import app.melogold.compose.persist.LocalPersistMap
 import app.melogold.compose.persist.PersistMap
 import app.melogold.compose.preferences.PreferencesHolder
-import app.melogold.core.ui.Darkness
+import app.melogold.core.ui.ArtworkColorScope
+import app.melogold.core.ui.ColorMode
+import app.melogold.core.ui.ColorSource
 import app.melogold.core.ui.Dimensions
-import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.SystemBarAppearance
-import app.melogold.core.ui.amoled
-import app.melogold.core.ui.appearance
-import app.melogold.core.ui.rippleConfiguration
+import app.melogold.core.ui.isDark
 import app.melogold.core.ui.shimmerTheme
+import app.melogold.core.ui.theme.MelogoldTheme
 import app.melogold.core.ui.utils.activityIntentBundle
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid17
@@ -139,6 +143,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 private const val TAG = "MainActivity"
+private const val WHOLE_APP_ARTWORK_DELAY_MS = 500L
 private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
 // Viewmodel in order to avoid recreating the entire Player state (WORKAROUND)
@@ -199,35 +204,60 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         modifier: Modifier = Modifier,
         content: @Composable BoxWithConstraintsScope.() -> Unit
     ) = with(AppearancePreferences) {
-        val sampleBitmap = vm.binder.collectProvidedBitmapAsState()
-        val appearance = appearance(
+        val isSystemInDarkTheme = isSystemInDarkTheme()
+        val isDark = colorMode == ColorMode.Dark ||
+            (colorMode == ColorMode.System && isSystemInDarkTheme)
+
+        val baseScheme = rememberMelogoldColorScheme(
             source = colorSource,
-            mode = colorMode,
+            isDark = isDark,
             darkness = darkness,
-            fontFamily = fontFamily,
-            materialAccentColor = Color(monet.getAccentColor(this@MainActivity)),
-            sampleBitmap = sampleBitmap,
-            applyFontPadding = applyFontPadding,
-            thumbnailRoundness = thumbnailRoundness.dp
+            contrast = contrast,
+            monet = _monet
         )
 
-        SystemBarAppearance(palette = appearance.colorPalette)
+        // "Artwork colors in the whole app" (REDESIGN-M3E §4.4): off on low-RAM devices
+        val isLowRamDevice = remember { getSystemService<ActivityManager>()?.isLowRamDevice == true }
+        val artworkScheme = if (artworkColorScope == ArtworkColorScope.WholeApp && !isLowRamDevice) {
+            val bitmap = vm.binder.collectProvidedBitmapAsState()
+            val mediaId = remember(bitmap) { vm.binder?.player?.currentMediaItem?.mediaId }
 
-        BoxWithConstraints(
-            modifier = Modifier.background(appearance.colorPalette.background0) then modifier.fillMaxSize()
+            val artwork = rememberArtworkColorScheme(
+                key = mediaId,
+                bitmap = bitmap,
+                isDark = isDark,
+                contrastLevel = rememberContrastLevel(contrast),
+                delayMillis = WHOLE_APP_ARTWORK_DELAY_MS
+            )
+            remember(artwork, isDark, darkness) {
+                artwork?.withDarkness(isDark = isDark, darkness = darkness)
+            }
+        } else null
+
+        val scheme = artworkScheme ?: baseScheme
+
+        MelogoldTheme(
+            scheme = scheme,
+            motionLevel = rememberEffectiveMotionLevel(motionLevel),
+            thumbnailRoundness = thumbnailRoundness.dp,
+            applyFontPadding = applyFontPadding,
+            isBrandScheme = artworkScheme == null && colorSource != ColorSource.System
         ) {
-            CompositionLocalProvider(
-                LocalAppearance provides appearance,
-                LocalPlayerServiceBinder provides vm.binder,
-                LocalCredentialManager provides Dependencies.credentialManager,
-                LocalIndication provides ripple(),
-                LocalRippleConfiguration provides rippleConfiguration(appearance = appearance),
-                LocalShimmerTheme provides shimmerTheme(),
-                LocalLayoutDirection provides LayoutDirection.Ltr,
-                LocalPersistMap provides Dependencies.application.persistMap,
-                LocalMonetCompat provides monet
+            SystemBarAppearance(isDark = scheme.isDark)
+
+            BoxWithConstraints(
+                modifier = Modifier.background(scheme.surface) then modifier.fillMaxSize()
             ) {
-                content()
+                CompositionLocalProvider(
+                    LocalPlayerServiceBinder provides vm.binder,
+                    LocalCredentialManager provides Dependencies.credentialManager,
+                    LocalShimmerTheme provides shimmerTheme(),
+                    LocalLayoutDirection provides LayoutDirection.Ltr,
+                    LocalPersistMap provides Dependencies.application.persistMap,
+                    LocalMonetCompat provides monet
+                ) {
+                    content()
+                }
             }
         }
     }
@@ -321,18 +351,10 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                         )
                     }
 
-                    CompositionLocalProvider(
-                        LocalAppearance provides LocalAppearance.current.let {
-                            if (it.colorPalette.isDark && AppearancePreferences.darkness == Darkness.AMOLED) {
-                                it.copy(colorPalette = it.colorPalette.amoled())
-                            } else it
-                        }
-                    ) {
-                        Player(
-                            layoutState = playerBottomSheetState,
-                            modifier = Modifier.align(Alignment.BottomCenter)
-                        )
-                    }
+                    Player(
+                        layoutState = playerBottomSheetState,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
 
                     BottomSheetMenu(
                         modifier = Modifier.align(Alignment.BottomCenter)
@@ -437,7 +459,9 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         monetColors: ColorScheme,
         isInitialChange: Boolean
     ) {
-        if (!isInitialChange) recreate()
+        // API 31+ uses the platform dynamic colors, which recreate the activity by themselves
+        if (!isInitialChange && !isAtLeastAndroid12 && AppearancePreferences.colorSource == ColorSource.System)
+            recreate()
     }
 
     override fun onUserLeaveHint() {

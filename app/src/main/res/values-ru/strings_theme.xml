@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Строки темы, владелец — Фаза 1 редизайна (REDESIGN-M3E §6.0: свой файл строк на область) -->
+<resources>
+    <string name="color_source_system">Системные</string>
+    <string name="color_source_brand">Melogold</string>
+    <string name="color_source_custom">Свой цвет</string>
+</resources>

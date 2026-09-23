@@ -24,7 +24,6 @@ dependencies {
     implementation(libs.compose.shimmer)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.util)
-    implementation(libs.compose.ui.fonts)
     implementation(libs.compose.material3)
     implementation(libs.palette)
     implementation(libs.material.color.utilities)

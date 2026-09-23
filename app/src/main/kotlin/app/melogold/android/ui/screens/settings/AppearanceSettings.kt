@@ -19,14 +19,13 @@ import app.melogold.android.ui.screens.Route
 import app.melogold.android.utils.currentLocale
 import app.melogold.android.utils.findActivity
 import app.melogold.android.utils.startLanguagePicker
-import app.melogold.core.ui.BuiltInFontFamily
 import app.melogold.core.ui.ColorMode
 import app.melogold.core.ui.ColorSource
 import app.melogold.core.ui.Darkness
 import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.ThumbnailRoundness
-import app.melogold.core.ui.googleFontsAvailable
 import app.melogold.core.ui.utils.isAtLeastAndroid13
+import kotlinx.collections.immutable.persistentListOf
 
 @Route
 @Composable
@@ -37,9 +36,11 @@ fun AppearanceSettings() = with(AppearancePreferences) {
 
     SettingsCategoryScreen(title = stringResource(R.string.appearance)) {
         SettingsGroup(title = stringResource(R.string.colors)) {
-            EnumValueSelectorSettingsEntry(
+            ValueSelectorSettingsEntry(
                 title = stringResource(R.string.color_source),
                 selectedValue = colorSource,
+                // "Custom color" is backlog P2
+                values = persistentListOf(ColorSource.System, ColorSource.Brand),
                 onValueSelect = { colorSource = it },
                 valueText = { it.nameLocalized }
             )
@@ -91,21 +92,7 @@ fun AppearanceSettings() = with(AppearancePreferences) {
                 }
             )
 
-            if (googleFontsAvailable()) EnumValueSelectorSettingsEntry(
-                title = stringResource(R.string.font),
-                selectedValue = fontFamily,
-                onValueSelect = { fontFamily = it },
-                valueText = {
-                    if (it == BuiltInFontFamily.System) stringResource(R.string.use_system_font) else it.name
-                }
-            ) else SwitchSettingsEntry(
-                title = stringResource(R.string.use_system_font),
-                text = stringResource(R.string.use_system_font_description),
-                isChecked = fontFamily == BuiltInFontFamily.System,
-                onCheckedChange = {
-                    fontFamily = if (it) BuiltInFontFamily.System else BuiltInFontFamily.Poppins
-                }
-            )
+            // Melogold always uses the system font (REDESIGN-M3E §8.4), there is no font picker
 
             SwitchSettingsEntry(
                 title = stringResource(R.string.apply_font_padding),
@@ -238,9 +225,9 @@ fun AppearanceSettings() = with(AppearancePreferences) {
 val ColorSource.nameLocalized
     @Composable get() = stringResource(
         when (this) {
-            ColorSource.Default -> R.string.color_source_default
-            ColorSource.Dynamic -> R.string.color_source_dynamic
-            ColorSource.MaterialYou -> R.string.color_source_material_you
+            ColorSource.System -> R.string.color_source_system
+            ColorSource.Brand -> R.string.color_source_brand
+            ColorSource.Custom -> R.string.color_source_custom
         }
     )
 

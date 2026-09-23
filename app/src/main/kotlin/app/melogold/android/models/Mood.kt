@@ -1,9 +1,10 @@
 package app.melogold.android.models
 
+import android.os.Parcel
 import android.os.Parcelable
 import androidx.compose.ui.graphics.Color
-import app.melogold.core.ui.ColorParceler
 import app.melogold.providers.innertube.Innertube
+import kotlinx.parcelize.Parceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.WriteWith
 
@@ -21,3 +22,8 @@ fun Innertube.Mood.Item.toUiMood() = Mood(
     browseId = endpoint.browseId,
     params = endpoint.params
 )
+
+object ColorParceler : Parceler<Color> {
+    override fun Color.write(parcel: Parcel, flags: Int) = parcel.writeLong(value.toLong())
+    override fun create(parcel: Parcel) = Color(parcel.readLong().toULong())
+}

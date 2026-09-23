@@ -39,7 +39,6 @@ compose_animation = { module = "androidx.compose.animation:animation" }
 compose_foundation = { module = "androidx.compose.foundation:foundation" }
 compose_ui = { module = "androidx.compose.ui:ui" }
 compose_ui_util = { module = "androidx.compose.ui:ui-util" }
-compose_ui_fonts = { module = "androidx.compose.ui:ui-text-google-fonts" }
 # Pinned explicitly over the BOM: alpha27 is the last alpha that resolves to stable
 # foundation 1.12.x (alpha28 pulls foundation 1.13.0-alpha01). See docs/REDESIGN-M3E.md §4.1
 compose_material3 = { module = "androidx.compose.material3:material3", version = "1.5.0-alpha27" }
