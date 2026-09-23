@@ -3,11 +3,13 @@ package app.melogold.android.ui.shell
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
@@ -26,6 +28,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import app.melogold.android.LocalPlayerAwareWindowInsets
@@ -87,7 +90,9 @@ fun AppShell(
     layout: ShellLayout,
     playerSheetState: BottomSheetState,
     snackbar: AppSnackbar,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bottomBarHeight: Dp = layout.bottomBarHeight,
+    onBottomBarHeightChange: (Dp) -> Unit = { }
 ) = Box(
     modifier = modifier
         .fillMaxSize()
@@ -97,6 +102,7 @@ fun AppShell(
     val density = LocalDensity.current
     val insets = LocalPlayerAwareWindowInsets.current
     val isDownloading by downloadState.collectAsState()
+    val navigationBarsInsets = WindowInsets.navigationBars
     var railWidth by remember { mutableStateOf(MainNavigationRailWidth) }
 
     // Composed before the sections: every stack and sheet handles "back" first
@@ -124,7 +130,7 @@ fun AppShell(
 
     Player(
         layoutState = playerSheetState,
-        collapsedBottomExtra = layout.bottomBarHeight,
+        collapsedBottomExtra = bottomBarHeight,
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .let { modifier ->
@@ -160,6 +166,13 @@ fun AppShell(
         nav = nav,
         modifier = Modifier
             .align(Alignment.BottomCenter)
+            .onSizeChanged {
+                // Larger font scales make the bar taller: the mini player moves up with it
+                val bottomInset = navigationBarsInsets.getBottom(density)
+                onBottomBarHeightChange(
+                    with(density) { (it.height - bottomInset).toDp() }.coerceAtLeast(MainNavigationBarHeight)
+                )
+            }
             .graphicsLayer {
                 translationY = size.height * playerSheetState.progress.coerceIn(0f, 1f)
             }

@@ -32,6 +32,8 @@ import kotlinx.coroutines.launch
  */
 val MainNavigationRailWidth = 96.dp
 
+private val RailLabelHorizontalPadding = 16.dp
+
 /**
  * The navigation of phones in landscape and of tablets (REDESIGN-M3E §2.7): a collapsed
  * [WideNavigationRail]; from 840 dp on ([expandable]) the ≡ button expands it.
@@ -49,6 +51,9 @@ fun MainNavigationRail(
     val state = rememberWideNavigationRailState()
     val coroutineScope = rememberCoroutineScope()
     val expanded = expandable && state.targetValue == WideNavigationRailValue.Expanded
+    val collapsedLabelStyle = rememberDestinationLabelStyle(
+        availableWidth = MainNavigationRailWidth - RailLabelHorizontalPadding
+    )
 
     WideNavigationRail(
         state = state,
@@ -79,7 +84,7 @@ fun MainNavigationRail(
                 selected = selected,
                 onClick = { nav.onItemClick(tab) },
                 icon = { DestinationIcon(tab = tab, selected = selected, badge = nav.hasBadge(tab)) },
-                label = { DestinationLabel(tab = tab) },
+                label = { DestinationLabel(tab = tab, style = if (expanded) null else collapsedLabelStyle) },
                 railExpanded = expanded,
                 modifier = Modifier.semantics {
                     collectionItemInfo = CollectionItemInfo(

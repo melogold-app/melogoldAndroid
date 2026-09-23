@@ -70,6 +70,7 @@ import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.ui.shell.LocalLinkHandler
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.MainNavState
+import app.melogold.android.ui.shell.MainNavigationBarHeight
 import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.ui.shell.rememberAppSnackbar
 import app.melogold.android.ui.shell.rememberMainNavState
@@ -286,6 +287,9 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             val density = LocalDensity.current
             val shellLayout = rememberShellLayout()
             val bottomDp = with(density) { windowInsets.getBottom(density).toDp() }
+            // 64 dp, taller with large font scales (measured by the shell)
+            var navigationBarHeight by remember { mutableStateOf(MainNavigationBarHeight) }
+            val bottomBarHeight = if (shellLayout.useRail) 0.dp else navigationBarHeight
 
             val imeVisible = WindowInsets.isImeVisible
             val imeBottomDp = with(density) { WindowInsets.ime.getBottom(density).toDp() }
@@ -295,19 +299,20 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             val playerBottomSheetState = rememberBottomSheetState(
                 key = vm.binder,
                 dismissedBound = 0.dp,
-                collapsedBound = Dimensions.items.collapsedPlayerHeight + shellLayout.bottomBarHeight + bottomDp,
+                collapsedBound = Dimensions.items.collapsedPlayerHeight + bottomBarHeight + bottomDp,
                 expandedBound = maxHeight
             )
 
             val playerAwareWindowInsets = remember(
                 bottomDp,
                 shellLayout,
+                bottomBarHeight,
                 playerBottomSheetState.value,
                 imeVisible,
                 imeBottomDp
             ) {
                 // Without a track the navigation bar remains; the keyboard covers the whole block
-                val bottomBlock = shellLayout.bottomBarHeight + bottomDp
+                val bottomBlock = bottomBarHeight + bottomDp
                 val shown = playerBottomSheetState.value.coerceIn(
                     bottomBlock..playerBottomSheetState.collapsedBound.coerceAtLeast(bottomBlock)
                 )
@@ -369,7 +374,9 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                         nav = mainNav,
                         layout = shellLayout,
                         playerSheetState = playerBottomSheetState,
-                        snackbar = snackbar
+                        snackbar = snackbar,
+                        bottomBarHeight = bottomBarHeight,
+                        onBottomBarHeightChange = { navigationBarHeight = it }
                     )
                 }
             }
