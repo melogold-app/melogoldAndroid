@@ -1,6 +1,10 @@
-# Melogold
+<p align="center">
+  <img src=".github/melogold-icon.png" width="128" height="128" alt="Melogold">
+</p>
 
-Музыка из YouTube Music на всех ваших устройствах — с общим избранным, библиотекой и плейлистами.
+<h1 align="center">Melogold</h1>
+
+<p align="center">Музыка из YouTube Music на всех ваших устройствах — с общим избранным, библиотекой и плейлистами.</p>
 
 > [!NOTE]
 > Melogold — форк [ViTune](https://github.com/bartoostveen/ViTune) (автор — Bart Oostveen),
