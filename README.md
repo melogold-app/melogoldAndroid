@@ -1,68 +1,113 @@
-<div align="center">
-    <img src="./app/src/main/ic_launcher-playstore.png" width="128" height="128" style="display: block; margin: 0 auto"/>
-    <h1>ViTune</h1>
-    <p>An Android application for seamless music streaming</p>
-</div>
+# Melogold
 
----
+Музыка из YouTube Music на всех ваших устройствах — с общим избранным, библиотекой и плейлистами.
 
-<p align="center">
-  <img src="./fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="30%" />
-  <img src="./fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="30%" />
-  <img src="./fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="30%" />
+> [!NOTE]
+> Melogold — форк [ViTune](https://github.com/bartoostveen/ViTune) (автор — Bart Oostveen),
+> который, в свою очередь, основан на [ViMusic](https://github.com/vfsfitvnm/ViMusic).
+> Оригинальный ViTune больше не развивается, и Melogold продолжает его как самостоятельный проект.
+> История коммитов оригинала сохранена, лицензия та же — [GPL-3.0](./LICENSE).
 
-  <img src="./fastlane/metadata/android/en-US/images/phoneScreenshots/4.png" width="30%" />
-  <img src="./fastlane/metadata/android/en-US/images/phoneScreenshots/5.png" width="30%" />
-  <img src="./fastlane/metadata/android/en-US/images/phoneScreenshots/6.png" width="30%" />
-</p>
+## Как это устроено
 
-## Features
+- **Музыка играет напрямую из YouTube Music** на каждом устройстве — как в ViTune.
+- **Melogold Server хранит только метаданные**: аккаунт, избранное, библиотеку, плейлисты и список
+  ваших устройств. Аудиофайлов на сервере нет.
+- **Сервер можно выбрать**: пользоваться официальным или поднять свой.
+- **Приложения обновляются сами** из [GitHub Releases](https://github.com/MaximCemencov/melogoldAndroid/releases) —
+  без ручного скачивания APK.
 
-- Play (almost) any song or video from YouTube Music
-- Play music from your device
-- Play songs in the background
-- Cache song for offline playback
-- Search for songs, albums, artists videos and playlists
-- Discover new songs by mood/genre
-- Import playlists from YouTube
-- Fetch, display and edit songs lyrics or synchronized lyrics
-- Manage your playlists locally or synchronize with the cloud
-- Highly customizable (dynamic theme, Material You, ...)
-- Normalize audio for the perfect listening experience
-- Listen from your car using Android Auto
-- Open YouTube/YouTube Music links (`watch`, `playlist`, `channel`, etc.) with ViTune
-- Ridiculously lightweight APK
+## Статус
 
-## Installation
+Проект на ранней стадии. Сейчас приложение по функциям совпадает с ViTune; в работе:
 
-[<img src="https://github.com/machiav3lli/oandbackupx/blob/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png"
-alt="Get it on GitHub"
-height="80"
-align="center">](https://github.com/25huizengek1/ViTune/releases/latest)
+- [ ] Новое имя и иконка внутри приложения
+- [ ] Автообновление из GitHub Releases
+- [ ] Аккаунт: регистрация и вход по логину и паролю
+- [ ] Синхронизация избранного, библиотеки и плейлистов между устройствами
+- [ ] Список подключённых устройств с возможностью отключить любое
+- [ ] Собственный сервер (self-hosting)
+- [ ] Клиенты для macOS, Windows и Linux
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-alt="Get it on F-Droid"
-height="80"
-align="center">](https://repo.vitune.app/)
+## Платформы
 
-[<img src="https://github.com/ImranR98/Obtainium/blob/main/assets/graphics/badge_obtainium.png"
-alt="Get it on Obtainium"
-height="54"
-align="center">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/25huizengek1/ViTune/)
+| Платформа | Репозиторий | Состояние |
+|---|---|---|
+| Android | этот репозиторий | в разработке |
+| Сервер | melogoldServer | в разработке |
+| macOS | — | запланирован |
+| Windows | — | запланирован |
+| Linux | — | запланирован |
 
-## Acknowledgments
+## Возможности
 
-- [**YouTube-Internal-Clients**](https://github.com/zerodytrash/YouTube-Internal-Clients): A Python
-  script that discovers hidden YouTube API clients. Just a research project.
-- [**ionicons**](https://github.com/ionic-team/ionicons): Premium hand-crafted icons built by Ionic,
-  for Ionic apps and web apps everywhere.
-- [**Flaticon: Ilham Fitrotul Hayat**](https://www.flaticon.com/authors/ilham-fitrotul-hayat): the
-  app's logo uses a music note icon.
+Унаследованы от ViTune:
 
-## Disclaimer
+- Поиск и воспроизведение песен, альбомов, исполнителей, видео и плейлистов из YouTube Music
+- Воспроизведение музыки с устройства
+- Фоновое воспроизведение и кэш для офлайн-прослушивания
+- Подборки по настроению и жанру, импорт плейлистов из YouTube
+- Обычные и синхронизированные тексты песен
+- Нормализация громкости, SponsorBlock
+- Android Auto
+- Открытие ссылок YouTube и YouTube Music
+- Динамическая тема и Material You
 
-This project and its contents are not affiliated with, funded, authorized, endorsed by, or in any
-way associated with YouTube, Google LLC or any of its affiliates and subsidiaries.
+## Установка
 
-Any trademark, service mark, trade name, or other intellectual property rights used in this project
-are owned by the respective owners.
+Первый релиз Melogold ещё не вышел. Сборки будут публиковаться в
+[Releases](https://github.com/MaximCemencov/melogoldAndroid/releases).
+
+## Сборка из исходников
+
+Понадобятся:
+
+- **JDK 25** — ровно эта версия, путь в `JAVA_HOME` (автоматический поиск toolchain отключён)
+- **Android SDK**: platform 37, NDK `29.0.14206865`, CMake `4.1.2` — путь в `local.properties`
+  (`sdk.dir=…`) или `ANDROID_HOME`
+- **Python 3** — для встроенного yt-dlp (Chaquopy)
+- Доступ в интернет во время сборки: QuickJS скачивается с bellard.org, yt-dlp — с PyPI
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+APK появится в `app/build/outputs/apk/debug/`. Убедитесь, что в него попал QuickJS — без него
+воспроизведение не работает (если строки нет, запустите сборку ещё раз):
+
+```bash
+unzip -l app/build/outputs/apk/debug/*.apk | grep libqjs
+```
+
+## Благодарности
+
+- [ViTune](https://github.com/bartoostveen/ViTune) и [ViMusic](https://github.com/vfsfitvnm/ViMusic) —
+  проекты, на которых основан Melogold
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — получение аудиопотоков
+- [YouTube-Internal-Clients](https://github.com/zerodytrash/YouTube-Internal-Clients) — исследование
+  внутренних клиентов YouTube API
+- [ionicons](https://github.com/ionic-team/ionicons) — иконки интерфейса
+- [Flaticon: Ilham Fitrotul Hayat](https://www.flaticon.com/authors/ilham-fitrotul-hayat) — иконка
+  ViTune, которая пока остаётся в приложении до замены
+
+## Лицензия
+
+[GPL-3.0](./LICENSE). Авторские права на исходный код ViTune и ViMusic принадлежат их авторам.
+
+## Отказ от ответственности
+
+Melogold не связан с YouTube, Google LLC или их дочерними компаниями, не финансируется, не одобрен
+и не поддерживается ими. Все товарные знаки принадлежат их правообладателям.
+
+<details>
+<summary>English</summary>
+
+**Melogold** is a fork of [ViTune](https://github.com/bartoostveen/ViTune) (based on
+[ViMusic](https://github.com/vfsfitvnm/ViMusic)), an Android YouTube Music client. ViTune is no
+longer maintained; Melogold continues it with accounts, cross-device sync of favorites, library and
+playlists through Melogold Server (metadata only — no audio is stored), a connected-devices list,
+self-hosting, in-app auto-updates from GitHub Releases and upcoming macOS, Windows and Linux
+clients. Early stage: the app currently matches ViTune. Licensed under [GPL-3.0](./LICENSE). Not
+affiliated with YouTube or Google LLC.
+
+</details>
