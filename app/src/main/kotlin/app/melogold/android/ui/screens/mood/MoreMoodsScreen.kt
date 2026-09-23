@@ -19,11 +19,8 @@ fun MoreMoodsScreen() {
     PersistMapCleanup(prefix = "more_moods/")
 
     RouteHandler {
+        // moodRoute is a global route now (REDESIGN-M3E §6.1)
         GlobalRoutes()
-
-        moodRoute { mood ->
-            MoodScreen(mood = mood)
-        }
 
         Content {
             Scaffold(

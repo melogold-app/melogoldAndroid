@@ -1,25 +1,19 @@
 package app.melogold.android.ui.screens
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.net.toUri
-import app.melogold.android.Database
-import app.melogold.android.LocalPlayerServiceBinder
-import app.melogold.android.R
-import app.melogold.android.handleUrl
 import app.melogold.android.models.Mood
-import app.melogold.android.models.SearchQuery
-import app.melogold.android.preferences.DataPreferences
-import app.melogold.android.query
 import app.melogold.android.ui.screens.album.AlbumScreen
 import app.melogold.android.ui.screens.artist.ArtistScreen
+import app.melogold.android.ui.screens.builtinplaylist.BuiltInPlaylistScreen
+import app.melogold.android.ui.screens.localplaylist.LocalPlaylistScreen
+import app.melogold.android.ui.screens.mood.MoodScreen
+import app.melogold.android.ui.screens.mood.MoreAlbumsScreen
+import app.melogold.android.ui.screens.mood.MoreMoodsScreen
 import app.melogold.android.ui.screens.pipedplaylist.PipedPlaylistScreen
 import app.melogold.android.ui.screens.playlist.PlaylistScreen
-import app.melogold.android.ui.screens.search.SearchScreen
-import app.melogold.android.ui.screens.searchresult.SearchResultScreen
+import app.melogold.android.ui.screens.search.SearchResultsEntry
+import app.melogold.android.ui.screens.search.SearchRouteEntry
 import app.melogold.android.ui.screens.settings.LogsScreen
-import app.melogold.android.ui.screens.settings.SettingsScreen
-import app.melogold.android.utils.toast
 import app.melogold.compose.routing.Route0
 import app.melogold.compose.routing.Route1
 import app.melogold.compose.routing.Route3
@@ -45,15 +39,17 @@ val logsRoute = Route0("logsRoute")
 val pipedPlaylistRoute = Route3<String, String, String>("pipedPlaylistRoute")
 val playlistRoute = Route4<String, String?, Int?, Boolean>("playlistRoute")
 val moodRoute = Route1<Mood>("moodRoute")
+val moreMoodsRoute = Route0("moreMoodsRoute")
+val moreAlbumsRoute = Route0("moreAlbumsRoute")
 val searchResultRoute = Route1<String>("searchResultRoute")
 val searchRoute = Route1<String>("searchRoute")
-val settingsRoute = Route0("settingsRoute")
 
+/**
+ * The detail screens every stack knows: they open in the stack of the current section
+ * (REDESIGN-M3E §1.3). Settings is a section of its own and has no route.
+ */
 @Composable
 fun RouteHandlerScope.GlobalRoutes() {
-    val context = LocalContext.current
-    val binder = LocalPlayerServiceBinder.current
-
     albumRoute { browseId ->
         AlbumScreen(browseId = browseId)
     }
@@ -62,8 +58,28 @@ fun RouteHandlerScope.GlobalRoutes() {
         ArtistScreen(browseId = browseId)
     }
 
+    builtInPlaylistRoute { builtInPlaylist ->
+        BuiltInPlaylistScreen(builtInPlaylist = builtInPlaylist)
+    }
+
+    localPlaylistRoute { playlistId ->
+        LocalPlaylistScreen(playlistId = playlistId)
+    }
+
     logsRoute {
         LogsScreen()
+    }
+
+    moodRoute { mood ->
+        MoodScreen(mood = mood)
+    }
+
+    moreMoodsRoute {
+        MoreMoodsScreen()
+    }
+
+    moreAlbumsRoute {
+        MoreAlbumsScreen()
     }
 
     pipedPlaylistRoute { apiBaseUrl, sessionToken, playlistId ->
@@ -86,36 +102,11 @@ fun RouteHandlerScope.GlobalRoutes() {
         )
     }
 
-    settingsRoute {
-        SettingsScreen()
-    }
-
     searchRoute { initialTextInput ->
-        SearchScreen(
-            initialTextInput = initialTextInput,
-            onSearch = { query ->
-                searchResultRoute(query)
-
-                if (!DataPreferences.pauseSearchHistory) query {
-                    Database.insert(SearchQuery(query = query))
-                }
-            },
-            onViewPlaylist = { url ->
-                with(context) {
-                    runCatching {
-                        handleUrl(url.toUri(), binder)
-                    }.onFailure {
-                        toast(getString(R.string.error_url, url))
-                    }
-                }
-            }
-        )
+        SearchRouteEntry(initialTextInput = initialTextInput)
     }
 
     searchResultRoute { query ->
-        SearchResultScreen(
-            query = query,
-            onSearchAgain = { searchRoute(query) }
-        )
+        SearchResultsEntry(query = query)
     }
 }

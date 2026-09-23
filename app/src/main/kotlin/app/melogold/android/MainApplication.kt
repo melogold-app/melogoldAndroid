@@ -3,10 +3,8 @@ package app.melogold.android
 import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
 import android.os.StrictMode
@@ -16,11 +14,8 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -30,7 +25,6 @@ import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.only
@@ -38,7 +32,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,13 +39,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
@@ -67,18 +58,23 @@ import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.service.PlayerService
 import app.melogold.android.service.ServiceNotifications
-import app.melogold.android.service.downloadState
-import app.melogold.android.ui.components.BottomSheetMenu
 import app.melogold.android.ui.components.rememberBottomSheetState
-import app.melogold.android.ui.components.themed.LinearProgressIndicator
-import app.melogold.android.ui.screens.albumRoute
-import app.melogold.android.ui.screens.artistRoute
-import app.melogold.android.ui.screens.home.HomeScreen
-import app.melogold.android.ui.screens.player.Player
 import app.melogold.android.ui.screens.player.Thumbnail
-import app.melogold.android.ui.screens.playlistRoute
 import app.melogold.android.ui.screens.searchResultRoute
-import app.melogold.android.ui.screens.settingsRoute
+import android.view.KeyEvent
+import androidx.compose.runtime.DisposableEffect
+import app.melogold.android.ui.shell.AppShell
+import app.melogold.android.ui.shell.KeyboardShortcuts
+import app.melogold.android.ui.shell.LinkHandler
+import app.melogold.android.ui.shell.LocalAppSnackbar
+import app.melogold.android.ui.shell.LocalLinkHandler
+import app.melogold.android.ui.shell.LocalMainNav
+import app.melogold.android.ui.shell.MainNavState
+import app.melogold.android.ui.shell.TopLevelDestination
+import app.melogold.android.ui.shell.rememberAppSnackbar
+import app.melogold.android.ui.shell.rememberMainNavState
+import app.melogold.android.ui.shell.rememberShellLayout
+import kotlinx.coroutines.flow.MutableStateFlow
 import app.melogold.android.ui.theme.rememberArtworkColorScheme
 import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
@@ -86,9 +82,7 @@ import app.melogold.android.ui.theme.withDarkness
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.KeyedCrossfade
 import app.melogold.android.utils.LocalMonetCompat
-import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.collectProvidedBitmapAsState
-import app.melogold.android.utils.forcePlay
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.invokeOnReady
 import app.melogold.android.utils.isInPip
@@ -97,7 +91,6 @@ import app.melogold.android.utils.maybeExitPip
 import app.melogold.android.utils.rememberEffectiveMotionLevel
 import app.melogold.android.utils.setDefaultPalette
 import app.melogold.android.utils.shouldBePlaying
-import app.melogold.android.utils.toast
 import app.melogold.compose.persist.LocalPersistMap
 import app.melogold.compose.persist.PersistMap
 import app.melogold.compose.preferences.PreferencesHolder
@@ -113,10 +106,6 @@ import app.melogold.core.ui.utils.activityIntentBundle
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid17
 import app.melogold.core.ui.utils.songBundle
-import app.melogold.providers.innertube.Innertube
-import app.melogold.providers.innertube.models.bodies.BrowseBody
-import app.melogold.providers.innertube.requests.playlistPage
-import app.melogold.providers.innertube.requests.song
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -134,17 +123,13 @@ import com.kieronquinn.monetcompat.core.MonetCompat
 import com.kieronquinn.monetcompat.interfaces.MonetColorsChangedListener
 import com.valentinilk.shimmer.LocalShimmerTheme
 import dev.kdrag0n.monet.theme.ColorScheme
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
-private const val TAG = "MainActivity"
 private const val WHOLE_APP_ARTWORK_DELAY_MS = 500L
-private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
 // Viewmodel in order to avoid recreating the entire Player state (WORKAROUND)
 class MainViewModel : ViewModel() {
@@ -173,6 +158,18 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
     private var _monet: MonetCompat? by mutableStateOf(null)
     val monet get() = _monet ?: throw MonetActivityAccessException()
 
+    /**
+     * The shell's navigation and link handler, once the content is composed: intents that arrive
+     * before (cold start) wait for them.
+     */
+    private val shell = MutableStateFlow<ShellHandles?>(null)
+    private suspend fun awaitShell() = shell.filterNotNull().first()
+
+    private val keyboardShortcuts = KeyboardShortcuts(
+        nav = { shell.value?.nav },
+        player = { vm.binder?.player }
+    )
+
     override fun onStart() {
         super.onStart()
         bindService(intent<PlayerService>(), serviceConnection, BIND_AUTO_CREATE)
@@ -195,8 +192,18 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             setContent()
         }
 
-        intent?.let { handleIntent(it) }
+        // A recreated activity restores its sections instead of acting on the old intent again
+        if (savedInstanceState == null) intent?.let { handleIntent(it) }
         addOnNewIntentListener(::handleIntent)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent) =
+        super.dispatchKeyEvent(event) || keyboardShortcuts.handle(event)
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // The cached data of the sections not on screen is the cheapest to give back
+        if (level >= TRIM_MEMORY_BACKGROUND) shell.value?.nav?.trimParked()
     }
 
     @Composable
@@ -262,7 +269,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         }
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     @OptIn(ExperimentalLayoutApi::class)
     fun setContent() = setContent {
         val windowInsets = WindowInsets.systemBars
@@ -276,42 +283,62 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             )
         ) {
             val density = LocalDensity.current
+            val shellLayout = rememberShellLayout()
             val bottomDp = with(density) { windowInsets.getBottom(density).toDp() }
 
             val imeVisible = WindowInsets.isImeVisible
             val imeBottomDp = with(density) { WindowInsets.ime.getBottom(density).toDp() }
-            val animatedBottomDp by animateDpAsState(
-                targetValue = if (imeVisible) 0.dp else bottomDp,
-                label = ""
-            )
 
+            // Constant per device form (REDESIGN-M3E §5.4): mini player + navigation bar, or the
+            // mini player alone next to the rail. Recreating the state keeps its anchor.
             val playerBottomSheetState = rememberBottomSheetState(
                 key = vm.binder,
                 dismissedBound = 0.dp,
-                collapsedBound = Dimensions.items.collapsedPlayerHeight + bottomDp,
+                collapsedBound = Dimensions.items.collapsedPlayerHeight + shellLayout.bottomBarHeight + bottomDp,
                 expandedBound = maxHeight
             )
 
             val playerAwareWindowInsets = remember(
                 bottomDp,
-                animatedBottomDp,
+                shellLayout,
                 playerBottomSheetState.value,
                 imeVisible,
                 imeBottomDp
             ) {
-                val bottom =
-                    if (imeVisible) imeBottomDp.coerceAtLeast(playerBottomSheetState.value)
-                    else playerBottomSheetState.value.coerceIn(
-                        animatedBottomDp..playerBottomSheetState.collapsedBound
-                    )
+                // Without a track the navigation bar remains; the keyboard covers the whole block
+                val bottomBlock = shellLayout.bottomBarHeight + bottomDp
+                val shown = playerBottomSheetState.value.coerceIn(
+                    bottomBlock..playerBottomSheetState.collapsedBound.coerceAtLeast(bottomBlock)
+                )
+                val bottom = if (imeVisible) maxOf(imeBottomDp, shown) else shown
 
                 windowInsets
-                    .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+                    .only(
+                        // The rail takes the start side
+                        if (shellLayout.useRail) WindowInsetsSides.End + WindowInsetsSides.Top
+                        else WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+                    )
                     .add(WindowInsets(bottom = bottom))
+            }
+
+            val mainNav = rememberMainNavState(
+                initialTab = { AppearancePreferences.lastTab },
+                onTabSelect = { AppearancePreferences.lastTab = it }
+            )
+            val linkHandler = remember(mainNav) {
+                LinkHandler(context = this@MainActivity, nav = mainNav, binder = vm::awaitBinder)
+            }
+            val snackbar = rememberAppSnackbar()
+
+            DisposableEffect(mainNav, linkHandler) {
+                shell.value = ShellHandles(nav = mainNav, linkHandler = linkHandler)
+                onDispose { shell.value = null }
             }
 
             val pip = isInPip(
                 onChange = {
+                    // The sections leave composition during picture-in-picture: keep their data
+                    mainNav.parkCurrent(parked = it)
                     if (!it || vm.binder?.player?.shouldBePlaying != true) return@isInPip
                     playerBottomSheetState.expandSoft()
                 }
@@ -332,32 +359,16 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                     setShouldShowSynchronizedLyrics = { },
                     showLyricsControls = false
                 ) else CompositionLocalProvider(
-                    LocalPlayerAwareWindowInsets provides playerAwareWindowInsets
+                    LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
+                    LocalMainNav provides mainNav,
+                    LocalLinkHandler provides linkHandler,
+                    LocalAppSnackbar provides snackbar
                 ) {
-                    val isDownloading by downloadState.collectAsState()
-
-                    Box {
-                        HomeScreen()
-                    }
-
-                    AnimatedVisibility(
-                        visible = isDownloading,
-                        modifier = Modifier.padding(playerAwareWindowInsets.asPaddingValues())
-                    ) {
-                        LinearProgressIndicator(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                        )
-                    }
-
-                    Player(
-                        layoutState = playerBottomSheetState,
-                        modifier = Modifier.align(Alignment.BottomCenter)
-                    )
-
-                    BottomSheetMenu(
-                        modifier = Modifier.align(Alignment.BottomCenter)
+                    AppShell(
+                        nav = mainNav,
+                        layout = shellLayout,
+                        playerSheetState = playerBottomSheetState,
+                        snackbar = snackbar
                     )
                 }
             }
@@ -393,14 +404,17 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         val extras = intent.extras?.activityIntentBundle
 
         when (intent.action) {
+            // Search results open in the Search section (REDESIGN-M3E §1.3)
             Intent.ACTION_SEARCH -> {
                 val query = extras?.query ?: return@launch
                 extras.query = null
 
-                searchResultRoute.ensureGlobal(query)
+                awaitShell().nav.navigate(TopLevelDestination.Search) {
+                    searchResultRoute.ensureGlobal(query)
+                }
             }
 
-            Intent.ACTION_APPLICATION_PREFERENCES -> settingsRoute.ensureGlobal()
+            Intent.ACTION_APPLICATION_PREFERENCES -> awaitShell().nav.navigate(TopLevelDestination.Settings) { }
 
             Intent.ACTION_VIEW, Intent.ACTION_SEND -> {
                 val uri = intent.data
@@ -410,7 +424,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                 intent.data = null
                 extras?.text = null
 
-                handleUrl(uri, vm.awaitBinder())
+                awaitShell().linkHandler.open(uri)
             }
 
             MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> {
@@ -471,67 +485,10 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
     }
 }
 
-@Suppress("CyclomaticComplexMethod")
-context(context: Context)
-fun handleUrl(
-    uri: Uri,
-    binder: PlayerService.Binder?
-) {
-    val path = uri.pathSegments.firstOrNull()
-    Log.d(TAG, "Opening url: $uri ($path)")
-
-    coroutineScope.launch {
-        when (path) {
-            "search" -> uri.getQueryParameter("q")?.let { query ->
-                searchResultRoute.ensureGlobal(query)
-            }
-
-            "playlist" -> uri.getQueryParameter("list")?.let { playlistId ->
-                val browseId = "VL$playlistId"
-
-                if (playlistId.startsWith("OLAK5uy_")) Innertube.playlistPage(
-                    body = BrowseBody(browseId = browseId)
-                )
-                    ?.getOrNull()
-                    ?.let { page ->
-                        page.songsPage?.items?.firstOrNull()?.album?.endpoint?.browseId
-                            ?.let { albumRoute.ensureGlobal(it) }
-                    } ?: withContext(Dispatchers.Main) {
-                    context.toast(context.getString(R.string.error_url, uri))
-                }
-                else playlistRoute.ensureGlobal(
-                    p0 = browseId,
-                    p1 = uri.getQueryParameter("params"),
-                    p2 = null,
-                    p3 = playlistId.startsWith("RDCLAK5uy_")
-                )
-            }
-
-            "channel", "c" -> uri.lastPathSegment?.let { channelId ->
-                artistRoute.ensureGlobal(channelId)
-            }
-
-            else -> when {
-                path == "watch" -> uri.getQueryParameter("v")
-
-                uri.host == "youtu.be" -> path
-
-                else -> {
-                    withContext(Dispatchers.Main) {
-                        context.toast(context.getString(R.string.error_url, uri))
-                    }
-                    null
-                }
-            }?.let { videoId ->
-                Innertube.song(videoId)?.getOrNull()?.let { song ->
-                    withContext(Dispatchers.Main) {
-                        binder?.player?.forcePlay(song.asMediaItem)
-                    }
-                }
-            }
-        }
-    }
-}
+private class ShellHandles(
+    val nav: MainNavState,
+    val linkHandler: LinkHandler
+)
 
 val LocalPlayerServiceBinder = staticCompositionLocalOf<PlayerService.Binder?> { null }
 val LocalPlayerAwareWindowInsets =

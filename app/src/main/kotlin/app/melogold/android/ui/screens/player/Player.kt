@@ -56,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.coerceAtMost
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -108,10 +109,15 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.absoluteValue
 
+/**
+ * @param collapsedBottomExtra the space under the mini player that other content covers: the
+ * navigation bar of the app shell (REDESIGN-M3E §5.4), 0 dp with the navigation rail
+ */
 @Composable
 fun Player(
     layoutState: BottomSheetState,
     modifier: Modifier = Modifier,
+    collapsedBottomExtra: Dp = 0.dp,
     shape: RoundedCornerShape = RoundedCornerShape(
         topStart = 12.dp,
         topEnd = 12.dp
@@ -226,6 +232,7 @@ fun Player(
                     }
                     .then(innerModifier)
                     .padding(horizontalBottomPaddingValues)
+                    .padding(bottom = collapsedBottomExtra)
             ) {
                 Spacer(modifier = Modifier.width(2.dp))
 
