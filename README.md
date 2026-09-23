@@ -39,10 +39,10 @@
 | Платформа | Репозиторий | Состояние |
 |---|---|---|
 | Android | этот репозиторий | в разработке |
-| Сервер | melogoldServer | в разработке |
-| macOS | — | запланирован |
-| Windows | — | запланирован |
-| Linux | — | запланирован |
+| Сервер | [melogoldServer](https://github.com/melogold-app/melogoldServer) | в разработке |
+| iOS и macOS | [melogoldiOSmacOS](https://github.com/melogold-app/melogoldiOSmacOS) | запланирован |
+| Windows | [melogoldWindows](https://github.com/melogold-app/melogoldWindows) | запланирован |
+| Linux | [melogoldLinux](https://github.com/melogold-app/melogoldLinux) | запланирован |
 
 ## Возможности
 
