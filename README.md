@@ -18,7 +18,7 @@
 - **Melogold Server хранит только метаданные**: аккаунт, избранное, библиотеку, плейлисты и список
   ваших устройств. Аудиофайлов на сервере нет.
 - **Сервер можно выбрать**: пользоваться официальным или поднять свой.
-- **Приложения обновляются сами** из [GitHub Releases](https://github.com/MaximCemencov/melogoldAndroid/releases) —
+- **Приложения обновляются сами** из [GitHub Releases](https://github.com/melogold-app/melogoldAndroid/releases) —
   без ручного скачивания APK.
 
 ## Статус
@@ -61,7 +61,7 @@
 ## Установка
 
 Первый релиз Melogold ещё не вышел. Сборки будут публиковаться в
-[Releases](https://github.com/MaximCemencov/melogoldAndroid/releases).
+[Releases](https://github.com/melogold-app/melogoldAndroid/releases).
 
 ## Сборка из исходников
 

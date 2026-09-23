@@ -13,8 +13,8 @@ LEAF_R_TOP = 'M524,324 C554,252 634,214 728,236 Z'
 
 DEFS = '''<defs>
 <radialGradient id="fruit" cx="0.38" cy="0.32" r="0.78">
-<stop offset="0" stop-color="#FFD43B"/><stop offset="0.42" stop-color="#FFB300"/>
-<stop offset="0.82" stop-color="#FF9C00"/><stop offset="1" stop-color="#F08400"/></radialGradient>
+<stop offset="0" stop-color="#FFA04D"/><stop offset="0.42" stop-color="#FE6B08"/>
+<stop offset="0.82" stop-color="#EE5A00"/><stop offset="1" stop-color="#D94A00"/></radialGradient>
 <linearGradient id="leafL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#27D680"/><stop offset="1" stop-color="#12B866"/></linearGradient>
 <linearGradient id="leafD" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A9A55"/><stop offset="1" stop-color="#04703C"/></linearGradient>
 <linearGradient id="stem" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#16B064"/><stop offset="1" stop-color="#05683A"/></linearGradient>
@@ -31,7 +31,7 @@ def leaves_svg():
 def fruit_svg(effects=True):
     s = '<circle cx="512" cy="572" r="250" fill="url(#fruit)"/>'
     if effects:
-        s += ('<g clip-path="url(#fc)"><ellipse cx="512" cy="336" rx="160" ry="36" fill="#B45A00" opacity="0.38" filter="url(#b16)"/></g>'
+        s += ('<g clip-path="url(#fc)"><ellipse cx="512" cy="336" rx="160" ry="36" fill="#9E3300" opacity="0.38" filter="url(#b16)"/></g>'
               '<ellipse cx="410" cy="458" rx="66" ry="38" transform="rotate(-38 410 458)" fill="#FFFFFF" opacity="0.6" filter="url(#b6)"/>'
               '<ellipse cx="452" cy="408" rx="13" ry="10" fill="#FFFFFF" opacity="0.9"/>')
     return s
@@ -50,9 +50,6 @@ def glyph_paths(dy=-30):
     fruit = (f'M{cx-r},{cy} A{r},{r} 0 1,0 {cx+r},{cy} A{r},{r} 0 1,0 {cx-r},{cy} Z '
              f'M{p1[0]:.1f},{p1[1]:.1f} A{rx},{ry} -38 1,0 {p2[0]:.1f},{p2[1]:.1f} A{rx},{ry} -38 1,0 {p1[0]:.1f},{p1[1]:.1f} Z')
     def shift(d):
-        out = []
-        for tok in d.replace(',', ' , ').split():
-            out.append(tok)
         # shift y of every coordinate pair
         res, nums = [], d.replace('M', ' M ').replace('C', ' C ').replace('Z', ' Z ').split()
         for n in nums:

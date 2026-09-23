@@ -65,7 +65,7 @@ open(p('apple', 'Melogold.icon', 'Assets', 'fruit.svg'), 'w').write(svg(fruit_sv
 open(p('apple', 'Melogold.icon', 'Assets', 'leaves.svg'), 'w').write(svg(leaves_svg(), MASTER))
 group = lambda name: {"layers": [{"image-name": f"{name}.svg", "name": name}],
                       "shadow": {"kind": "neutral", "opacity": 0.5},
-                      "translucency": {"enabled": True, "value": 0.4}}
+                      "translucency": {"enabled": name == 'leaves', "value": 0.2}}
 json.dump({"fill": "automatic", "groups": [group('leaves'), group('fruit')],
            "supported-platforms": {"circles": ["watchOS"], "squares": "shared"}},
           open(p('apple', 'Melogold.icon', 'icon.json'), 'w'), indent=2)
