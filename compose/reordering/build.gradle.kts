@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "app.vitune.compose.reordering"
+    namespace = "app.melogold.compose.reordering"
     compileSdk = 37
 
     defaultConfig {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "app.vitune.compose.persist"
+    namespace = "app.melogold.compose.persist"
     compileSdk = 37
 
     defaultConfig {

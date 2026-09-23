@@ -1,16 +1,23 @@
+Melogold is a free and open-source music player for YouTube Music. Use it without an account, or sign in to keep your favorites, library and playlists in sync across all your devices — on the public Melogold server or on your own self-hosted one.
+
 <b>Features:</b>
 
 * Play (almost) any song or video from YouTube Music
-* Play music from your device
-* Play songs in the background
-* Cache song for offline playback
-* Search for songs, albums, artists videos and playlists
-* Discover new songs by mood/genre
+* Play music stored on your device
+* Background playback and offline cache
+* Search songs, albums, artists, videos and playlists
+* Discover new music by mood and genre
 * Import playlists from YouTube
-* Fetch, display and edit songs lyrics or synchronized lyrics
-* Manage your playlists locally or synchronize with the cloud
-* Highly customizable (dynamic theme, Material You, ...)
-* Normalize audio for the perfect listening experience
-* Listen from your car using Android Auto
-* Open YouTube/YouTube Music links (`watch`, `playlist`, `channel`, etc.) with ViTune
-* Ridiculously lightweight APK
+* Plain and synchronized lyrics, with editing
+* Dynamic theme and Material You
+* Loudness normalization and SponsorBlock
+* Android Auto
+* Open YouTube and YouTube Music links (watch, playlist, channel and more)
+
+<b>Coming soon:</b>
+
+* Accounts with sync of favorites, library, playlists and history
+* Sign in on a new device by scanning a QR code
+* Connected devices list
+* Automatic updates
+* Clients for macOS, Windows and Linux

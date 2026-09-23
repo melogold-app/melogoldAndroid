@@ -25,7 +25,7 @@ android {
         minSdk = 24
         targetSdk = 37
 
-        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 25
+        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = project.version.toString()
 
         multiDexEnabled = true
@@ -64,14 +64,14 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-DEBUG"
-            manifestPlaceholders["appName"] = "ViTune Debug"
+            manifestPlaceholders["appName"] = "Melogold Debug"
         }
 
         release {
             versionNameSuffix = "-RELEASE"
             isMinifyEnabled = true
             isShrinkResources = true
-            manifestPlaceholders["appName"] = "ViTune"
+            manifestPlaceholders["appName"] = "Melogold"
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -84,7 +84,7 @@ android {
 
             applicationIdSuffix = ".nightly"
             versionNameSuffix = "-NIGHTLY"
-            manifestPlaceholders["appName"] = "ViTune Nightly"
+            manifestPlaceholders["appName"] = "Melogold Nightly"
             signingConfig = signingConfigs.findByName("ci")
         }
     }
