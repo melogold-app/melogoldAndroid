@@ -10,9 +10,13 @@ from scipy import ndimage
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else 'source.png'
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'out')
-MASTER_FILL = 0.74   # subject height share on square white icons (iOS/macOS/Play/README/avatar)
-FG_RADIUS = 0.32     # Android adaptive foreground: farthest opaque pixel from centre, share of canvas
-FREE_FILL = 0.94     # shape-free icons (Windows, Linux): subject bbox share
+# Subject height as a share of the canvas (and vertical centre), measured on Clementine VPN's icons
+# so both apps look the same size side by side.
+FG_H = 0.481                     # Android adaptive foreground (also the monochrome layer)
+MASTER_H = 0.701                 # square white icons: Play Store, legacy mipmaps, README, avatar, AppIcon-1024
+ICON_LAYER_H, ICON_LAYER_CY = 0.720, 0.483   # macOS Icon Composer layer
+WINDOWS_H, WINDOWS_CY = 0.715, 0.482          # Windows .ico on a white tile
+LINUX_H = 0.855                  # Linux hicolor, transparent
 
 def extract(path):
     im = np.asarray(Image.open(path).convert('RGB')).astype(np.float64)
@@ -35,16 +39,12 @@ def extract(path):
     line_img = Image.fromarray((lines * 255).astype(np.uint8), 'L').crop(box)
     return subject, line_img
 
-def radius(img):
-    a = np.asarray(img.getchannel('A')) > 12
-    ys, xs = np.where(a); h, w = a.shape
-    return np.sqrt((ys - h / 2) ** 2 + (xs - w / 2) ** 2).max()
-
-def place(img, canvas, scale, bg=None):
-    w, h = img.size
-    im = img.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.LANCZOS)
+def place(img, canvas, h_share, cy=0.5, bg=None):
+    """Scale `img` so its height is h_share of the canvas and centre it at (0.5, cy)."""
+    scale = h_share * canvas / img.height
+    im = img.resize((max(1, round(img.width * scale)), max(1, round(img.height * scale))), Image.LANCZOS)
     out = Image.new('RGBA', (canvas, canvas), bg or (0, 0, 0, 0))
-    out.alpha_composite(im, ((canvas - im.width) // 2, (canvas - im.height) // 2))
+    out.alpha_composite(im, ((canvas - im.width) // 2, round(canvas * cy - im.height / 2)))
     return out
 
 def mask_rounded(img, radius_share, circle=False):
@@ -64,16 +64,15 @@ def build(src):
     subject, lines = extract(src)
     subject.save(p('master', 'melogold-subject.png'))
     line_art = glyph(subject, lines)
-    H = subject.height
-    white = place(subject, 1024, MASTER_FILL * 1024 / H, bg=(255, 255, 255, 255)); white.save(p('master', 'melogold-1024.png'))
-    free = place(subject, 1024, FREE_FILL * 1024 / max(subject.size)); free.save(p('master', 'melogold-transparent-1024.png'))
-    fg_scale = FG_RADIUS * 1024 / radius(subject)
+    WHITE = (255, 255, 255, 255)
+    white = place(subject, 1024, MASTER_H, bg=WHITE); white.save(p('master', 'melogold-1024.png'))
+    free = place(subject, 1024, LINUX_H); free.save(p('master', 'melogold-transparent-1024.png'))
     # --- Android
-    fg = place(subject, 1024, fg_scale); mono = place(line_art, 1024, fg_scale)
+    fg = place(subject, 1024, FG_H); mono = place(line_art, 1024, FG_H)
     for dpi, s in {'mdpi': 108, 'hdpi': 162, 'xhdpi': 216, 'xxhdpi': 324, 'xxxhdpi': 432}.items():
         fg.resize((s, s), Image.LANCZOS).save(p('android', f'drawable-{dpi}', 'ic_launcher_foreground.png'), optimize=True)
         mono.resize((s, s), Image.LANCZOS).save(p('android', f'drawable-{dpi}', 'ic_launcher_monochrome.png'), optimize=True)
-    notif = place(glyph(subject), 1024, 0.92 * 1024 / max(subject.size))
+    notif = place(glyph(subject), 1024, 0.92)
     for dpi, s in {'mdpi': 24, 'hdpi': 36, 'xhdpi': 48, 'xxhdpi': 72, 'xxxhdpi': 96}.items():
         notif.resize((s, s), Image.LANCZOS).save(p('android', f'drawable-{dpi}', 'app_icon.png'), optimize=True)
     for dpi, s in {'mdpi': 48, 'hdpi': 72, 'xhdpi': 96, 'xxhdpi': 144, 'xxxhdpi': 192}.items():
@@ -83,7 +82,7 @@ def build(src):
             c = Image.new('RGBA', (s, s), (0, 0, 0, 0)); c.alpha_composite(t, (off, off)); c.save(p('android', f'mipmap-{dpi}', name), lossless=True)
     white.resize((512, 512), Image.LANCZOS).save(p('android', 'ic_launcher-playstore.png'), optimize=True)
     # --- Apple (Icon Composer bundle, single layer like Clementine.icon)
-    place(subject, 1024, MASTER_FILL * 1024 / H).save(p('apple', 'Melogold.icon', 'Assets', 'melogold.png'))
+    place(subject, 1024, ICON_LAYER_H, ICON_LAYER_CY).save(p('apple', 'Melogold.icon', 'Assets', 'melogold.png'))
     json.dump({"fill": "automatic",
                "groups": [{"layers": [{"image-name": "melogold.png", "name": "melogold"}],
                            "shadow": {"kind": "neutral", "opacity": 0.5},
@@ -92,8 +91,9 @@ def build(src):
               open(p('apple', 'Melogold.icon', 'icon.json'), 'w'), indent=2)
     white.convert('RGB').save(p('apple', 'AppIcon-1024.png'))
     # --- Windows / Linux
-    free.save(p('windows', 'melogold.ico'), sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-    free.resize((256, 256), Image.LANCZOS).save(p('windows', 'melogold-256.png'))
+    win = place(subject, 1024, WINDOWS_H, WINDOWS_CY, bg=WHITE)
+    win.save(p('windows', 'melogold.ico'), sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    win.resize((256, 256), Image.LANCZOS).save(p('windows', 'melogold-256.png'))
     for s in (16, 24, 32, 48, 64, 128, 256, 512):
         free.resize((s, s), Image.LANCZOS).save(p('linux', 'hicolor', f'{s}x{s}', 'apps', 'melogold.png'), optimize=True)
     # --- README / avatar
