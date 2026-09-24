@@ -303,9 +303,7 @@ class MainActivity : ComponentActivity() {
                         reason: Int
                     ) = when {
                         mediaItem == null -> playerBottomSheetState.dismissSoft()
-
                         playerBottomSheetState.dismissed -> playerBottomSheetState.collapseSoft()
-
                         else -> Unit
                     }
                 }
