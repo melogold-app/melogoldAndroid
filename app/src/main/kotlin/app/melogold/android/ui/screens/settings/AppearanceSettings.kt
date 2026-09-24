@@ -64,13 +64,6 @@ fun AppearanceSettings() = with(AppearancePreferences) {
             // Melogold always uses the system font (REDESIGN-M3E §8.4), there is no font picker
         }
         SettingsGroup(title = stringResource(R.string.player)) {
-            EnumValueSelectorSettingsEntry(
-                title = stringResource(R.string.player_layout),
-                selectedValue = PlayerPreferences.playerLayout,
-                onValueSelect = { PlayerPreferences.playerLayout = it },
-                valueText = { it.displayName() }
-            )
-
             SwitchSettingsEntry(
                 title = stringResource(R.string.lyrics_keep_screen_awake),
                 text = stringResource(R.string.lyrics_keep_screen_awake_description),

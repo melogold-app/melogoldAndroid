@@ -120,6 +120,3 @@ inline val ColorPalette.overlay get() = Color.Black.copy(alpha = 0.75f)
 
 @Suppress("UnusedReceiverParameter")
 inline val ColorPalette.onOverlay get() = defaultDarkPalette.text
-
-@Suppress("UnusedReceiverParameter")
-inline val ColorPalette.onOverlayShimmer get() = defaultDarkPalette.shimmer

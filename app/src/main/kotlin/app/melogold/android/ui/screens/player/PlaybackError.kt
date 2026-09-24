@@ -93,7 +93,6 @@ fun PlaybackError(
 
 /**
  * A user-facing message for a playback [error] of [mediaItem].
- * Mirrors the mapping used by [Thumbnail].
  */
 @Composable
 fun playbackErrorMessage(mediaItem: MediaItem, error: PlaybackException?): String =

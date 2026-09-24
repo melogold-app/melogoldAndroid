@@ -12,14 +12,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,9 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -63,21 +59,17 @@ import androidx.media3.common.util.UnstableApi
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
-import app.melogold.android.models.ui.toUiMedia
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.BottomSheet
 import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.components.themed.BaseMediaItemMenu
 import app.melogold.android.ui.components.themed.IconButton
 import app.melogold.android.ui.components.themed.SecondaryTextButton
 import app.melogold.android.ui.components.themed.SliderDialog
 import app.melogold.android.ui.components.themed.SliderDialogBody
-import app.melogold.android.ui.modifiers.PinchDirection
-import app.melogold.android.ui.modifiers.pinchToToggle
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
@@ -93,7 +85,6 @@ import app.melogold.compose.routing.OnGlobalRoute
 import app.melogold.core.ui.Dimensions
 import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.collapsedPlayerProgressBar
-import app.melogold.core.ui.utils.isLandscape
 import app.melogold.core.ui.utils.px
 import app.melogold.core.ui.utils.roundedShape
 import app.melogold.core.ui.utils.songBundle
@@ -342,16 +333,7 @@ fun Player(
             }
         }
 
-        if (playerLayout == PlayerPreferences.PlayerLayout.Classic) ClassicExpandedContent(
-            layoutState = layoutState,
-            mediaItem = mediaItem,
-            likedAt = likedAt,
-            setLikedAt = { likedAt = it },
-            shouldBePlaying = shouldBePlaying,
-            openPlayerMenu = openPlayerMenu,
-            shape = shape,
-            windowInsets = windowInsets
-        ) else mediaItem?.let { currentMediaItem ->
+        mediaItem?.let { currentMediaItem ->
             if (binder != null) ModernPlayer(
                 layoutState = layoutState,
                 binder = binder,
@@ -390,156 +372,6 @@ fun Player(
             }
         }
     }
-}
-
-@Suppress("LongMethod")
-@Composable
-private fun BoxScope.ClassicExpandedContent(
-    layoutState: BottomSheetState,
-    mediaItem: MediaItem?,
-    likedAt: Long?,
-    setLikedAt: (Long?) -> Unit,
-    shouldBePlaying: Boolean,
-    openPlayerMenu: () -> Unit,
-    shape: RoundedCornerShape,
-    windowInsets: WindowInsets
-) = with(PlayerPreferences) {
-    val colorPalette = LocalAppearance.current.colorPalette
-    val binder = LocalPlayerServiceBinder.current
-
-    val positionAndDuration = binder?.player.positionAndDurationState()
-    val position = positionAndDuration.first
-    val duration = positionAndDuration.second
-
-    val horizontalBottomPaddingValues = windowInsets
-        .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
-        .asPaddingValues()
-
-    var isShowingStatsForNerds by rememberSaveable { mutableStateOf(false) }
-    var isShowingLyricsDialog by rememberSaveable { mutableStateOf(false) }
-
-    if (isShowingLyricsDialog) LyricsDialog(onDismiss = { isShowingLyricsDialog = false })
-
-    val playerBottomSheetState = rememberBottomSheetState(
-        dismissedBound = 64.dp + horizontalBottomPaddingValues.calculateBottomPadding(),
-        expandedBound = layoutState.expandedBound
-    )
-
-    val containerModifier = Modifier
-        .clip(shape)
-        .background(
-            Brush.verticalGradient(
-                0.5f to colorPalette.background1,
-                1f to colorPalette.background0
-            )
-        )
-        .padding(
-            windowInsets
-                .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-                .asPaddingValues()
-        )
-        .padding(bottom = playerBottomSheetState.collapsedBound)
-
-    val thumbnailContent: @Composable (modifier: Modifier) -> Unit = { innerModifier ->
-        Box(modifier = innerModifier) {
-            Thumbnail(
-                isShowingLyrics = isShowingLyrics,
-                onShowLyrics = { isShowingLyrics = it },
-                isShowingStatsForNerds = isShowingStatsForNerds,
-                onShowStatsForNerds = { isShowingStatsForNerds = it },
-                onOpenDialog = { isShowingLyricsDialog = true },
-                likedAt = likedAt,
-                setLikedAt = setLikedAt,
-                modifier = Modifier
-                    .nestedScroll(layoutState.preUpPostDownNestedScrollConnection)
-                    .pinchToToggle(
-                        key = isShowingLyricsDialog,
-                        direction = PinchDirection.Out,
-                        threshold = 1.05f,
-                        onPinch = {
-                            if (isShowingLyrics) isShowingLyricsDialog = true
-                        }
-                    )
-            )
-        }
-    }
-
-    val controlsContent: @Composable (modifier: Modifier) -> Unit = { innerModifier ->
-        Controls(
-            media = mediaItem?.toUiMedia(duration),
-            binder = binder,
-            likedAt = likedAt,
-            setLikedAt = setLikedAt,
-            shouldBePlaying = shouldBePlaying,
-            position = position,
-            modifier = innerModifier
-        )
-    }
-
-    if (isLandscape) Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = containerModifier.padding(top = 32.dp)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .weight(0.66f)
-                .padding(bottom = 16.dp)
-        ) {
-            thumbnailContent(Modifier.padding(horizontal = 16.dp))
-        }
-
-        controlsContent(
-            Modifier
-                .padding(vertical = 8.dp)
-                .fillMaxHeight()
-                .weight(1f)
-        )
-    } else Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = containerModifier.padding(top = 54.dp)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.weight(1.25f)
-        ) {
-            thumbnailContent(Modifier.padding(horizontal = 32.dp, vertical = 8.dp))
-        }
-
-        controlsContent(
-            Modifier
-                .padding(vertical = 8.dp)
-                .fillMaxWidth()
-                .weight(1f)
-        )
-    }
-
-    if (binder != null) Queue(
-        layoutState = playerBottomSheetState,
-        binder = binder,
-        beforeContent = {
-            if (playerLayout == PlayerPreferences.PlayerLayout.New) IconButton(
-                onClick = { trackLoopEnabled = !trackLoopEnabled },
-                icon = R.drawable.infinite,
-                enabled = trackLoopEnabled,
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .size(20.dp)
-            ) else Spacer(modifier = Modifier.width(20.dp))
-        },
-        afterContent = {
-            IconButton(
-                icon = R.drawable.ellipsis_horizontal,
-                color = colorPalette.text,
-                onClick = openPlayerMenu,
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .size(20.dp)
-            )
-        },
-        modifier = Modifier.align(Alignment.BottomCenter),
-        shape = shape
-    )
 }
 
 @Composable

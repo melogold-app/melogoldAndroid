@@ -31,13 +31,6 @@ private fun Modifier.fadingEdge(
         )
     }
 
-fun Modifier.verticalFadingEdge(
-    top: Boolean = true,
-    middle: Int = 3,
-    bottom: Boolean = true,
-    alpha: Float = 1f
-) = fadingEdge(start = top, middle = middle, end = bottom, alpha = alpha, isHorizontal = false)
-
 fun Modifier.horizontalFadingEdge(
     left: Boolean = true,
     middle: Int = 3,

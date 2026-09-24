@@ -1,9 +1,6 @@
 package app.melogold.android.preferences
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import app.melogold.android.GlobalPreferencesHolder
-import app.melogold.android.R
 
 object PlayerPreferences : GlobalPreferencesHolder() {
     val trackLoopEnabledProperty = boolean(false)
@@ -21,10 +18,8 @@ object PlayerPreferences : GlobalPreferencesHolder() {
     var stopWhenClosed by boolean(false)
 
     var isShowingLyrics by boolean(false)
-    var isShowingSynchronizedLyrics by boolean(false)
     var preferSyncedLyrics by boolean(true)
 
-    var playerLayout by enum(PlayerLayout.New)
     var lyricsKeepScreenAwake by boolean(false)
 
     val handleAudioFocusProperty = boolean(true)
@@ -32,30 +27,4 @@ object PlayerPreferences : GlobalPreferencesHolder() {
 
     val sponsorBlockEnabledProperty = boolean(false)
     var sponsorBlockEnabled by sponsorBlockEnabledProperty
-
-    enum class PlayerLayout(val displayName: @Composable () -> String) {
-        Classic(displayName = { stringResource(R.string.classic_player_layout_name) }),
-        New(displayName = { stringResource(R.string.new_player_layout_name) })
-    }
-
-    enum class SeekBarStyle(val displayName: @Composable () -> String) {
-        Static(displayName = { stringResource(R.string.static_seek_bar_name) }),
-        Wavy(displayName = { stringResource(R.string.wavy_seek_bar_name) })
-    }
-
-    @Suppress("unused")
-    enum class WavySeekBarQuality(
-        val quality: Float,
-        val displayName: @Composable () -> String
-    ) {
-        Poor(quality = 50f, displayName = { stringResource(R.string.seek_bar_quality_poor) }),
-        Low(quality = 25f, displayName = { stringResource(R.string.seek_bar_quality_low) }),
-        Medium(quality = 15f, displayName = { stringResource(R.string.seek_bar_quality_medium) }),
-        High(quality = 5f, displayName = { stringResource(R.string.seek_bar_quality_high) }),
-        Great(quality = 1f, displayName = { stringResource(R.string.seek_bar_quality_great) }),
-        Subpixel(
-            quality = 0.5f,
-            displayName = { stringResource(R.string.seek_bar_quality_subpixel) }
-        )
-    }
 }
