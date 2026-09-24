@@ -4,8 +4,6 @@ import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.BrowseResponse
 import app.melogold.providers.innertube.models.MusicTwoRowItemRenderer
 import app.melogold.providers.innertube.models.bodies.BrowseBody
-import app.melogold.providers.innertube.models.oddElements
-import app.melogold.providers.innertube.models.splitBySeparator
 import app.melogold.providers.innertube.utils.from
 import app.melogold.providers.utils.runCatchingCancellable
 import io.ktor.client.call.body
@@ -93,17 +91,5 @@ suspend fun Innertube.discoverPage() = runCatchingCancellable {
     )
 }
 
-fun MusicTwoRowItemRenderer.toNewReleaseAlbumPage() = Innertube.AlbumItem(
-    info = Innertube.Info(
-        name = title?.text,
-        endpoint = navigationEndpoint?.browseEndpoint
-    ),
-    authors = subtitle?.runs?.splitBySeparator()?.getOrNull(1)?.oddElements()?.map {
-        Innertube.Info(
-            name = it.text,
-            endpoint = it.navigationEndpoint?.browseEndpoint
-        )
-    },
-    year = subtitle?.runs?.lastOrNull()?.text,
-    thumbnail = thumbnailRenderer?.musicThumbnailRenderer?.thumbnail?.thumbnails?.firstOrNull()
-)
+// The same reading as every album card: "Single • Artist", the year only where it is one
+fun MusicTwoRowItemRenderer.toNewReleaseAlbumPage() = Innertube.AlbumItem.from(this)

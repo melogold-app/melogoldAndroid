@@ -81,4 +81,5 @@
         <item quantity="other">Updated from YouTube: %1$d tracks gone</item>
     </plurals>
     <string name="local_playlist_synced_now">just now</string>
+    <string name="new_releases_title">New albums and singles</string>
 </resources>

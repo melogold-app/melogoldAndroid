@@ -86,4 +86,5 @@
         <item quantity="other">Обновлено из YouTube: убрано %1$d трека</item>
     </plurals>
     <string name="local_playlist_synced_now">только что</string>
+    <string name="new_releases_title">Новые альбомы и синглы</string>
 </resources>

@@ -18,6 +18,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.melogold.android.R
 
@@ -31,11 +32,12 @@ fun SectionHeader(
     subtitle: String? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    trailing: (@Composable () -> Unit)? = null
+    trailing: (@Composable () -> Unit)? = null,
+    startPadding: Dp = 16.dp
 ) = Row(
     modifier = modifier
         .fillMaxWidth()
-        .padding(start = 16.dp, end = 8.dp, top = 20.dp, bottom = 4.dp),
+        .padding(start = startPadding, end = 8.dp, top = 20.dp, bottom = 4.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp)
 ) {

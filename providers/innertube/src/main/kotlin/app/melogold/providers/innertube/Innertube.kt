@@ -180,7 +180,9 @@ object Innertube {
         val info: Info<NavigationEndpoint.Endpoint.Browse>?,
         val authors: List<Info<NavigationEndpoint.Endpoint.Browse>>?,
         val year: String?,
-        override val thumbnail: Thumbnail?
+        override val thumbnail: Thumbnail?,
+        /** "Album", "Single", "EP", as YouTube Music writes it, where it does. */
+        val typeText: String? = null
     ) : Item() {
         override val key get() = info!!.endpoint!!.browseId!!
 
