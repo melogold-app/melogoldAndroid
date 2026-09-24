@@ -33,11 +33,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.R
+import app.melogold.android.ui.components.m3e.SegmentedGroupDefaults
 import app.melogold.android.ui.components.themed.Scaffold
 import app.melogold.android.ui.kit.ArtistAvatar
 import app.melogold.android.ui.kit.Artwork
 import app.melogold.android.ui.kit.CollectionCard
-import app.melogold.android.ui.kit.groupedListColors
 import app.melogold.android.ui.model.rememberScreenModel
 import app.melogold.android.ui.screens.GlobalRoutes
 import app.melogold.android.ui.screens.Route
@@ -69,7 +69,7 @@ fun LibraryPlaylistsScreen() = LibraryListScreen(title = R.string.library_playli
             SegmentedListItem(
                 onClick = { localPlaylistRoute(playlist.id) },
                 shapes = ListItemDefaults.segmentedShapes(index = index, count = list.size),
-                colors = groupedListColors(),
+                colors = SegmentedGroupDefaults.colors(),
                 leadingContent = {
                     Artwork(url = playlist.thumbnail, size = 48.dp, shape = RoundedCornerShape(10.dp))
                 },

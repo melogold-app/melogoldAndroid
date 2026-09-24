@@ -48,11 +48,11 @@ import app.melogold.android.models.Playlist
 import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.query
 import app.melogold.android.ui.components.m3e.IconShape
+import app.melogold.android.ui.components.m3e.SegmentedGroupDefaults
 import app.melogold.android.ui.components.m3e.ShapeIcon
 import app.melogold.android.ui.kit.Artwork
 import app.melogold.android.ui.kit.NewPlaylistDialog
 import app.melogold.android.ui.kit.SectionHeader
-import app.melogold.android.ui.kit.groupedListColors
 import app.melogold.android.ui.model.rememberScreenModel
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.builtInPlaylistRoute
@@ -270,7 +270,7 @@ private fun PlaylistGroup(
         SegmentedListItem(
             onClick = onNew,
             shapes = ListItemDefaults.segmentedShapes(index = 0, count = count),
-            colors = groupedListColors(),
+            colors = SegmentedGroupDefaults.colors(),
             leadingContent = {
                 LeadingIcon(icon = R.drawable.ms_add)
             }
@@ -282,7 +282,7 @@ private fun PlaylistGroup(
             SegmentedListItem(
                 onClick = { onOpen(playlist) },
                 shapes = ListItemDefaults.segmentedShapes(index = index + 1, count = count),
-                colors = groupedListColors(),
+                colors = SegmentedGroupDefaults.colors(),
                 leadingContent = {
                     Artwork(url = playlist.thumbnail, size = 48.dp, shape = RoundedCornerShape(10.dp))
                 },
@@ -313,7 +313,7 @@ private fun SavedGroup(
     SegmentedListItem(
         onClick = onAlbums,
         shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
-        colors = groupedListColors(),
+        colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_album) },
         trailingContent = { CountAndChevron(albums) }
     ) {
@@ -322,7 +322,7 @@ private fun SavedGroup(
     SegmentedListItem(
         onClick = onArtists,
         shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
-        colors = groupedListColors(),
+        colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_person) },
         trailingContent = { CountAndChevron(artists) }
     ) {

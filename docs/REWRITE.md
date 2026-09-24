@@ -374,8 +374,9 @@ Should делаются после must своей задачи. Если should
 
 ### 3.0 Общие правила экранов
 
-**Шапки:**
-- корни разделов — `LargeFlexibleTopAppBar` через `A/ui/shell/TabRootScaffold.kt`;
+**Шапки** (пересмотрено 24.09.2026 по просьбе пользователя и гайдлайнам M3 app bars/search):
+- корни разделов — small `TopAppBar` через `A/ui/shell/TabRootScaffold.kt`: в покое цвета фона, при прокрутке заливается `surfaceContainer`. `LargeFlexibleTopAppBar` отменён: на телефоне он занимал шестую часть экрана до контента. Где в разделах ниже написано «LargeFlexibleTopAppBar» или «MediumFlexibleTopAppBar», читать «small TopAppBar»;
+- корень Поиска — `AppBarWithSearch`, фокусированный поиск — `ExpandedFullScreenSearchBar`; в выдаче запрос виден в свёрнутом поле, тап возвращает к вводу;
 - вложенные списки — `MediumFlexibleTopAppBar` со стрелкой «назад»;
 - детальные коллекции (альбом, плейлист, исполнитель) — `CollectionHeader` из кита в контенте плюс `TopAppBar`, в котором заголовок появляется после прокрутки шапки.
 

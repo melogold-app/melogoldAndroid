@@ -19,6 +19,7 @@ import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.isLocal
 import app.melogold.core.ui.utils.SongBundleAccessor
 import app.melogold.providers.innertube.Innertube
+import app.melogold.providers.innertube.youtube.YouTubeItem
 import app.melogold.providers.innertube.models.bodies.ContinuationBody
 import app.melogold.providers.innertube.requests.playlistPage
 import kotlinx.coroutines.currentCoroutineContext
@@ -194,3 +195,27 @@ inline fun <reified T : Throwable> Throwable.findCause(): T? {
 
     return null
 }
+
+/**
+ * A plain YouTube video as a queue item: the channel stands in for the artist (REWRITE §4.8.2).
+ */
+val YouTubeItem.Video.asMediaItem: MediaItem
+    get() = MediaItem.Builder()
+        .setMediaId(videoId)
+        .setUri(videoId)
+        .setCustomCacheKey(videoId)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle(title)
+                .setArtist(channelName)
+                .setArtworkUri(thumbnailUrl?.toUri())
+                .setExtras(
+                    SongBundleAccessor.bundle {
+                        durationText = this@asMediaItem.durationText
+                        artistNames = channelName?.let { listOf(it) }
+                        artistIds = channelId?.let { listOf(it) }
+                    }
+                )
+                .build()
+        )
+        .build()

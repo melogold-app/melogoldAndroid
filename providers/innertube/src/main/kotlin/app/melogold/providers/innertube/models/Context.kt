@@ -122,6 +122,20 @@ data class Context(
 
         val DefaultWeb get() = DefaultWebNoLang.withLang
 
+        /** Plain YouTube (www.youtube.com, client WEB): search and channels outside the music catalog. */
+        val DefaultYouTubeWeb get() = DefaultYouTubeWebNoLang.withLang
+
+        val DefaultYouTubeWebNoLang = Context(
+            client = Client(
+                clientId = 1,
+                clientName = "WEB",
+                clientVersion = "2.20260922.06.00",
+                platform = "DESKTOP",
+                userAgent = UserAgents.DESKTOP_CURRENT,
+                referer = "https://www.youtube.com/"
+            )
+        )
+
         val DefaultWebNoLang = Context(
             client = Client(
                 clientId = 67,
@@ -190,6 +204,8 @@ val validCountryCodes =
 
 @Suppress("MaximumLineLength")
 object UserAgents {
+    const val DESKTOP_CURRENT =
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
     const val DESKTOP =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36"
     const val ANDROID_MUSIC =

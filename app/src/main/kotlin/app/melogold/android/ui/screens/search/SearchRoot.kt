@@ -87,7 +87,7 @@ import app.melogold.android.ui.model.rememberScreenModel
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.localPlaylistRoute
 import app.melogold.android.ui.screens.searchResultRoute
-import app.melogold.android.ui.screens.searchresult.SearchResultScreen
+import app.melogold.android.ui.screens.searchresult.SearchResultsScreen
 import app.melogold.android.ui.shell.LocalLinkHandler
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TopLevelDestination
@@ -687,9 +687,9 @@ private fun LinkRow(target: LinkTarget, onOpen: () -> Unit) {
 fun SearchResultsEntry(query: String) {
     val nav = LocalMainNav.current
 
-    SearchResultScreen(
+    SearchResultsScreen(
         query = query,
-        onSearchAgain = { nav.openSearch(query) }
+        onEditQuery = { nav.openSearch(query) }
     )
 }
 
