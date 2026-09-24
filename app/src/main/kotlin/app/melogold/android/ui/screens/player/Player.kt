@@ -71,6 +71,8 @@ import app.melogold.android.ui.components.themed.SecondaryTextButton
 import app.melogold.android.ui.components.themed.SliderDialog
 import app.melogold.android.ui.components.themed.SliderDialogBody
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
+import app.melogold.android.ui.shell.AppSnackbar
+import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.positionAndDurationState
@@ -90,8 +92,8 @@ import app.melogold.core.ui.utils.roundedShape
 import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlin.math.absoluteValue
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * @param collapsedBottomExtra the space under the mini player that other content covers: the
@@ -113,6 +115,9 @@ fun Player(
     val binder = LocalPlayerServiceBinder.current
 
     PersistMapCleanup(prefix = "queue/suggestions")
+
+    val snackbar = LocalAppSnackbar.current
+    val stoppedMessage = stringResource(R.string.player_stopped)
 
     var mediaItem by remember(binder) {
         mutableStateOf(
@@ -176,146 +181,28 @@ fun Player(
         state = layoutState,
         modifier = modifier.fillMaxSize(),
         onDismiss = {
-            binder?.let { onDismiss(it) }
+            binder?.let { stopWithUndo(it, snackbar, stoppedMessage) }
             layoutState.dismissSoft()
         },
         backHandlerEnabled = !menuState.isDisplayed,
-        collapsedContent = { innerModifier ->
-            val positionAndDuration = binder?.player.positionAndDurationState()
-            val position = positionAndDuration.first
-            val duration = positionAndDuration.second
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
+        collapsedContent = { _ ->
+            MiniPlayer(
+                binder = binder,
+                metadata = metadata,
+                explicit = extras?.explicit == true,
+                shouldBePlaying = shouldBePlaying,
+                onExpand = layoutState::expandSoft,
+                onMenu = {
+                    val item = mediaItem
+                    if (binder != null && item != null) menuState.display {
+                        PlayerMenu(onDismiss = menuState::hide, mediaItem = item, binder = binder)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(shape)
-                    .background(colorPalette.background1)
-                    .drawBehind {
-                        drawRect(
-                            color = colorPalette.collapsedPlayerProgressBar,
-                            topLeft = Offset.Zero,
-                            size = Size(
-                                width = runCatching {
-                                    size.width * (position.toFloat() / duration.absoluteValue)
-                                }.getOrElse { 0f },
-                                height = size.height
-                            )
-                        )
-                    }
-                    .then(innerModifier)
                     .padding(horizontalBottomPaddingValues)
                     .padding(bottom = collapsedBottomExtra)
-            ) {
-                Spacer(modifier = Modifier.width(2.dp))
-
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.height(Dimensions.items.collapsedPlayerHeight)
-                ) {
-                    AsyncImage(
-                        model = metadata?.artworkUri?.thumbnail(Dimensions.thumbnails.song.px),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .clip(thumbnailCornerSize.roundedShape)
-                            .background(colorPalette.background0)
-                            .size(48.dp)
-                    )
-                }
-
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier
-                        .height(Dimensions.items.collapsedPlayerHeight)
-                        .weight(1f)
-                ) {
-                    AnimatedContent(
-                        targetState = metadata?.title?.toString().orEmpty(),
-                        label = "",
-                        transitionSpec = { fadeIn() togetherWith fadeOut() }
-                    ) { text ->
-                        BasicText(
-                            text = text,
-                            style = typography.xs.semiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    AnimatedVisibility(visible = metadata?.artist != null) {
-                        AnimatedContent(
-                            targetState = metadata?.artist?.toString().orEmpty(),
-                            label = "",
-                            transitionSpec = { fadeIn() togetherWith fadeOut() }
-                        ) { text ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                BasicText(
-                                    text = text,
-                                    style = typography.xs.semiBold.secondary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-
-                                AnimatedVisibility(visible = extras?.explicit == true) {
-                                    Image(
-                                        painter = painterResource(R.drawable.explicit),
-                                        contentDescription = null,
-                                        colorFilter = ColorFilter.tint(colorPalette.text),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(2.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.height(Dimensions.items.collapsedPlayerHeight)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clickable(
-                                onClick = {
-                                    if (shouldBePlaying) binder?.player?.pause()
-                                    else {
-                                        if (binder?.player?.playbackState == Player.STATE_IDLE) binder.player.prepare()
-                                        binder?.player?.play()
-                                    }
-                                },
-                                indication = ripple(bounded = false),
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
-                            .clip(CircleShape)
-                    ) {
-                        AnimatedPlayPauseButton(
-                            playing = shouldBePlaying,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(horizontal = 4.dp, vertical = 8.dp)
-                                .size(23.dp)
-                        )
-                    }
-
-                    IconButton(
-                        icon = R.drawable.play_skip_forward,
-                        color = colorPalette.text,
-                        onClick = { binder?.player?.forceSeekToNext() },
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp, vertical = 8.dp)
-                            .size(20.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(2.dp))
-            }
+            )
         }
     ) {
         var audioDialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -397,7 +284,21 @@ private fun PlayerMenu(
     )
 }
 
-private fun onDismiss(binder: PlayerService.Binder) {
+/**
+ * Swiping the mini player down stops playback and clears the queue; "Undo" brings the queue, the
+ * track and the position back (REWRITE §3.10.1, VT#177).
+ */
+private fun stopWithUndo(binder: PlayerService.Binder, snackbar: AppSnackbar, message: String) {
+    val player = binder.player
+    val items = List(player.mediaItemCount) { player.getMediaItemAt(it) }
+    val index = player.currentMediaItemIndex
+    val position = player.currentPosition
+
     binder.stopRadio()
-    binder.player.clearMediaItems()
+    player.clearMediaItems()
+
+    if (items.isNotEmpty()) snackbar.showUndo(message) {
+        player.setMediaItems(items, index.coerceIn(0, items.lastIndex), position)
+        player.prepare()
+    }
 }

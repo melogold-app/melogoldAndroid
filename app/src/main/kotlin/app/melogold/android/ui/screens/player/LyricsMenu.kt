@@ -28,6 +28,7 @@ fun LyricsMenu(
     onEdit: () -> Unit,
     onSearchOnline: () -> Unit,
     onRefetch: (() -> Unit)?,
+    onImport: () -> Unit,
     onPickFromLrcLib: (() -> Unit)?,
     onSetStartOffset: (() -> Unit)?,
     header: @Composable ColumnScope.() -> Unit = {},
@@ -77,6 +78,15 @@ fun LyricsMenu(
             onClick = {
                 menuState.hide()
                 onRefetch?.invoke()
+            }
+        )
+
+        MenuEntry(
+            icon = R.drawable.ms_input,
+            text = stringResource(R.string.lyrics_import_file),
+            onClick = {
+                menuState.hide()
+                onImport()
             }
         )
 

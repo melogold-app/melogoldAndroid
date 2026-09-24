@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+
 package app.melogold.android.ui.screens.player.modern
 
 import android.content.Context
@@ -5,279 +7,182 @@ import android.content.Intent
 import android.media.MediaRouter2
 import android.os.Build
 import android.provider.Settings
-import androidx.annotation.DrawableRes
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
+import androidx.compose.material3.WavyProgressIndicatorDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import app.melogold.android.R
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.service.PlayerService
-import app.melogold.android.ui.screens.player.AnimatedPlayPauseButton
+import app.melogold.android.ui.components.m3e.MelogoldContainedLoadingIndicator
+import app.melogold.android.ui.components.m3e.rememberHaptics
+import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
 import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.positionAndDurationState
 import app.melogold.android.utils.toast
-import app.melogold.core.ui.LocalAppearance
+import kotlinx.coroutines.delay
 
 private const val SEEK_STEP_MS = 10_000L
-private val TrackInset = 32.dp
-private val TrackInsetPressed = 24.dp
+
+/** Previous and next next to the wide play button (96 × 72 dp). */
+private val SideButtonSize = DpSize(64.dp, 64.dp)
+
+/** After a seek, the bar keeps showing the new position until the player reports it. */
+private const val SEEK_SETTLE_MS = 700L
 
 private fun Player.playOrResume() {
     if (playbackState == Player.STATE_IDLE) prepare()
+    if (playbackState == Player.STATE_ENDED) seekToDefaultPosition()
     play()
 }
 
 /**
- * A slider in the Apple style: a thin rounded track without a knob, which grows while touched.
- * Drags are relative (touching does not jump), a tap jumps to the tapped position, and the value is
- * only committed on release.
- *
- * @param fraction the current value in 0..1
- * @param onScrub called while dragging with the value that would be committed
- * @param onCommit called on release (or tap) with the new value
- */
-@Composable
-private fun AppleSlider(
-    fraction: Float,
-    pressFraction: () -> Float,
-    onPressedChange: (Boolean) -> Unit,
-    onScrub: (Float?) -> Unit,
-    onCommit: (Float) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    inset: Dp = TrackInset,
-    pressedInset: Dp = TrackInsetPressed,
-    markerFraction: Float? = null
-) {
-    val currentFraction by rememberUpdatedState(fraction)
-    val currentOnCommit by rememberUpdatedState(onCommit)
-    val currentOnScrub by rememberUpdatedState(onScrub)
-    val currentOnPressedChange by rememberUpdatedState(onPressedChange)
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(40.dp)
-            .pointerInput(enabled) {
-                if (!enabled) return@pointerInput
-                sliderGestures(
-                    inset = inset,
-                    fraction = { currentFraction },
-                    onPressedChange = { currentOnPressedChange(it) },
-                    onScrub = { currentOnScrub(it) },
-                    onCommit = { currentOnCommit(it) }
-                )
-            }
-            .drawBehind {
-                val p = pressFraction()
-                val start = (inset + (pressedInset - inset) * p).toPx()
-                val width = size.width - start * 2
-                val height = (6.dp + 6.dp * p).toPx()
-                val top = (size.height - height) / 2
-                val radius = CornerRadius(height / 2, height / 2)
-
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.22f),
-                    topLeft = Offset(start, top),
-                    size = Size(width, height),
-                    cornerRadius = radius
-                )
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.7f + 0.3f * p),
-                    topLeft = Offset(start, top),
-                    size = Size(width * fraction.coerceIn(0f, 1f), height),
-                    cornerRadius = radius
-                )
-                markerFraction?.let {
-                    drawCircle(
-                        color = Color.White,
-                        radius = height / 2,
-                        center = Offset(start + width * it.coerceIn(0f, 1f), top + height / 2)
-                    )
-                }
-            }
-    )
-}
-
-private suspend fun PointerInputScope.sliderGestures(
-    inset: Dp,
-    fraction: () -> Float,
-    onPressedChange: (Boolean) -> Unit,
-    onScrub: (Float?) -> Unit,
-    onCommit: (Float) -> Unit
-) = awaitEachGesture {
-    val down = awaitFirstDown(requireUnconsumed = false)
-    val trackStart = inset.toPx()
-    val trackWidth = (size.width - trackStart * 2).coerceAtLeast(1f)
-    val start = fraction()
-    var accumulated = 0f
-
-    onPressedChange(true)
-
-    try {
-        val slop = awaitHorizontalTouchSlopOrCancellation(down.id) { change, over ->
-            change.consume()
-            accumulated += over
-            onScrub((start + accumulated / trackWidth).coerceIn(0f, 1f))
-        }
-
-        if (slop != null) {
-            var value = (start + accumulated / trackWidth).coerceIn(0f, 1f)
-            val completed = horizontalDrag(slop.id) { change ->
-                accumulated += change.positionChange().x
-                change.consume()
-                value = (start + accumulated / trackWidth).coerceIn(0f, 1f)
-                onScrub(value)
-            }
-            if (completed) onCommit(value)
-        } else {
-            val up = currentEvent.changes.firstOrNull { it.id == down.id }
-            if (up != null && !up.pressed && !up.isConsumed) {
-                up.consume()
-                onCommit(((up.position.x - trackStart) / trackWidth).coerceIn(0f, 1f))
-            }
-        }
-    } finally {
-        onScrub(null)
-        onPressedChange(false)
-    }
-}
-
-/**
- * The seek bar with the elapsed / remaining labels. It reads the playback position itself, so only
- * this leaf recomposes (every 500 ms).
+ * The seek bar (REWRITE §3.10.2): the active part waves while playing and lies flat when paused,
+ * a bar thumb, the position applied when the finger lifts; elapsed time on the left, remaining time
+ * with a minus on the right. It reads the playback position itself, so only this leaf recomposes.
  */
 @Composable
 fun PlayerScrubber(
     binder: PlayerService.Binder,
+    playing: Boolean,
+    reduceMotion: Boolean,
     onScrubbing: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val player = binder.player
-    val haptic = LocalHapticFeedback.current
+    val haptics = rememberHaptics()
 
     val positionAndDuration = player.positionAndDurationState()
     val duration = positionAndDuration.second.takeIf { it != C.TIME_UNSET && it > 0 } ?: 0L
     val position = positionAndDuration.first.coerceIn(0L, duration.coerceAtLeast(0L))
 
     var scrubFraction by remember { mutableStateOf<Float?>(null) }
-    var pressed by remember { mutableStateOf(false) }
-    val pressFraction = animateFloatAsState(
-        targetValue = if (pressed) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 700f),
-        label = ""
-    )
+    var settling by remember { mutableStateOf(false) }
+
+    LaunchedEffect(settling) {
+        if (!settling) return@LaunchedEffect
+        delay(SEEK_SETTLE_MS)
+        scrubFraction = null
+        settling = false
+    }
 
     val shownPosition = scrubFraction?.let { (it * duration).toLong() } ?: position
     val fraction = if (duration > 0) shownPosition.toFloat() / duration else 0f
+    val interactionSource = remember { MutableInteractionSource() }
 
     val elapsedText = formatAsDuration(shownPosition)
     val totalText = formatAsDuration(duration)
     val stateText = stringResource(R.string.seek_position_format, elapsedText, totalText)
     val back10 = stringResource(R.string.seek_back_10)
     val forward10 = stringResource(R.string.seek_forward_10)
+    val marker = binder.poiTimestamp?.takeIf { duration > 0 }?.let { it.toFloat() / duration }
+
+    val activeColor = MaterialTheme.colorScheme.primary
+    val trackColor = MaterialTheme.colorScheme.secondaryContainer
+    val markerColor = MaterialTheme.colorScheme.tertiary
+    val wavy = playing && scrubFraction == null && !reduceMotion
 
     Column(modifier = modifier.fillMaxWidth()) {
-        AppleSlider(
-            fraction = fraction,
-            pressFraction = { pressFraction.value },
-            enabled = duration > 0,
-            onPressedChange = {
-                pressed = it
-                onScrubbing(it)
-            },
-            onScrub = { newFraction ->
+        Slider(
+            value = fraction,
+            onValueChange = { value ->
                 val old = scrubFraction
-                if (newFraction != null && old != null) {
-                    val hitEdge = (newFraction == 0f && old > 0f) || (newFraction == 1f && old < 1f)
-                    if (hitEdge) haptic.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                }
-                scrubFraction = newFraction
+                if (old != null && ((value == 0f && old > 0f) || (value == 1f && old < 1f))) haptics.segmentTick()
+                if (old == null) onScrubbing(true)
+                settling = false
+                scrubFraction = value
             },
-            onCommit = { player.seekTo((it * duration).toLong()) },
-            markerFraction = binder.poiTimestamp?.takeIf { duration > 0 }?.let { it.toFloat() / duration },
+            onValueChangeFinished = {
+                scrubFraction?.let { player.seekTo((it * duration).toLong()) }
+                onScrubbing(false)
+                settling = true
+            },
+            enabled = duration > 0,
+            interactionSource = interactionSource,
+            thumb = {
+                SliderDefaults.Thumb(
+                    interactionSource = interactionSource,
+                    thumbSize = DpSize(4.dp, 32.dp),
+                    colors = SliderDefaults.colors(thumbColor = activeColor)
+                )
+            },
+            track = { state ->
+                LinearWavyProgressIndicator(
+                    progress = { state.value },
+                    color = activeColor,
+                    trackColor = trackColor,
+                    amplitude = { if (wavy) WavyProgressIndicatorDefaults.indicatorAmplitude(it) else 0f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .drawWithContent {
+                            drawContent()
+                            if (marker != null) drawCircle(
+                                color = markerColor,
+                                radius = 3.dp.toPx(),
+                                center = Offset(size.width * marker, size.height / 2)
+                            )
+                        }
+                )
+            },
             modifier = Modifier
+                .padding(horizontal = 24.dp)
                 .semantics {
-                    progressBarRangeInfo = ProgressBarRangeInfo(
-                        current = position.toFloat(),
-                        range = 0f..duration.toFloat().coerceAtLeast(1f)
-                    )
                     stateDescription = stateText
-                    setProgress { target ->
-                        player.seekTo(target.toLong())
-                        true
-                    }
                     customActions = listOf(
                         CustomAccessibilityAction(back10) {
                             player.seekTo((player.currentPosition - SEEK_STEP_MS).coerceAtLeast(0L))
                             true
                         },
                         CustomAccessibilityAction(forward10) {
-                            player.seekTo(
-                                (player.currentPosition + SEEK_STEP_MS).coerceAtMost(duration)
-                            )
+                            player.seekTo((player.currentPosition + SEEK_STEP_MS).coerceAtMost(duration))
                             true
                         }
                     )
@@ -285,281 +190,152 @@ fun PlayerScrubber(
                 .testTag("player_scrubber")
         )
 
-        TimeLabels(
-            elapsed = elapsedText,
-            remaining = "−" + formatAsDuration((duration - shownPosition).coerceAtLeast(0L)),
-            pressFraction = { pressFraction.value }
-        )
-    }
-}
-
-@Composable
-private fun TimeLabels(
-    elapsed: String,
-    remaining: String,
-    pressFraction: () -> Float,
-    modifier: Modifier = Modifier
-) {
-    val typography = LocalAppearance.current.typography
-    val style = typography.xxs.copy(
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Medium,
-        fontFeatureSettings = "tnum",
-        color = Color.White
-    )
-
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = modifier
-            .fillMaxWidth()
-            .offset(y = (-6).dp)
-            .padding(horizontal = TrackInset)
-            .graphicsLayer {
-                val p = pressFraction()
-                translationY = 4.dp.toPx() * p
-                alpha = 0.55f + 0.35f * p
-            }
-    ) {
-        BasicText(text = elapsed, style = style)
-        BasicText(text = remaining, style = style)
-    }
-}
-
-@Composable
-private fun TransportButton(
-    @DrawableRes icon: Int?,
-    contentDescription: String,
-    onClick: () -> Unit,
-    testTag: String,
-    modifier: Modifier = Modifier,
-    iconWidth: Dp = 40.dp,
-    iconHeight: Dp = 24.dp,
-    content: (@Composable () -> Unit)? = null
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale = animateFloatAsState(
-        targetValue = if (pressed) 0.85f else 1f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 800f),
-        label = ""
-    )
-    val circleAlpha = animateFloatAsState(
-        targetValue = if (pressed) 1f else 0f,
-        animationSpec = tween(if (pressed) 80 else 250),
-        label = ""
-    )
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .size(80.dp)
-            .testTag(testTag)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = onClick
-            )
-            // Keeps the description on the tagged node (no merged child nodes)
-            .clearAndSetSemantics { this.contentDescription = contentDescription }
-    ) {
-        Spacer(
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier
-                .size(72.dp)
-                .drawBehind {
-                    drawCircle(Color.White.copy(alpha = 0.12f * circleAlpha.value))
-                }
-        )
-
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.graphicsLayer {
-                scaleX = scale.value
-                scaleY = scale.value
-            }
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
         ) {
-            if (content != null) content()
-            else if (icon != null) Image(
-                painter = painterResource(icon),
-                contentDescription = null,
-                colorFilter = ColorFilter.tint(OnArt.primary),
-                modifier = Modifier.size(width = iconWidth, height = iconHeight)
-            )
+            val style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
+            val color = MaterialTheme.colorScheme.onSurfaceVariant
+            Text(text = elapsedText, style = style, color = color)
+            Text(text = "−" + formatAsDuration((duration - shownPosition).coerceAtLeast(0L)), style = style, color = color)
         }
     }
 }
 
+/**
+ * Shuffle, the `|<< · play · >>|` button group and repeat (REWRITE §3.10.2). Play is the wide
+ * button in the middle; its shape morphs between round (paused) and square (playing).
+ */
 @Composable
 fun TransportRow(
     binder: PlayerService.Binder,
     shouldBePlaying: Boolean,
+    resolving: Boolean,
     modifier: Modifier = Modifier
 ) {
     val player = binder.player
+    val haptics = rememberHaptics()
+    var shuffle by remember(player) { mutableStateOf(player.shuffleModeEnabled) }
 
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(80.dp)
-    ) {
-        TransportButton(
-            icon = R.drawable.play_skip_back,
-            contentDescription = stringResource(R.string.skip_back),
-            onClick = { player.forceSeekToPrevious() },
-            testTag = "player_prev",
-            iconWidth = 32.dp,
-            iconHeight = 26.dp,
-            modifier = Modifier.offset(x = (-112).dp)
-        )
-
-        TransportButton(
-            icon = null,
-            contentDescription = stringResource(if (shouldBePlaying) R.string.pause else R.string.play),
-            onClick = {
-                if (shouldBePlaying) player.pause() else player.playOrResume()
-            },
-            testTag = "player_play_pause"
-        ) {
-            AnimatedPlayPauseButton(
-                playing = shouldBePlaying,
-                modifier = Modifier.size(42.dp)
-            )
+    player.DisposableListener {
+        object : Player.Listener {
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                shuffle = shuffleModeEnabled
+            }
         }
-
-        TransportButton(
-            icon = R.drawable.play_skip_forward,
-            contentDescription = stringResource(R.string.skip_forward),
-            onClick = { player.forceSeekToNext() },
-            testTag = "player_next",
-            iconWidth = 32.dp,
-            iconHeight = 26.dp,
-            modifier = Modifier.offset(x = 112.dp)
-        )
     }
-}
-
-@Composable
-private fun ToolbarButton(
-    @DrawableRes icon: Int,
-    contentDescription: String,
-    testTag: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    selected: Boolean = false,
-    isToggle: Boolean = false,
-    stateDescription: String? = null,
-    alpha: Float = 1f
-) {
-    val selectedFraction = animateFloatAsState(
-        targetValue = if (selected) 1f else 0f,
-        animationSpec = tween(200),
-        label = ""
-    )
-    val interactionSource = remember { MutableInteractionSource() }
-    val tint = if (selected) OnArt.onSelected else OnArt.primary.copy(alpha = 0.85f)
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .size(48.dp)
-            .testTag(testTag)
-            .let {
-                if (isToggle) it.toggleable(
-                    value = selected,
-                    interactionSource = interactionSource,
-                    indication = null,
-                    role = Role.Switch,
-                    onValueChange = { onClick() }
-                ) else it.clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    role = Role.Button,
-                    onClick = onClick
-                )
-            }
-            .clearAndSetSemantics {
-                this.contentDescription = contentDescription
-                if (stateDescription != null) this.stateDescription = stateDescription
-            }
-            .graphicsLayer { this.alpha = alpha }
-            .drawBehind {
-                val f = selectedFraction.value
-                if (f > 0f) drawCircle(
-                    color = OnArt.selected.copy(alpha = 0.85f * f),
-                    radius = 20.dp.toPx() * (0.8f + 0.2f * f)
-                )
-            }
-    ) {
-        Image(
-            painter = painterResource(icon),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(tint),
-            modifier = Modifier.size(22.dp)
-        )
-    }
-}
-
-@Composable
-fun PlayerToolbar(
-    lyricsSelected: Boolean,
-    lyricsAvailable: Boolean,
-    queueSelected: Boolean,
-    onLyricsClick: () -> Unit,
-    onQueueClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val on = stringResource(R.string.state_on)
-    val off = stringResource(R.string.state_off)
-    val noOutputSwitcher = stringResource(R.string.no_output_switcher)
 
     val trackLoop = PlayerPreferences.trackLoopEnabled
     val queueLoop = PlayerPreferences.queueLoopEnabled
 
     Row(
-        horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .testTag("player_toolbar")
+            .padding(horizontal = 16.dp)
     ) {
-        ToolbarButton(
-            icon = R.drawable.lyrics,
-            contentDescription = stringResource(R.string.player_lyrics),
-            testTag = "player_lyrics_button",
-            selected = lyricsSelected,
-            isToggle = true,
-            stateDescription = if (lyricsSelected) on else off,
-            alpha = if (lyricsAvailable || lyricsSelected) 1f else 0.35f,
-            onClick = onLyricsClick
-        )
-
-        ToolbarButton(
-            icon = R.drawable.speaker_output,
-            contentDescription = stringResource(R.string.player_output),
-            testTag = "player_output_button",
-            onClick = { context.showOutputSwitcher(noOutputSwitcher) }
-        )
-
-        ToolbarButton(
-            icon = when {
-                trackLoop -> R.drawable.infinite
-                queueLoop -> R.drawable.repeat_on
-                else -> R.drawable.repeat
+        IconToggleButton(
+            checked = shuffle,
+            onCheckedChange = {
+                haptics.toggle(it)
+                player.shuffleModeEnabled = it
             },
-            contentDescription = stringResource(R.string.player_repeat),
-            testTag = "player_repeat_button",
-            stateDescription = stringResource(
-                when {
-                    trackLoop -> R.string.repeat_one
-                    queueLoop -> R.string.repeat_all
-                    else -> R.string.repeat_off
-                }
-            ),
-            alpha = if (trackLoop || queueLoop) 1f else 0.6f,
-            onClick = {
+            modifier = Modifier.testTag("player_shuffle")
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ms_shuffle),
+                contentDescription = stringResource(R.string.shuffle)
+            )
+        }
+
+        val prevSource = remember { MutableInteractionSource() }
+        val playSource = remember { MutableInteractionSource() }
+        val nextSource = remember { MutableInteractionSource() }
+
+        ButtonGroup(
+            overflowIndicator = { },
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            customItem(
+                buttonGroupContent = {
+                    FilledTonalIconButton(
+                        onClick = { player.forceSeekToPrevious() },
+                        shapes = IconButtonDefaults.shapes(),
+                        interactionSource = prevSource,
+                        modifier = Modifier
+                            .size(SideButtonSize)
+                            .animateWidth(prevSource)
+                            .testTag("player_prev")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ms_skip_previous_fill),
+                            contentDescription = stringResource(R.string.skip_back),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                },
+                menuContent = { }
+            )
+            customItem(
+                buttonGroupContent = {
+                    // Round while paused, square while playing (M3 Expressive shape morph)
+                    val shapes = IconButtonDefaults.shapes(
+                        shape = if (shouldBePlaying) IconButtonDefaults.extraLargeSquareShape
+                        else IconButtonDefaults.extraLargeRoundShape,
+                        pressedShape = IconButtonDefaults.extraLargePressedShape
+                    )
+                    FilledIconButton(
+                        onClick = {
+                            haptics.confirm()
+                            if (shouldBePlaying) player.pause() else player.playOrResume()
+                        },
+                        shapes = shapes,
+                        interactionSource = playSource,
+                        modifier = Modifier
+                            .size(DpSize(96.dp, 72.dp))
+                            .animateWidth(playSource)
+                            .testTag("player_play_pause")
+                    ) {
+                        if (resolving) MelogoldContainedLoadingIndicator(modifier = Modifier.size(40.dp))
+                        else Icon(
+                            painter = painterResource(if (shouldBePlaying) R.drawable.ms_pause_fill else R.drawable.ms_play_arrow_fill),
+                            contentDescription = stringResource(if (shouldBePlaying) R.string.pause else R.string.play),
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                },
+                menuContent = { }
+            )
+            customItem(
+                buttonGroupContent = {
+                    FilledTonalIconButton(
+                        onClick = { player.forceSeekToNext() },
+                        shapes = IconButtonDefaults.shapes(),
+                        interactionSource = nextSource,
+                        modifier = Modifier
+                            .size(SideButtonSize)
+                            .animateWidth(nextSource)
+                            .testTag("player_next")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ms_skip_next_fill),
+                            contentDescription = stringResource(R.string.skip_forward),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                },
+                menuContent = { }
+            )
+        }
+
+        IconToggleButton(
+            checked = trackLoop || queueLoop,
+            onCheckedChange = {
+                // off → queue → track → off
                 when {
                     trackLoop -> {
                         PlayerPreferences.trackLoopEnabled = false
@@ -567,20 +343,99 @@ fun PlayerToolbar(
                     }
 
                     queueLoop -> PlayerPreferences.trackLoopEnabled = true
-
                     else -> PlayerPreferences.queueLoopEnabled = true
                 }
-            }
-        )
+                haptics.segmentTick()
+            },
+            modifier = Modifier
+                .testTag("player_repeat_button")
+                .semantics {
+                    stateDescription = when {
+                        trackLoop -> "repeat_one"
+                        queueLoop -> "repeat_all"
+                        else -> "repeat_off"
+                    }
+                }
+        ) {
+            Icon(
+                painter = painterResource(if (trackLoop) R.drawable.ms_repeat_one else R.drawable.ms_repeat),
+                contentDescription = stringResource(
+                    when {
+                        trackLoop -> R.string.repeat_one
+                        queueLoop -> R.string.repeat_all
+                        else -> R.string.player_repeat
+                    }
+                )
+            )
+        }
+    }
+}
 
-        ToolbarButton(
-            icon = R.drawable.list,
-            contentDescription = stringResource(R.string.player_queue),
-            testTag = "player_queue_button",
-            selected = queueSelected,
-            isToggle = true,
-            stateDescription = if (queueSelected) on else off,
-            onClick = onQueueClick
+/**
+ * "Lyrics · Queue" as a connected pair of toggle buttons, and the output switcher chip
+ * (REWRITE §3.10.2).
+ */
+@Composable
+fun PlayerToolbar(
+    lyricsSelected: Boolean,
+    queueSelected: Boolean,
+    onLyricsClick: () -> Unit,
+    onQueueClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val noOutputSwitcher = stringResource(R.string.no_output_switcher)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .testTag("player_toolbar")
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)) {
+            ToggleButton(
+                checked = lyricsSelected,
+                onCheckedChange = { onLyricsClick() },
+                shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+                modifier = Modifier.testTag("player_lyrics_button")
+            ) {
+                Icon(
+                    painter = painterResource(if (lyricsSelected) R.drawable.ms_lyrics_fill else R.drawable.ms_lyrics),
+                    contentDescription = null,
+                    modifier = Modifier.size(ToggleButtonDefaults.IconSize)
+                )
+                Spacer(modifier = Modifier.size(ToggleButtonDefaults.IconSpacing))
+                Text(text = stringResource(R.string.player_lyrics))
+            }
+            ToggleButton(
+                checked = queueSelected,
+                onCheckedChange = { onQueueClick() },
+                shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+                modifier = Modifier.testTag("player_queue_button")
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ms_queue_music),
+                    contentDescription = null,
+                    modifier = Modifier.size(ToggleButtonDefaults.IconSize)
+                )
+                Spacer(modifier = Modifier.size(ToggleButtonDefaults.IconSpacing))
+                Text(text = stringResource(R.string.player_queue))
+            }
+        }
+
+        AssistChip(
+            onClick = { context.showOutputSwitcher(noOutputSwitcher) },
+            label = { Text(text = stringResource(R.string.player_output_short)) },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ms_media_output),
+                    contentDescription = null,
+                    modifier = Modifier.size(AssistChipDefaults.IconSize)
+                )
+            },
+            modifier = Modifier.testTag("player_output_button")
         )
     }
 }
@@ -594,6 +449,8 @@ fun PlayerToolbar(
 fun PlayerControlsBlock(
     binder: PlayerService.Binder,
     shouldBePlaying: Boolean,
+    resolving: Boolean,
+    reduceMotion: Boolean,
     onScrubbing: (Boolean) -> Unit,
     toolbar: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -603,12 +460,12 @@ fun PlayerControlsBlock(
         .fillMaxWidth()
         .testTag("player_controls")
 ) {
-    PlayerScrubber(binder = binder, onScrubbing = onScrubbing)
-    Spacer(modifier = Modifier.height(if (compact) 8.dp else 34.dp))
-    TransportRow(binder = binder, shouldBePlaying = shouldBePlaying)
-    Spacer(modifier = Modifier.height(if (compact) 8.dp else 28.dp))
+    PlayerScrubber(binder = binder, playing = shouldBePlaying, reduceMotion = reduceMotion, onScrubbing = onScrubbing)
+    Spacer(modifier = Modifier.height(if (compact) 8.dp else 20.dp))
+    TransportRow(binder = binder, shouldBePlaying = shouldBePlaying, resolving = resolving)
+    Spacer(modifier = Modifier.height(if (compact) 8.dp else 24.dp))
     toolbar()
-    Spacer(modifier = Modifier.height(if (compact) 4.dp else 10.dp))
+    Spacer(modifier = Modifier.height(if (compact) 4.dp else 12.dp))
 }
 
 /** Opens the system output switcher (API 34+) or the Bluetooth settings. */

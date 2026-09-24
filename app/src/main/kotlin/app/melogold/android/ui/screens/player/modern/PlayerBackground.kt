@@ -1,12 +1,12 @@
 package app.melogold.android.ui.screens.player.modern
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,73 +16,63 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import app.melogold.android.ui.theme.ArtworkColors
 import app.melogold.android.utils.thumbnail
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.toBitmap
-import com.materialkolor.hct.Hct
 
 private const val SAMPLE_SIZE = 112
 
-// HCT tones of the top and bottom of the gradient: dark enough for the white text on top
-private const val TOP_TONE = 24.0
-private const val BOTTOM_TONE = 10.0
-private const val MAX_CHROMA = 40.0
-
-// Grey artwork (no seed color) gets a nearly neutral background in the hue of the app accent
-private const val NEUTRAL_CHROMA = 6.0
-
-private val colorAnimationSpec = tween<Color>(durationMillis = 800, easing = LinearOutSlowInEasing)
-
-private fun toneOf(hct: Hct, tone: Double, maxChroma: Double) =
-    Color(Hct.from(hct.hue, hct.chroma.coerceAtMost(maxChroma), tone).toInt())
+/** The primary container shows through at the top of the player (REWRITE §3.10.2). */
+private const val TOP_TINT_ALPHA = 0.35f
 
 /**
- * The static background of the player: a dark vertical gradient in the hue of the artwork's seed
- * color (the same `QuantizerCelebi` + `Score` seed as the artwork color scheme, see
- * [ArtworkColors]). Nothing moves; a new track only crossfades the colors.
+ * A small software copy of the artwork at [uri], for picking its colors; null while loading or
+ * when there is no artwork.
  */
 @Composable
-fun PlayerBackground(
-    artworkUri: Uri?,
-    accent: Color,
-    modifier: Modifier = Modifier
-) {
+fun rememberArtworkBitmap(uri: Uri?): Bitmap? {
     val context = LocalContext.current
-    var seed by remember { mutableStateOf<Int?>(null) }
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    LaunchedEffect(artworkUri) {
-        val bitmap = artworkUri?.let { uri ->
+    LaunchedEffect(uri) {
+        bitmap = uri?.let {
             runCatching {
                 val request = ImageRequest.Builder(context)
-                    .data(uri.toString().thumbnail(SAMPLE_SIZE))
+                    .data(it.toString().thumbnail(SAMPLE_SIZE))
                     .size(SAMPLE_SIZE)
                     .allowHardware(false)
                     .build()
-
-                (SingletonImageLoader.get(context).execute(request) as? SuccessResult)
-                    ?.image
-                    ?.toBitmap()
+                (SingletonImageLoader.get(context).execute(request) as? SuccessResult)?.image?.toBitmap()
             }.getOrNull()
         }
-
-        seed = bitmap?.let { ArtworkColors.seedOf(key = artworkUri.toString(), bitmap = it) }
     }
 
-    val source = remember(seed, accent) { Hct.fromInt(seed ?: accent.toArgb()) }
-    val maxChroma = if (seed == null) NEUTRAL_CHROMA else MAX_CHROMA
+    return bitmap
+}
 
-    val top by animateColorAsState(toneOf(source, TOP_TONE, maxChroma), colorAnimationSpec, label = "")
-    val bottom by animateColorAsState(toneOf(source, BOTTOM_TONE, maxChroma), colorAnimationSpec, label = "")
+/**
+ * The static background of the player (`ArtworkTintedBackground`, REWRITE §3.10.2): the surface of
+ * the artwork's color scheme with its primary container fading in from the top. Nothing moves; a
+ * new track only crossfades the colors.
+ */
+@Composable
+fun ArtworkTintedBackground(modifier: Modifier = Modifier) {
+    val spec = MaterialTheme.motionScheme.slowEffectsSpec<Color>()
+    val surface by animateColorAsState(MaterialTheme.colorScheme.surface, spec, label = "")
+    val tint by animateColorAsState(
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = TOP_TINT_ALPHA),
+        spec,
+        label = ""
+    )
 
-    Spacer(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(top, bottom)))
+            .background(surface)
+            .background(Brush.verticalGradient(0f to tint, 0.65f to Color.Transparent))
     )
 }

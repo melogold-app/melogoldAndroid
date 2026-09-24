@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lyrics_import_file">Импорт из файла</string>
+    <string name="lyrics_imported">Текст добавлен</string>
+    <string name="lyrics_import_failed">Не удалось прочитать текст из файла</string>
+
+    <string name="lyrics_source_youtube_music">Текст: YouTube Music</string>
+    <string name="lyrics_source_lrclib">Текст: LRCLIB</string>
+    <string name="lyrics_source_kugou">Текст: KuGou</string>
+    <string name="lyrics_source_file">Текст импортирован из файла</string>
+    <string name="lyrics_source_user">Ваш текст</string>
+</resources>

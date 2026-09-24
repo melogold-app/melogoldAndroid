@@ -1,8 +1,8 @@
 @file:Suppress("TooManyFunctions")
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package app.melogold.android.ui.screens.player.modern
 
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
@@ -14,7 +14,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -24,16 +23,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.ripple
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconToggleButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,37 +48,28 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.media3.common.MediaItem
 import app.melogold.android.Database
 import app.melogold.android.R
 import app.melogold.android.models.Info
+import app.melogold.android.ui.components.m3e.rememberHaptics
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.utils.thumbnail
-import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.utils.px
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -82,16 +77,6 @@ import coil3.request.crossfade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-/** Colours of the content drawn on top of the artwork-tinted background: always light. */
-internal object OnArt {
-    val primary = Color.White
-    val secondary = Color.White.copy(alpha = 0.6f)
-    val tertiary = Color.White.copy(alpha = 0.55f)
-    val glass = Color.White.copy(alpha = 0.14f)
-    val selected = Color.White.copy(alpha = 0.85f)
-    val onSelected = Color.Black.copy(alpha = 0.8f)
-}
 
 /** The scopes needed for shared-element transitions between the NowPlaying and Lyrics stages. */
 @Immutable
@@ -136,38 +121,66 @@ internal fun Modifier.modeSharedBounds(scopes: SharedScopes?, key: String): Modi
     }
 }
 
+/**
+ * The top of the expanded player (REWRITE §3.10.2): the drag handle, "collapse" and the player
+ * menu.
+ */
 @Composable
-fun Handle(
-    onClick: () -> Unit,
+fun PlayerTopBar(
+    onCollapse: () -> Unit,
+    onMore: () -> Unit,
     modifier: Modifier = Modifier
+) = Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = modifier
+        .fillMaxWidth()
+        .testTag("player_handle")
 ) {
-    val description = stringResource(R.string.collapse_player)
+    val collapse = stringResource(R.string.collapse_player)
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(32.dp)
-            .testTag("player_handle")
+            .height(20.dp)
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() },
                 role = Role.Button,
-                onClick = onClick
+                onClick = onCollapse
             )
-            .clearAndSetSemantics { contentDescription = description }
+            .clearAndSetSemantics { contentDescription = collapse }
     ) {
         Box(
             modifier = Modifier
-                .size(width = 36.dp, height = 5.dp)
-                .background(color = Color.White.copy(alpha = 0.4f), shape = CircleShape)
+                .size(width = 32.dp, height = 4.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    shape = CircleShape
+                )
         )
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+    ) {
+        IconButton(onClick = onCollapse) {
+            Icon(
+                painter = painterResource(R.drawable.ms_keyboard_arrow_down),
+                contentDescription = collapse
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        MoreButton(onClick = onMore)
     }
 }
 
 /**
- * The big Now Playing artwork. Scales down while paused; tap, long press, horizontal swipe and
- * pinch are handled by [modifier] / the callbacks.
+ * The big Now Playing artwork (28 dp corners). Shrinks a little while paused; tap, long press and
+ * horizontal swipe are handled by [modifier] and the callbacks.
  */
 @Composable
 fun PlayerArtwork(
@@ -181,7 +194,7 @@ fun PlayerArtwork(
     overlay: @Composable () -> Unit = {}
 ) {
     val scale = animateFloatAsState(
-        targetValue = if (playing) 1f else 0.8f,
+        targetValue = if (playing) 1f else 0.9f,
         animationSpec = when {
             reduceMotion -> tween(150)
             playing -> spring(dampingRatio = 0.65f, stiffness = 300f)
@@ -190,15 +203,16 @@ fun PlayerArtwork(
         label = ""
     )
     val elevation = animateFloatAsState(
-        targetValue = if (playing) 24f else 6f,
+        targetValue = if (playing) 16f else 4f,
         animationSpec = tween(300),
         label = ""
     )
-    val shape = remember { RoundedCornerShape(10.dp) }
+    val shape = MaterialTheme.shapes.extraLarge
     val context = LocalContext.current
     val sizePx = size.px
 
     Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .size(size)
             .graphicsLayer {
@@ -208,7 +222,7 @@ fun PlayerArtwork(
                 this.shape = shape
                 clip = true
             }
-            .background(Color.White.copy(alpha = 0.08f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .pointerInput(onTap, onLongPress) {
                 detectTapGestures(
                     onTap = { onTap() },
@@ -217,6 +231,13 @@ fun PlayerArtwork(
             }
             .testTag("player_artwork")
     ) {
+        Icon(
+            painter = painterResource(R.drawable.ms_music_note),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(size * 0.3f)
+        )
+
         AsyncImage(
             model = remember(mediaItem.mediaMetadata.artworkUri, sizePx) {
                 ImageRequest.Builder(context)
@@ -224,8 +245,6 @@ fun PlayerArtwork(
                     .crossfade(300)
                     .build()
             },
-            placeholder = painterResource(R.drawable.ic_launcher_foreground),
-            error = painterResource(R.drawable.ic_launcher_foreground),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
@@ -235,30 +254,32 @@ fun PlayerArtwork(
     }
 }
 
-/** The 72 dp thumbnail of the compact (Lyrics mode) header. */
+/** The thumbnail of the compact (Lyrics mode) header. */
 @Composable
 fun HeaderArtwork(
     mediaItem: MediaItem,
     modifier: Modifier = Modifier,
-    size: Dp = 72.dp
+    size: Dp = 56.dp
 ) {
     val sizePx = size.px
 
-    AsyncImage(
-        model = mediaItem.mediaMetadata.artworkUri?.thumbnail(sizePx * 2),
-        placeholder = painterResource(R.drawable.ic_launcher_foreground),
-        error = painterResource(R.drawable.ic_launcher_foreground),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .size(size)
             .graphicsLayer {
-                shadowElevation = 4.dp.toPx()
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(12.dp)
                 clip = true
             }
-            .background(Color.White.copy(alpha = 0.08f))
-    )
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+    ) {
+        AsyncImage(
+            model = mediaItem.mediaMetadata.artworkUri?.thumbnail(sizePx * 2),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }
 
 /**
@@ -267,8 +288,8 @@ fun HeaderArtwork(
 @Composable
 fun ArtistLine(
     mediaItem: MediaItem,
-    style: TextStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyLarge
 ) {
     var artists by remember(mediaItem.mediaId) { mutableStateOf<List<Info>?>(null) }
 
@@ -281,6 +302,7 @@ fun ArtistLine(
     }
 
     val fallback = mediaItem.mediaMetadata.artist?.toString().orEmpty()
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
 
     AnimatedContent(
         targetState = artists,
@@ -288,21 +310,24 @@ fun ArtistLine(
         label = "",
         modifier = modifier
     ) { currentArtists ->
-        if (currentArtists == null) BasicText(
+        if (currentArtists == null) Text(
             text = fallback,
             style = style,
+            color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         ) else Row(verticalAlignment = Alignment.CenterVertically) {
             currentArtists.forEachIndexed { i, artist ->
-                if (i > 0) BasicText(
+                if (i > 0) Text(
                     text = if (i == currentArtists.lastIndex) " & " else ", ",
                     style = style,
+                    color = color,
                     maxLines = 1
                 )
-                BasicText(
+                Text(
                     text = artist.name.orEmpty(),
                     style = style,
+                    color = color,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
@@ -317,139 +342,70 @@ fun ArtistLine(
     }
 }
 
-@Composable
-private fun GlassCircleButton(
-    @DrawableRes icon: Int,
-    modifier: Modifier = Modifier,
-    iconModifier: Modifier = Modifier
-) = Box(
-    contentAlignment = Alignment.Center,
-    modifier = modifier.size(48.dp)
-) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(32.dp)
-            .background(color = OnArt.glass, shape = CircleShape)
-    ) {
-        Image(
-            painter = painterResource(icon),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(OnArt.primary),
-            modifier = iconModifier.size(17.dp)
-        )
-    }
-}
-
+/**
+ * ♡ as a tonal icon toggle (REWRITE §3.10.2): the shape morphs when checked, the heart bounces.
+ */
 @Composable
 fun FavoriteButton(
     liked: Boolean,
     onToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val haptic = LocalHapticFeedback.current
+    val haptics = rememberHaptics()
     val coroutineScope = rememberCoroutineScope()
     val bounce = remember { Animatable(1f) }
 
-    val on = stringResource(R.string.state_on)
-    val off = stringResource(R.string.state_off)
-    val description = stringResource(if (liked) R.string.unlike else R.string.like)
-
-    GlassCircleButton(
-        icon = if (liked) R.drawable.heart else R.drawable.heart_outline,
-        iconModifier = Modifier.graphicsLayer {
-            scaleX = bounce.value
-            scaleY = bounce.value
-        },
-        modifier = modifier
-            .testTag("player_favorite")
-            .clip(CircleShape)
-            .toggleable(
-                value = liked,
-                role = Role.Switch,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 20.dp),
-                onValueChange = {
-                    haptic.performHapticFeedback(HapticFeedbackType.Confirm)
-                    onToggle(it)
-                    coroutineScope.launch {
-                        bounce.animateTo(1.3f, spring(stiffness = 600f))
-                        bounce.animateTo(
-                            targetValue = 1f,
-                            animationSpec = spring(dampingRatio = 0.5f, stiffness = 600f)
-                        )
-                    }
-                }
-            )
-            .clearAndSetSemantics {
-                contentDescription = description
-                stateDescription = if (liked) on else off
+    FilledTonalIconToggleButton(
+        checked = liked,
+        onCheckedChange = {
+            haptics.toggle(it)
+            onToggle(it)
+            coroutineScope.launch {
+                bounce.animateTo(1.25f, spring(stiffness = 600f))
+                bounce.animateTo(1f, spring(dampingRatio = 0.5f, stiffness = 600f))
             }
-    )
+        },
+        shapes = IconButtonDefaults.toggleableShapes(),
+        modifier = modifier.testTag("player_favorite")
+    ) {
+        Icon(
+            painter = painterResource(if (liked) R.drawable.ms_favorite_fill else R.drawable.ms_favorite),
+            contentDescription = stringResource(if (liked) R.string.unlike else R.string.like),
+            modifier = Modifier.graphicsLayer {
+                scaleX = bounce.value
+                scaleY = bounce.value
+            }
+        )
+    }
 }
 
 @Composable
 fun MoreButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
-) {
-    val description = stringResource(R.string.more_options)
-
-    GlassCircleButton(
-        icon = R.drawable.ellipsis_horizontal,
-        modifier = modifier
-            .testTag("player_more")
-            .clip(CircleShape)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 20.dp),
-                role = Role.Button,
-                onClick = onClick
-            )
-            .clearAndSetSemantics { contentDescription = description }
+) = IconButton(onClick = onClick, modifier = modifier.testTag("player_more")) {
+    Icon(
+        painter = painterResource(R.drawable.ms_more_vert),
+        contentDescription = stringResource(R.string.more_options)
     )
 }
 
-/** Favourite + "…", shared between the big title block and the compact header. */
-@Composable
-fun TitleActions(
-    liked: Boolean,
-    onToggleLike: (Boolean) -> Unit,
-    onMore: () -> Unit,
-    modifier: Modifier = Modifier
-) = Row(
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = modifier
-) {
-    FavoriteButton(liked = liked, onToggle = onToggleLike)
-    MoreButton(onClick = onMore)
-}
-
-@Composable
-private fun titleStyle(size: Int, weight: FontWeight, color: Color): TextStyle {
-    val typography = LocalAppearance.current.typography
-    return typography.l.copy(
-        fontSize = size.sp,
-        fontWeight = weight,
-        color = color,
-        lineHeight = (size + 5).sp
-    )
-}
-
-/** Title and artists of the big Now Playing layout, with the favourite and "…" buttons. */
+/**
+ * Title and artists of the playing track with ♡ (REWRITE §3.10.2).
+ */
 @Composable
 fun TitleBlock(
     mediaItem: MediaItem,
     liked: Boolean,
     onToggleLike: (Boolean) -> Unit,
-    onMore: () -> Unit,
     sharedScopes: SharedScopes?,
     modifier: Modifier = Modifier
 ) = Row(
     verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
     modifier = modifier
         .fillMaxWidth()
-        .padding(start = 32.dp, end = 16.dp)
+        .padding(horizontal = 24.dp)
 ) {
     Column(
         verticalArrangement = Arrangement.Center,
@@ -462,39 +418,35 @@ fun TitleBlock(
             transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(250)) },
             label = ""
         ) { title ->
-            BasicText(
+            Text(
                 text = title,
-                style = titleStyle(20, FontWeight.SemiBold, OnArt.primary),
+                style = MaterialTheme.typography.headlineSmallEmphasized,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 modifier = Modifier
                     .basicMarquee(iterations = 3, initialDelayMillis = 2000)
                     .testTag("player_title")
             )
         }
-        ArtistLine(
-            mediaItem = mediaItem,
-            style = titleStyle(20, FontWeight.Normal, OnArt.secondary)
-        )
+        ArtistLine(mediaItem = mediaItem)
     }
 
-    TitleActions(
+    FavoriteButton(
         liked = liked,
-        onToggleLike = onToggleLike,
-        onMore = onMore,
+        onToggle = onToggleLike,
         modifier = Modifier.modeSharedElement(sharedScopes, "actions")
     )
 }
 
 /**
- * The header of the Lyrics mode: 72 dp thumbnail, title, artists, favourite and "…".
- * Tapping the thumbnail or the title calls [onClick].
+ * The header of the Lyrics mode: thumbnail, title, artists, ♡ and the lyrics menu. Tapping the
+ * thumbnail or the title calls [onClick].
  */
 @Composable
 fun CompactHeader(
     mediaItem: MediaItem,
     liked: Boolean,
     onToggleLike: (Boolean) -> Unit,
-    onMore: () -> Unit,
     onClick: () -> Unit,
     sharedScopes: SharedScopes?,
     modifier: Modifier = Modifier,
@@ -503,7 +455,7 @@ fun CompactHeader(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier
         .fillMaxWidth()
-        .padding(start = 32.dp, end = 16.dp)
+        .padding(start = 24.dp, end = 8.dp)
         .testTag("player_header")
 ) {
     Box(
@@ -533,23 +485,20 @@ fun CompactHeader(
             transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(250)) },
             label = ""
         ) { title ->
-            BasicText(
+            Text(
                 text = title,
-                style = titleStyle(17, FontWeight.SemiBold, OnArt.primary),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
         }
-        ArtistLine(
-            mediaItem = mediaItem,
-            style = titleStyle(15, FontWeight.Normal, OnArt.secondary)
-        )
+        ArtistLine(mediaItem = mediaItem, style = MaterialTheme.typography.bodyMedium)
     }
 
-    TitleActions(
+    FavoriteButton(
         liked = liked,
-        onToggleLike = onToggleLike,
-        onMore = onMore,
+        onToggle = onToggleLike,
         modifier = Modifier.modeSharedElement(sharedScopes, "actions")
     )
 }

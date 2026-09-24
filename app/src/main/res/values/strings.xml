@@ -390,7 +390,7 @@
     <string name="lyrics_unavailable_title">Lyrics aren\'t available</string>
     <string name="lyrics_load_failed">Couldn\'t load lyrics</string>
     <string name="retry">Retry</string>
-    <string name="lyrics_search_lrclib">Find on LrcLib</string>
+    <string name="lyrics_search_lrclib">Find on LRCLIB</string>
     <string name="lyrics_enter_manually">Enter manually</string>
     <string name="lyrics_jump_to_line">Jump to line</string>
     <string name="lyrics_copy_line">Copy line</string>

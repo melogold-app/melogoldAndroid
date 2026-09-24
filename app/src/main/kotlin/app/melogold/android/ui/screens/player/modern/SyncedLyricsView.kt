@@ -1,6 +1,5 @@
 package app.melogold.android.ui.screens.player.modern
 
-import android.util.Log
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -10,7 +9,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,12 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableLongState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -37,18 +38,20 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameMillis
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -60,12 +63,15 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.ResolvedTextDirection
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
@@ -73,40 +79,43 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.Player
-import app.melogold.android.BuildConfig
 import app.melogold.android.R
 import app.melogold.android.utils.shouldBePlaying
-import app.melogold.core.ui.LocalAppearance
-import app.melogold.core.ui.utils.isAtLeastAndroid12
+import app.melogold.domain.lyrics.SyncedLine
+import app.melogold.domain.lyrics.SyncedWord
+import app.melogold.domain.lyrics.VocalSide
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
-import kotlin.math.min
 
-private const val TAG = "PlayerLyrics"
-
-/** Kill switch for the per-line blur (API 31+). */
-private const val LINE_BLUR = true
-
-/** The lyrics lead the audio a little, so a line lights up right when it is sung. */
-private const val LEAD_MS = 50L
+/** The lyrics lead the audio a little, so a word lights up right when it is sung. */
+private const val LEAD_MS = 60L
 
 private const val RESUME_FOLLOW_DELAY_MS = 3_000L
 private const val SEEK_JUMP_LINES = 8
+private const val PAUSED_POLL_MS = 250L
+
+/** Alpha of lines around the active one (REWRITE §3.10.3). */
+private const val PAST_ALPHA = 0.35f
+private const val FUTURE_ALPHA = 0.6f
+private const val SCROLLING_ALPHA = 0.6f
+
+/** Alpha of the words of the active line that are not sung yet. */
+private const val UNSUNG_ALPHA = 0.4f
 
 private val lineEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
 
-/** A line's distance from the active one, clamped: 0 = active, 1..5 next, -1..-5 past, ±6 far. */
-private fun bucketOf(distance: Int) = distance.coerceIn(-6, 6)
-
 /**
- * The full-screen, time-synced lyrics.
+ * The full-screen, time-synced lyrics (REWRITE §3.10.3, docs/spec/lyrics.md): the active line is
+ * bright and, for word-timed lyrics, fills word by word; the second singer of a duet sits at the
+ * end edge, backing vocals are smaller under their line, translations under the text. No blur,
+ * no scaling.
  *
- * Only a [derivedStateOf] reads the (50 ms) position ticker, so composition only sees the active
- * index change; rows only recompose when their distance bucket changes.
+ * The playback position is read every frame while playing, but only in the draw phase and in a
+ * [derivedStateOf] for the active index, so composition only sees the active row change.
  *
  * @param anchor where the top of the active line sits, from the top of the view
  * @param controlsOverlapPx height of the controls drawn over the bottom of this view (0 when none)
@@ -124,31 +133,32 @@ fun SyncedLyricsView(
     controlsOverlapPx: () -> Int,
     reduceMotion: Boolean,
     modeState: PlayerModeState,
-    onLineLongPress: (LyricLine) -> Unit,
+    onLineLongPress: (SyncedLine) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val density = LocalDensity.current
-    val typography = LocalAppearance.current.typography
 
+    // The position in lyrics time: every frame while playing, a few times a second when paused
     val positionMs = remember(mediaId) { mutableLongStateOf(player.currentPosition) }
+    val shift = LEAD_MS - content.startTimeMs
 
-    LaunchedEffect(player, mediaId) {
+    LaunchedEffect(player, mediaId, shouldBePlaying) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
-                positionMs.longValue = player.currentPosition
-                delay(if (player.isPlaying) 50L else 250L)
+                if (player.isPlaying) withFrameMillis { positionMs.longValue = player.currentPosition }
+                else {
+                    positionMs.longValue = player.currentPosition
+                    delay(PAUSED_POLL_MS)
+                }
             }
         }
     }
 
+    val lyricsPosition: () -> Long = { positionMs.longValue + shift }
     val activeIndex = remember(content) {
-        derivedStateOf {
-            content.lines.activeIndexAt(
-                positionMs.longValue + LEAD_MS + content.offsetMs - content.startTimeMs
-            )
-        }
+        derivedStateOf { content.rows.activeIndexAt(positionMs.longValue + shift) }
     }
 
     val listState = remember(mediaId) { LazyListState() }
@@ -180,7 +190,6 @@ fun SyncedLyricsView(
     LaunchedEffect(content, listState) {
         var previous = -1
         snapshotFlow { activeIndex.value }.collectLatest { index ->
-            if (BuildConfig.DEBUG) Log.d(TAG, "active=$index pos=${positionMs.longValue}")
             val from = previous
             previous = index
             if (autoFollow) scrollToLine(index, from)
@@ -212,16 +221,14 @@ fun SyncedLyricsView(
         onDispose { modeState.userScrolling = false }
     }
 
-    val lineStyle = typography.xxl.copy(
-        fontSize = 32.sp,
+    val colors = MaterialTheme.colorScheme
+    val lineStyle = MaterialTheme.typography.headlineMedium.copy(
         fontWeight = FontWeight.Bold,
-        lineHeight = 40.sp,
-        letterSpacing = (-0.3).sp,
-        color = Color.White,
-        textAlign = TextAlign.Start,
-        textDirection = TextDirection.Content
+        lineHeight = 38.sp,
+        letterSpacing = (-0.2).sp
     )
-    val footerStyle = typography.xxs.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.45f))
+    val backingStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+    val translationStyle = MaterialTheme.typography.bodyLarge
     val jumpLabel = stringResource(R.string.lyrics_jump_to_line)
     val instrumental = stringResource(R.string.lyrics_instrumental)
     val scrolling = modeState.userScrolling
@@ -254,13 +261,12 @@ fun SyncedLyricsView(
                     .testTag("lyrics_list")
             ) {
                 itemsIndexed(
-                    items = content.lines,
+                    items = content.rows,
                     key = { index, _ -> index },
-                    contentType = { _, line -> if (line.isInterlude) 1 else 0 }
-                ) { index, line ->
+                    contentType = { _, row -> if (row is LyricRow.Interlude) 1 else 0 }
+                ) { index, row ->
                     val onClick = {
-                        val target = (line.startMs - content.offsetMs + content.startTimeMs)
-                            .coerceAtLeast(0L)
+                        val target = (row.startMs + content.startTimeMs).coerceAtLeast(0L)
                         player.seekTo(target)
                         if (!player.shouldBePlaying) {
                             if (player.playbackState == Player.STATE_IDLE) player.prepare()
@@ -269,38 +275,41 @@ fun SyncedLyricsView(
                         positionMs.longValue = target
                         autoFollow = true
                         haptic.performHapticFeedback(HapticFeedbackType.KeyboardTap)
-                        if (BuildConfig.DEBUG) Log.d(TAG, "seek line=$index to=$target")
                     }
 
-                    if (line.isInterlude) InterludeRow(
-                        index = index,
-                        line = line,
-                        activeIndex = activeIndex,
-                        positionMs = positionMs,
-                        offsetMs = content.offsetMs - content.startTimeMs,
-                        playing = shouldBePlaying,
-                        reduceMotion = reduceMotion,
-                        onClick = onClick,
-                        modifier = Modifier.semantics { contentDescription = instrumental }
-                    ) else LyricLineRow(
-                        index = index,
-                        line = line,
-                        activeIndex = activeIndex,
-                        scrolling = scrolling,
-                        reduceMotion = reduceMotion,
-                        style = lineStyle,
-                        clickLabel = jumpLabel,
-                        onClick = onClick,
-                        onLongClick = { onLineLongPress(line) }
-                    )
+                    when (row) {
+                        is LyricRow.Interlude -> InterludeRow(
+                            index = index,
+                            row = row,
+                            activeIndex = activeIndex,
+                            position = lyricsPosition,
+                            playing = shouldBePlaying,
+                            reduceMotion = reduceMotion,
+                            color = colors.onSurface,
+                            onClick = onClick,
+                            modifier = Modifier.semantics { contentDescription = instrumental }
+                        )
+
+                        is LyricRow.Sung -> LyricLineRow(
+                            index = index,
+                            line = row.line,
+                            activeIndex = activeIndex,
+                            position = lyricsPosition,
+                            scrolling = scrolling,
+                            lineStyle = lineStyle,
+                            backingStyle = backingStyle,
+                            translationStyle = translationStyle,
+                            color = colors.onSurface,
+                            secondaryColor = colors.onSurfaceVariant,
+                            clickLabel = jumpLabel,
+                            onClick = onClick,
+                            onLongClick = { onLineLongPress(row.line) }
+                        )
+                    }
                 }
 
                 item(key = "footer", contentType = 2) {
-                    BasicText(
-                        text = stringResource(R.string.provided_lyrics_by),
-                        style = footerStyle,
-                        modifier = Modifier.padding(horizontal = 32.dp, vertical = 24.dp)
-                    )
+                    LyricsSourceFooter(source = content.source, synced = true)
                 }
             }
         }
@@ -336,52 +345,52 @@ private fun DrawScope.drawFadeMask(controlsFraction: Float, controlsOverlap: Flo
     )
 }
 
-// The states are read in the draw phase so that a line change does not recompose every row
+/**
+ * A sung line: its main text, backing vocals under it and the translation, aligned to its
+ * singer's side. Rows only recompose when they become (in)active; the word fill is drawn.
+ */
+// The states are read in the draw phase so that the playback clock does not recompose the row
 @Suppress("StateParam")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LyricLineRow(
     index: Int,
-    line: LyricLine,
+    line: SyncedLine,
     activeIndex: State<Int>,
+    position: () -> Long,
     scrolling: Boolean,
-    reduceMotion: Boolean,
-    style: TextStyle,
+    lineStyle: TextStyle,
+    backingStyle: TextStyle,
+    translationStyle: TextStyle,
+    color: Color,
+    secondaryColor: Color,
     clickLabel: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val bucket by remember(index, activeIndex) {
-        derivedStateOf { bucketOf(index - activeIndex.value) }
+    val distance by remember(index, activeIndex) {
+        derivedStateOf { (index - activeIndex.value).coerceIn(-1, 1) }
     }
-    val active = bucket == 0
+    val active = distance == 0
 
-    val targetAlpha = when {
-        active -> 1f
-        scrolling -> 0.45f
-        bucket > 0 -> 0.35f
-        else -> 0.20f
-    }
     val alpha = animateFloatAsState(
-        targetValue = targetAlpha,
+        targetValue = when {
+            active -> 1f
+            scrolling -> SCROLLING_ALPHA
+            distance > 0 -> FUTURE_ALPHA
+            else -> PAST_ALPHA
+        },
         animationSpec = tween(durationMillis = 400, easing = lineEasing),
         label = ""
     )
-    val scale = animateFloatAsState(
-        targetValue = if (active || reduceMotion) 1f else 0.96f,
-        animationSpec = spring(dampingRatio = 0.88f, stiffness = 50f),
-        label = ""
-    )
-    val blurDp = when {
-        !LINE_BLUR || !isAtLeastAndroid12 || reduceMotion || scrolling || active -> 0f
-        bucket > 0 -> min(1f + bucket, 5f)
-        else -> min(2f + abs(bucket), 6f)
-    }
 
-    BasicText(
-        text = line.text,
-        style = style,
+    val end = line.side == VocalSide.End
+    val align = if (end) TextAlign.End else TextAlign.Start
+
+    Column(
+        horizontalAlignment = if (end) Alignment.End else Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
@@ -395,15 +404,123 @@ private fun LyricLineRow(
             .semantics { selected = active }
             .testTag("lyrics_line")
             .padding(horizontal = 32.dp, vertical = 10.dp)
-            .graphicsLayer {
-                this.alpha = alpha.value
-                scaleX = scale.value
-                scaleY = scale.value
-                transformOrigin = TransformOrigin(0f, 0.5f)
-                val radius = blurDp.dp.toPx()
-                renderEffect = if (radius > 0f) BlurEffect(radius, radius, TileMode.Decal) else null
-            }
+            .graphicsLayer { this.alpha = alpha.value }
+    ) {
+        FilledText(
+            text = line.text,
+            words = line.words,
+            active = active,
+            position = position,
+            style = lineStyle.copy(textAlign = align),
+            color = color
+        )
+
+        line.background?.let { background ->
+            FilledText(
+                text = background.text,
+                words = background.words,
+                active = active,
+                position = position,
+                style = backingStyle.copy(textAlign = align),
+                color = color.copy(alpha = 0.8f)
+            )
+        }
+
+        (line.translation ?: line.transliteration)?.let { translation ->
+            Text(
+                text = translation,
+                style = translationStyle.copy(textAlign = align),
+                color = secondaryColor
+            )
+        }
+    }
+}
+
+/**
+ * Text that, while [active], fills with [color] word by word as [position] passes each word; the
+ * word being sung fills from its start edge with a soft edge. Words not sung yet stay dimmed.
+ * Without word timing, the active text is simply bright.
+ */
+// The position is read in the draw phase only
+@Suppress("StateParam")
+@Composable
+private fun FilledText(
+    text: String,
+    words: List<SyncedWord>,
+    active: Boolean,
+    position: () -> Long,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    // The words joined give the text the layout is measured with
+    val shown = if (words.isEmpty()) text else words.joinToString("") { it.text }
+    val ranges = remember(words) {
+        var offset = 0
+        words.map { word -> (offset until offset + word.text.length).also { offset += word.text.length } }
+    }
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val fill = active && words.isNotEmpty()
+
+    Text(
+        text = shown,
+        style = style,
+        color = if (fill) color.copy(alpha = color.alpha * UNSUNG_ALPHA) else color,
+        onTextLayout = { layout = it },
+        modifier = modifier.drawWithContent {
+            drawContent()
+            val result = layout
+            if (!fill || result == null) return@drawWithContent
+            drawSungWords(result, words, ranges, position(), color)
+        }
     )
+}
+
+/**
+ * Draws the sung part of [layout] in [color] over the dimmed text: the words already sung in full,
+ * the word being sung up to its progress with a feathered edge.
+ */
+private fun DrawScope.drawSungWords(
+    layout: TextLayoutResult,
+    words: List<SyncedWord>,
+    ranges: List<IntRange>,
+    positionMs: Long,
+    color: Color
+) {
+    val sung = Path()
+    var current: Pair<Rect, Float>? = null
+    var currentRtl = false
+
+    words.forEachIndexed { index, word ->
+        val range = ranges[index]
+        if (range.isEmpty() || range.last >= layout.layoutInput.text.length) return@forEachIndexed
+        when {
+            positionMs >= word.endMs -> sung.addPath(layout.getPathForRange(range.first, range.last + 1))
+            positionMs > word.startMs -> {
+                val progress = (positionMs - word.startMs).toFloat() / (word.endMs - word.startMs).coerceAtLeast(1)
+                current = layout.getPathForRange(range.first, range.last + 1).getBounds() to progress
+                currentRtl = layout.getBidiRunDirection(range.first) == ResolvedTextDirection.Rtl
+            }
+        }
+    }
+
+    clipPath(sung) { drawText(layout, color = color) }
+
+    current?.let { (bounds, progress) ->
+        val feather = 12.dp.toPx()
+        val edge = if (currentRtl) bounds.right - bounds.width * progress else bounds.left + bounds.width * progress
+        val (from, to) = if (currentRtl) edge + feather to edge - feather else edge - feather to edge + feather
+        clipRect(bounds.left, bounds.top, bounds.right, bounds.bottom) {
+            drawText(
+                layout,
+                brush = Brush.horizontalGradient(
+                    colors = listOf(color, color.copy(alpha = 0f)),
+                    startX = from,
+                    endX = to
+                )
+            )
+        }
+    }
 }
 
 /**
@@ -411,17 +528,17 @@ private fun LyricLineRow(
  * "breathe"; the animation only touches the draw phase.
  */
 // The states are read in the draw phase so that the playback clock does not recompose the row
-@Suppress("StateParam", "MutableStateParam")
+@Suppress("StateParam")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun InterludeRow(
     index: Int,
-    line: LyricLine,
+    row: LyricRow.Interlude,
     activeIndex: State<Int>,
-    positionMs: MutableLongState,
-    offsetMs: Long,
+    position: () -> Long,
     playing: Boolean,
     reduceMotion: Boolean,
+    color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -450,33 +567,40 @@ private fun InterludeRow(
             .drawBehind {
                 val isActive = active
                 // Only the active row reads the position, so the others never redraw
-                val position = if (isActive) positionMs.longValue + LEAD_MS + offsetMs else 0L
-                val duration = (line.endMs - line.startMs).coerceAtLeast(1L)
-                val fraction = if (isActive) {
-                    ((position - line.startMs).toFloat() / duration).coerceIn(0f, 1f)
-                } else 0f
+                val now = if (isActive) position() else 0L
+                val duration = (row.endMs - row.startMs).coerceAtLeast(1L)
+                val fraction = if (isActive) ((now - row.startMs).toFloat() / duration).coerceIn(0f, 1f) else 0f
                 drawInterludeDots(
                     fraction = fraction,
-                    remainingMs = if (isActive) (line.endMs - position).toFloat() else Float.MAX_VALUE,
+                    remainingMs = if (isActive) (row.endMs - now).toFloat() else Float.MAX_VALUE,
                     clockMs = if (isActive) clock.floatValue else 0f,
                     active = isActive,
-                    animated = !reduceMotion
+                    animated = !reduceMotion,
+                    // With the next singer, where the eye goes next
+                    right = (layoutDirection == LayoutDirection.Rtl) != (row.side == VocalSide.End),
+                    color = color
                 )
             }
     )
 }
 
-/** Draws the three interlude dots, starting 32 dp from the left and centred vertically. */
+/**
+ * Draws the three interlude dots 32 dp from the left edge, or from the right one when [right],
+ * centred vertically.
+ */
 internal fun DrawScope.drawInterludeDots(
     fraction: Float,
     remainingMs: Float,
     clockMs: Float,
     active: Boolean,
-    animated: Boolean
+    animated: Boolean,
+    right: Boolean,
+    color: Color
 ) {
     val dot = 10.dp.toPx()
     val gap = 6.dp.toPx()
-    val startX = 32.dp.toPx()
+    val margin = 32.dp.toPx()
+    val startX = if (right) size.width - margin - dot * 3 - gap * 2 else margin
     val cy = size.height / 2
     val groupCenter = Offset(startX + dot * 1.5f + gap, cy)
 
@@ -502,7 +626,7 @@ internal fun DrawScope.drawInterludeDots(
             val fill = if (active) (fraction * 3f - k).coerceIn(0f, 1f) else 0f
             val alpha = (0.2f + 0.7f * fill) * groupAlpha
             drawCircle(
-                color = Color.White.copy(alpha = alpha.coerceIn(0f, 1f)),
+                color = color.copy(alpha = alpha.coerceIn(0f, 1f)),
                 radius = dot / 2,
                 center = Offset(startX + dot / 2 + k * (dot + gap), cy)
             )

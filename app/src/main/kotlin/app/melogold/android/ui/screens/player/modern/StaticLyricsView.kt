@@ -1,31 +1,24 @@
 package app.melogold.android.ui.screens.player.modern
 
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -34,17 +27,15 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.melogold.android.R
-import app.melogold.core.ui.LocalAppearance
+import app.melogold.android.models.LyricsSource
+import app.melogold.android.ui.kit.DelayedLoadingIndicator
 
 /**
  * Unsynchronized lyrics: selectable text in a free scroll, no highlighting, no following.
@@ -54,12 +45,12 @@ import app.melogold.core.ui.LocalAppearance
 @Composable
 fun StaticLyricsView(
     text: String,
+    source: LyricsSource?,
     mediaId: String,
     controlsOverlapPx: () -> Int,
     bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
-    val typography = LocalAppearance.current.typography
     val scrollState = remember(mediaId) { ScrollState(0) }
 
     SelectionContainer(
@@ -88,93 +79,73 @@ fun StaticLyricsView(
             }
             .testTag("lyrics_static")
     ) {
-        BasicText(
-            text = text,
-            style = typography.l.copy(
-                fontSize = 22.sp,
-                fontWeight = FontWeight.SemiBold,
-                lineHeight = 30.sp,
-                color = Color.White.copy(alpha = 0.85f),
-                textAlign = TextAlign.Start,
-                textDirection = TextDirection.Content
-            ),
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 32.dp)
-                .padding(top = 36.dp, bottom = bottomPadding + 48.dp)
-        )
+                .padding(top = 36.dp, bottom = bottomPadding + 24.dp)
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+            )
+            DisableSelection {
+                LyricsSourceFooter(source = source, synced = false)
+            }
+        }
     }
 }
 
-/** Breathing dots shown at the anchor while the lyrics load. */
+/**
+ * Where the lyrics came from, under them. Rows cached before the source was kept are synced ones
+ * from LRCLIB or KuGou, or plain ones from an unknown provider (nothing is shown for those).
+ */
+@Composable
+fun LyricsSourceFooter(
+    source: LyricsSource?,
+    synced: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val text = when (source) {
+        LyricsSource.YouTubeMusic -> stringResource(R.string.lyrics_source_youtube_music)
+        LyricsSource.LrcLib -> stringResource(R.string.lyrics_source_lrclib)
+        LyricsSource.KuGou -> stringResource(R.string.lyrics_source_kugou)
+        LyricsSource.File -> stringResource(R.string.lyrics_source_file)
+        LyricsSource.User -> stringResource(R.string.lyrics_source_user)
+        null -> if (synced) stringResource(R.string.provided_lyrics_by) else return
+    }
+
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        modifier = modifier
+            .padding(horizontal = 32.dp, vertical = 24.dp)
+            .testTag("lyrics_source")
+    )
+}
+
+/** The loading indicator at the anchor while the lyrics load (REWRITE §3.10.3). */
 @Composable
 fun LyricsLoading(
     anchor: Dp,
-    reduceMotion: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val clock = remember { mutableFloatStateOf(0f) }
     val description = stringResource(R.string.lyrics_loading)
 
-    LaunchedEffect(reduceMotion) {
-        if (reduceMotion) return@LaunchedEffect
-        val start = withFrameMillis { it }
-        while (true) {
-            withFrameMillis { clock.floatValue = (it - start).toFloat() }
-        }
-    }
-
     Box(
+        contentAlignment = Alignment.TopCenter,
         modifier = modifier
             .fillMaxSize()
+            .padding(top = anchor)
             .semantics { contentDescription = description }
             .testTag("lyrics_loading")
     ) {
-        Spacer(
-            modifier = Modifier
-                .padding(top = anchor)
-                .fillMaxWidth()
-                .height(40.dp)
-                .drawBehind {
-                    val t = clock.floatValue
-                    drawInterludeDots(
-                        fraction = if (reduceMotion) 0f else (t / 1800f) % 1f,
-                        remainingMs = Float.MAX_VALUE,
-                        clockMs = t,
-                        active = !reduceMotion,
-                        animated = !reduceMotion
-                    )
-                }
-        )
-    }
-}
-
-@Composable
-private fun GlassPill(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val typography = LocalAppearance.current.typography
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .clip(CircleShape)
-            .background(OnArt.glass)
-            .clickable(role = Role.Button, onClick = onClick)
-            .heightIn(min = 40.dp)
-            .padding(horizontal = 18.dp, vertical = 8.dp)
-    ) {
-        BasicText(
-            text = text,
-            style = typography.s.copy(
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = OnArt.primary
-            )
-        )
+        DelayedLoadingIndicator()
     }
 }
 
@@ -184,34 +155,26 @@ private fun LyricsMessage(
     testTag: String,
     modifier: Modifier = Modifier,
     actions: @Composable () -> Unit
+) = Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(20.dp),
+    modifier = modifier
+        .fillMaxSize()
+        .padding(top = 140.dp, start = 32.dp, end = 32.dp)
+        .testTag(testTag)
 ) {
-    val typography = LocalAppearance.current.typography
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(top = 140.dp, start = 32.dp, end = 32.dp)
-            .testTag(testTag)
+    Text(
+        text = message,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        textAlign = TextAlign.Center
+    )
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        BasicText(
-            text = message,
-            style = typography.l.copy(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = OnArt.secondary,
-                textAlign = TextAlign.Center
-            )
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            actions()
-        }
+        actions()
     }
 }
 
@@ -219,6 +182,7 @@ private fun LyricsMessage(
 @Composable
 fun LyricsEmptyState(
     onSearchLrcLib: () -> Unit,
+    onImport: () -> Unit,
     onEnterManually: () -> Unit,
     modifier: Modifier = Modifier
 ) = LyricsMessage(
@@ -226,8 +190,9 @@ fun LyricsEmptyState(
     testTag = "lyrics_empty",
     modifier = modifier
 ) {
-    GlassPill(text = stringResource(R.string.lyrics_search_lrclib), onClick = onSearchLrcLib)
-    GlassPill(text = stringResource(R.string.lyrics_enter_manually), onClick = onEnterManually)
+    FilledTonalButton(onClick = onSearchLrcLib) { Text(text = stringResource(R.string.lyrics_search_lrclib)) }
+    FilledTonalButton(onClick = onImport) { Text(text = stringResource(R.string.lyrics_import_file)) }
+    TextButton(onClick = onEnterManually) { Text(text = stringResource(R.string.lyrics_enter_manually)) }
 }
 
 /** Fetching failed because of the network. */
@@ -240,5 +205,5 @@ fun LyricsErrorState(
     testTag = "lyrics_error",
     modifier = modifier
 ) {
-    GlassPill(text = stringResource(R.string.retry), onClick = onRetry)
+    FilledTonalButton(onClick = onRetry) { Text(text = stringResource(R.string.retry)) }
 }

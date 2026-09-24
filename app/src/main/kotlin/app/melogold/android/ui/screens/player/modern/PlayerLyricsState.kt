@@ -18,6 +18,7 @@ import app.melogold.android.models.Lyrics
 import app.melogold.android.transaction
 import app.melogold.android.ui.screens.player.awaitDuration
 import app.melogold.android.ui.screens.player.fetchLyrics
+import app.melogold.domain.lyrics.LyricsFormats
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -99,7 +100,9 @@ fun rememberPlayerLyrics(
                                     songId = mediaId,
                                     fixed = result.fixed,
                                     synced = result.synced,
-                                    startTime = row?.startTime
+                                    startTime = row?.startTime,
+                                    fixedSource = result.fixedSource,
+                                    syncedSource = result.syncedSource
                                 ).toContent(preferSynced = preferSynced, fetchEnabled = false)
 
                                 state.content = when (partial) {
@@ -117,7 +120,9 @@ fun rememberPlayerLyrics(
                                             songId = mediaId,
                                             fixed = result.fixed.orEmpty(),
                                             synced = result.synced.orEmpty(),
-                                            startTime = row?.startTime
+                                            startTime = row?.startTime,
+                                            fixedSource = result.fixedSource,
+                                            syncedSource = result.syncedSource
                                         )
                                     )
                                 }.onFailure {
@@ -143,21 +148,26 @@ fun rememberPlayerLyrics(
 private fun Lyrics?.toContent(preferSynced: Boolean, fetchEnabled: Boolean): LyricsContent {
     val rawFixed = this?.fixed
     val rawSynced = this?.synced
-    val syncedLines = buildLyricLines(rawSynced)
+    // TTML, LRC or enhanced LRC (docs/spec/lyrics.md)
+    val synced = rawSynced?.takeIf { it.isNotBlank() }?.let(LyricsFormats::parseSynced)
+    val rows = synced?.let(::buildLyricRows)?.takeIf { it.isNotEmpty() }
 
     return when {
-        preferSynced && syncedLines != null -> LyricsContent.Synced(
-            lines = syncedLines.first,
-            offsetMs = syncedLines.second,
-            startTimeMs = this?.startTime ?: 0L
+        preferSynced && synced != null && rows != null -> LyricsContent.Synced(
+            lyrics = synced,
+            rows = rows,
+            startTimeMs = this?.startTime ?: 0L,
+            source = this?.syncedSource
         )
 
-        rawFixed != null && rawFixed.isNotBlank() -> LyricsContent.Plain(rawFixed)
+        rawFixed != null && rawFixed.isNotBlank() -> LyricsContent.Plain(
+            text = rawFixed,
+            source = this?.fixedSource
+        )
 
-        syncedLines != null -> LyricsContent.Plain(
-            syncedLines.first
-                .filterNot { it.isInterlude }
-                .joinToString(separator = "\n") { it.text }
+        synced != null && rows != null -> LyricsContent.Plain(
+            text = rows.filterIsInstance<LyricRow.Sung>().joinToString(separator = "\n") { it.line.text },
+            source = this?.syncedSource
         )
 
         rawFixed != null && rawSynced != null -> LyricsContent.NotFound

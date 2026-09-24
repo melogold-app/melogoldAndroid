@@ -378,7 +378,7 @@
     <string name="lyrics_unavailable_title">Текст песни недоступен</string>
     <string name="lyrics_load_failed">Не удалось загрузить текст</string>
     <string name="retry">Повторить</string>
-    <string name="lyrics_search_lrclib">Найти на LrcLib</string>
+    <string name="lyrics_search_lrclib">Найти на LRCLIB</string>
     <string name="lyrics_enter_manually">Ввести вручную</string>
     <string name="lyrics_jump_to_line">Перейти к строке</string>
     <string name="lyrics_copy_line">Копировать строку</string>

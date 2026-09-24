@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Player (REWRITE §3.10) -->
+<resources>
+    <string name="player_output_short">Device</string>
+    <string name="player_stopped">Playback stopped</string>
+</resources>

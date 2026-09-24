@@ -44,6 +44,7 @@ import app.melogold.android.models.Event
 import app.melogold.android.models.Format
 import app.melogold.android.models.Info
 import app.melogold.android.models.Lyrics
+import app.melogold.android.models.LyricsSource
 import app.melogold.android.models.PipedSession
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.PlaylistPreview
@@ -838,7 +839,7 @@ interface DatabaseAccessor {
         PipedSession::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 30,
+    version = 31,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -865,7 +866,8 @@ interface DatabaseAccessor {
         AutoMigration(from = 26, to = 27),
         AutoMigration(from = 27, to = 28),
         AutoMigration(from = 28, to = 29),
-        AutoMigration(from = 29, to = 30)
+        AutoMigration(from = 29, to = 30),
+        AutoMigration(from = 30, to = 31)
     ]
 )
 @TypeConverters(Converters::class)
@@ -1141,6 +1143,15 @@ object Converters {
 
     @TypeConverter
     fun stringToUrl(string: String) = Url(string)
+
+    @TypeConverter
+    fun lyricsSourceToString(source: LyricsSource?) = source?.name
+
+    /** An unknown name (written by a newer version) reads as an unknown source. */
+    @TypeConverter
+    fun stringToLyricsSource(name: String?) = name?.let { value ->
+        LyricsSource.entries.firstOrNull { it.name == value }
+    }
 }
 
 @Suppress("UnusedReceiverParameter")

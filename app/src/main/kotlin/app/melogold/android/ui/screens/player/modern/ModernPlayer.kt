@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -53,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -72,9 +74,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.core.content.getSystemService
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import app.melogold.android.Database
 import app.melogold.android.R
 import app.melogold.android.models.Lyrics
+import app.melogold.android.models.LyricsSource
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.service.LOCAL_KEY_PREFIX
@@ -93,6 +97,9 @@ import app.melogold.android.ui.screens.player.StatsForNerds
 import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.searchLyricsOnline
+import app.melogold.android.ui.theme.rememberArtworkColorScheme
+import app.melogold.android.ui.theme.rememberContrastLevel
+import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
 import app.melogold.android.utils.rememberReduceMotion
@@ -102,9 +109,9 @@ import app.melogold.android.utils.windowState
 import app.melogold.compose.persist.findActivityNullable
 import app.melogold.compose.routing.CallbackPredictiveBackHandler
 import app.melogold.core.ui.LocalAppearance
-import app.melogold.core.ui.defaultDarkPalette
 import app.melogold.core.ui.setSystemBarAppearance
 import app.melogold.core.ui.utils.isLandscape
+import app.melogold.domain.lyrics.SyncedLine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -240,19 +247,30 @@ fun ModernPlayer(
         }
     )
 
-    // Light system bar icons on this always-dark screen, restored when collapsing
+    // The player follows the app theme (REWRITE §3.10): its colors come from the artwork, its
+    // darkness from the app; system bar icons follow the same darkness
+    val appScheme = MaterialTheme.colorScheme
+    val appIsDark = appScheme.surface.luminance() < 0.5f
+    val artworkBitmap = rememberArtworkBitmap(mediaItem.mediaMetadata.artworkUri)
+    val artworkScheme = rememberArtworkColorScheme(
+        key = mediaId,
+        bitmap = artworkBitmap,
+        isDark = appIsDark,
+        contrastLevel = rememberContrastLevel(),
+        delayMillis = 150L
+    )
     val activity = remember(context) { context.findActivityNullable() }
-    val appPalette = appearance.colorPalette
-    val currentAppIsDark by rememberUpdatedState(appPalette.isDark)
-    LaunchedEffect(layoutState.expanded, appPalette) {
+    val currentAppIsDark by rememberUpdatedState(appearance.colorPalette.isDark)
+    LaunchedEffect(layoutState.expanded, appIsDark) {
         if (layoutState.expanded) {
             withFrameNanos { }
-            activity?.setSystemBarAppearance(isDark = true)
-        } else activity?.setSystemBarAppearance(isDark = appPalette.isDark)
+            activity?.setSystemBarAppearance(isDark = appIsDark)
+        } else activity?.setSystemBarAppearance(isDark = currentAppIsDark)
     }
     DisposableEffect(activity) {
         onDispose { activity?.setSystemBarAppearance(isDark = currentAppIsDark) }
     }
+    val buffering = rememberBuffering(binder.player)
 
     val keepScreenOn = PlayerPreferences.lyricsKeepScreenAwake &&
         mode == PlayerMode.Lyrics &&
@@ -268,6 +286,13 @@ fun ModernPlayer(
     var showingStats by rememberSaveable(mediaId) { mutableStateOf(false) }
 
     val copiedMessage = stringResource(R.string.copied)
+    val importedMessage = stringResource(R.string.lyrics_imported)
+    val importFailedMessage = stringResource(R.string.lyrics_import_failed)
+    val importLyrics = rememberLyricsImporter(
+        mediaItem = mediaItem,
+        current = { lyrics.raw },
+        onResult = { imported -> context.toast(if (imported) importedMessage else importFailedMessage) }
+    )
 
     fun showLyricsMenu(header: @Composable ColumnScope.() -> Unit = { }) = menuState.display {
         val errorMessage = stringResource(R.string.no_browser_installed)
@@ -296,8 +321,8 @@ fun ModernPlayer(
                         runCatching {
                             Database.insert(mediaItem)
                             Database.upsert(
-                                if (showingSynced) current.copy(synced = null)
-                                else current.copy(fixed = null)
+                                if (showingSynced) current.copy(synced = null, syncedSource = null)
+                                else current.copy(fixed = null, fixedSource = null)
                             )
                         }
                     }
@@ -305,6 +330,7 @@ fun ModernPlayer(
                     lyrics.retry()
                 }
             },
+            onImport = importLyrics,
             onPickFromLrcLib = if (showingSynced) {
                 { picking = true }
             } else null,
@@ -325,7 +351,7 @@ fun ModernPlayer(
         )
     }
 
-    val onLineLongPress: (LyricLine) -> Unit = { line ->
+    val onLineLongPress: (SyncedLine) -> Unit = { line ->
         showLyricsMenu(
             header = {
                 MenuEntry(
@@ -411,7 +437,6 @@ fun ModernPlayer(
             mediaItem = mediaItem,
             liked = likedAt != null,
             onToggleLike = onToggleLike,
-            onMore = openPlayerMenu,
             sharedScopes = scopes,
             modifier = blockModifier
         )
@@ -422,7 +447,6 @@ fun ModernPlayer(
             mediaItem = mediaItem,
             liked = likedAt != null,
             onToggleLike = onToggleLike,
-            onMore = { showLyricsMenu() },
             onClick = onHeaderClick,
             sharedScopes = scopes,
             modifier = headerModifier
@@ -463,18 +487,17 @@ fun ModernPlayer(
 
                 is LyricsContent.Plain -> StaticLyricsView(
                     text = targetContent.text,
+                    source = targetContent.source,
                     mediaId = target.mediaId,
                     controlsOverlapPx = overlapPx,
                     bottomPadding = if (overlaid) controlsHeight else 0.dp
                 )
 
-                LyricsContent.Loading, LyricsContent.Unknown -> LyricsLoading(
-                    anchor = anchor,
-                    reduceMotion = reduceMotion
-                )
+                LyricsContent.Loading, LyricsContent.Unknown -> LyricsLoading(anchor = anchor)
 
                 LyricsContent.NotFound -> LyricsEmptyState(
                     onSearchLrcLib = { picking = true },
+                    onImport = importLyrics,
                     onEnterManually = { editingSynced = false }
                 )
 
@@ -487,13 +510,14 @@ fun ModernPlayer(
         PlayerControlsBlock(
             binder = binder,
             shouldBePlaying = shouldBePlaying,
+            resolving = buffering && shouldBePlaying,
+            reduceMotion = reduceMotion,
             onScrubbing = { modeState.scrubbing = it },
             compact = compact,
             modifier = controlsModifier,
             toolbar = {
                 PlayerToolbar(
                     lyricsSelected = mode == PlayerMode.Lyrics,
-                    lyricsAvailable = content !is LyricsContent.NotFound,
                     queueSelected = queueOpen,
                     onLyricsClick = onLyricsClick,
                     onQueueClick = onQueueClick
@@ -502,21 +526,8 @@ fun ModernPlayer(
         )
     }
 
-    val onArtAppearance = remember(appearance) {
-        appearance.copy(
-            colorPalette = defaultDarkPalette.copy(
-                accent = appearance.colorPalette.accent,
-                onAccent = appearance.colorPalette.onAccent,
-                text = Color.White,
-                textSecondary = Color.White.copy(alpha = 0.6f),
-                textDisabled = Color.White.copy(alpha = 0.35f)
-            ),
-            typography = appearance.typography.copy(color = Color.White)
-        )
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalAppearance provides onArtAppearance) {
+        MaterialTheme(colorScheme = artworkScheme ?: appScheme) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -536,16 +547,21 @@ fun ModernPlayer(
                         false
                     }
             ) {
-                PlayerBackground(
-                    artworkUri = mediaItem.mediaMetadata.artworkUri,
-                    accent = appearance.colorPalette.accent
-                )
+                ArtworkTintedBackground()
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")
+
+                // The overflow menu follows what is shown: the lyrics actions (with "More options"
+                // leading to the track menu) while the lyrics are
+                val onMore: () -> Unit = {
+                    if (mode == PlayerMode.Lyrics) showLyricsMenu() else openPlayerMenu()
+                }
 
                 if (landscape) LandscapeLayout(
                     transition = transition,
                     reduceMotion = reduceMotion,
+                    onCollapse = { layoutState.collapseSoft() },
+                    onMore = onMore,
                     artwork = artwork,
                     titleBlock = titleBlock,
                     compactHeader = compactHeader,
@@ -559,6 +575,7 @@ fun ModernPlayer(
                     compactControls = compactControls,
                     backProgress = { backProgress.floatValue },
                     onCollapse = { layoutState.collapseSoft() },
+                    onMore = onMore,
                     onControlsHeightChange = { controlsHeightPx.intValue = it },
                     artwork = artwork,
                     titleBlock = titleBlock,
@@ -588,7 +605,9 @@ fun ModernPlayer(
                                     songId = mediaId,
                                     fixed = if (synced) raw?.fixed else text,
                                     synced = if (synced) text else raw?.synced,
-                                    startTime = raw?.startTime
+                                    startTime = raw?.startTime,
+                                    fixedSource = if (synced) raw?.fixedSource else LyricsSource.User,
+                                    syncedSource = if (synced) LyricsSource.User else raw?.syncedSource
                                 )
                             )
                         }
@@ -620,7 +639,9 @@ fun ModernPlayer(
                                     songId = mediaId,
                                     fixed = lyrics.raw?.fixed,
                                     synced = track.syncedLyrics,
-                                    startTime = lyrics.raw?.startTime
+                                    startTime = lyrics.raw?.startTime,
+                                    fixedSource = lyrics.raw?.fixedSource,
+                                    syncedSource = LyricsSource.LrcLib
                                 )
                             )
                         }
@@ -649,6 +670,7 @@ private fun PortraitLayout(
     compactControls: Boolean,
     backProgress: () -> Float,
     onCollapse: () -> Unit,
+    onMore: () -> Unit,
     onControlsHeightChange: (Int) -> Unit,
     artwork: @Composable (Dp, SharedScopes?) -> Unit,
     titleBlock: @Composable (Modifier, SharedScopes?) -> Unit,
@@ -662,7 +684,7 @@ private fun PortraitLayout(
             WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
         )
 ) {
-    Handle(onClick = onCollapse)
+    PlayerTopBar(onCollapse = onCollapse, onMore = onMore)
 
     Box(
         modifier = Modifier
@@ -773,6 +795,8 @@ private fun ControlsOverlay(
 private fun LandscapeLayout(
     transition: Transition<PlayerMode>,
     reduceMotion: Boolean,
+    onCollapse: () -> Unit,
+    onMore: () -> Unit,
     artwork: @Composable (Dp, SharedScopes?) -> Unit,
     titleBlock: @Composable (Modifier, SharedScopes?) -> Unit,
     compactHeader: @Composable (Modifier, SharedScopes?) -> Unit,
@@ -820,11 +844,13 @@ private fun LandscapeLayout(
         }
 
         Column(
-            verticalArrangement = Arrangement.Center,
             modifier = Modifier
                 .weight(0.5f)
                 .fillMaxHeight()
         ) {
+            PlayerTopBar(onCollapse = onCollapse, onMore = onMore)
+            Spacer(modifier = Modifier.weight(1f))
+
             transition.AnimatedContent(
                 transitionSpec = {
                     if (reduceMotion) fadeIn(tween(150)) togetherWith fadeOut(tween(150))
@@ -849,6 +875,23 @@ private fun LandscapeLayout(
             }
 
             controls(Modifier, true)
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
+}
+
+/** Whether [player] is buffering: play shows a loading indicator meanwhile (REWRITE §3.10.2). */
+@Composable
+private fun rememberBuffering(player: Player): Boolean {
+    var buffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
+
+    player.DisposableListener {
+        object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                buffering = playbackState == Player.STATE_BUFFERING
+            }
+        }
+    }
+
+    return buffering
 }
