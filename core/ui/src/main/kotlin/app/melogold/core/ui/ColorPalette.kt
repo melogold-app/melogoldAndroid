@@ -1,11 +1,9 @@
 package app.melogold.core.ui
 
-import android.graphics.Bitmap
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.palette.graphics.Palette
 
 /**
  * The legacy palette read by screens that are not migrated to Material 3 yet (via
@@ -72,41 +70,6 @@ val defaultDarkPalette = ColorPalette(
     isDefault = true,
     isDark = true
 )
-
-/**
- * The dominant color of [bitmap]. Still used by the player background; the app-wide artwork color
- * scheme uses `material-color-utilities` instead (`A/ui/theme/ArtworkColorScheme.kt`).
- */
-fun dynamicAccentColorOf(
-    bitmap: Bitmap,
-    isDark: Boolean
-): Hsl? {
-    val palette = Palette
-        .from(bitmap)
-        .maximumColorCount(8)
-        .addFilter(if (isDark) ({ _, hsl -> hsl[0] !in 36f..100f }) else null)
-        .generate()
-
-    val hsl = if (isDark) {
-        palette.dominantSwatch ?: Palette
-            .from(bitmap)
-            .maximumColorCount(8)
-            .generate()
-            .dominantSwatch
-    } else {
-        palette.dominantSwatch
-    }?.hsl ?: return null
-
-    val arr = if (hsl[1] < 0.08)
-        palette.swatches
-            .map(Palette.Swatch::getHsl)
-            .sortedByDescending(FloatArray::component2)
-            .find { it[1] != 0f }
-            ?: hsl
-    else hsl
-
-    return arr.hsl
-}
 
 inline val ColorPalette.isPureBlack get() = background0 == Color.Black
 inline val ColorPalette.collapsedPlayerProgressBar

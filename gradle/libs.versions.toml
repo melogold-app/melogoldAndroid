@@ -83,7 +83,6 @@ slf4j = { module = "org.slf4j:slf4j-api", version = "2.0.19" }
 logback = { module = "com.github.tony19:logback-android", version = "3.0.0" }
 
 brotli = { module = "org.brotli:dec", version = "0.1.2" }
-palette = { module = "androidx.palette:palette", version = "1.0.0" }
 material_color_utilities = { module = "com.materialkolor:material-color-utilities", version = "5.0.1" }
 
 zxing_core = { module = "com.google.zxing:core", version = "3.5.3" }

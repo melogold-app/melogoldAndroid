@@ -203,7 +203,6 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.ktor)
 
-    implementation(libs.palette)
     implementation(libs.material.color.utilities)
 
     implementation(libs.exoplayer)

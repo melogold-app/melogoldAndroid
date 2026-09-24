@@ -538,8 +538,7 @@ fun ModernPlayer(
             ) {
                 PlayerBackground(
                     artworkUri = mediaItem.mediaMetadata.artworkUri,
-                    accent = appearance.colorPalette.accent,
-                    animate = shouldBePlaying && !queueOpen && !reduceMotion
+                    accent = appearance.colorPalette.accent
                 )
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")
