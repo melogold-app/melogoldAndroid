@@ -3,6 +3,9 @@ package app.melogold.android.ui.screens.player.modern
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import app.melogold.android.service.isLocal
+import app.melogold.android.ui.screens.player.lyricseditor.LyricsEditorDialog
+import app.melogold.android.ui.screens.player.lyricseditor.initialDraft
+import app.melogold.android.ui.screens.player.lyricseditor.saveLyricsDraft
 import app.melogold.android.ui.screens.player.sleepTimerLeft
 import androidx.compose.foundation.layout.RowScope
 import android.content.ClipData
@@ -88,7 +91,6 @@ import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.components.themed.MenuEntry
-import app.melogold.android.ui.components.themed.TextFieldDialog
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.screens.player.LyricsMenu
 import app.melogold.android.ui.screens.player.PlaybackErrorCard
@@ -284,7 +286,7 @@ fun ModernPlayer(
     }
 
     // Dialogs and menus (hosted outside of the palette override below, so they keep the app theme)
-    var editingSynced by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var editing by rememberSaveable { mutableStateOf(false) }
     var picking by rememberSaveable { mutableStateOf(false) }
     val showPlayerMenu: () -> Unit = {
         openPlayerMenu { menuState.display { StreamInfoSheet(mediaId = mediaId, binder = binder) } }
@@ -315,13 +317,7 @@ fun ModernPlayer(
         LyricsMenu(
             showingSynced = showingSynced,
             onToggleSynced = { PlayerPreferences.preferSyncedLyrics = !showingSynced },
-            onEdit = {
-                editingSynced = when (lyrics.content) {
-                    is LyricsContent.Synced -> true
-                    is LyricsContent.Plain -> false
-                    else -> showingSynced
-                }
-            },
+            onEdit = { editing = true },
             onSearchOnline = {
                 context.searchLyricsOnline(
                     mediaMetadata = mediaItem.mediaMetadata,
@@ -512,7 +508,7 @@ fun ModernPlayer(
                 LyricsContent.NotFound -> LyricsEmptyState(
                     onSearchLrcLib = { picking = true },
                     onImport = importLyrics,
-                    onEnterManually = { editingSynced = false }
+                    onEnterManually = { editing = true }
                 )
 
                 LyricsContent.Failed -> LyricsErrorState(onRetry = lyrics::retry)
@@ -602,33 +598,19 @@ fun ModernPlayer(
             }
         }
 
-        editingSynced?.let { synced ->
-            val raw = lyrics.raw
+        if (editing) {
+            val savedMessage = stringResource(R.string.lyrics_editor_saved)
 
-            TextFieldDialog(
-                hintText = stringResource(R.string.enter_lyrics),
-                initialTextInput = (if (synced) raw?.synced else raw?.fixed).orEmpty(),
-                singleLine = false,
-                maxLines = 10,
-                isTextInputValid = { true },
-                onDismiss = { editingSynced = null },
-                onAccept = { text ->
-                    transaction {
-                        runCatching {
-                            Database.insert(mediaItem)
-                            Database.upsert(
-                                Lyrics(
-                                    songId = mediaId,
-                                    fixed = if (synced) raw?.fixed else text,
-                                    synced = if (synced) text else raw?.synced,
-                                    startTime = raw?.startTime,
-                                    fixedSource = if (synced) raw?.fixedSource else LyricsSource.User,
-                                    syncedSource = if (synced) LyricsSource.User else raw?.syncedSource
-                                )
-                            )
-                        }
-                    }
-                }
+            LyricsEditorDialog(
+                mediaItem = mediaItem,
+                binder = binder,
+                initial = remember(mediaId) { initialDraft(lyrics.raw) },
+                onSave = { draft ->
+                    saveLyricsDraft(mediaItem = mediaItem, current = lyrics.raw, draft = draft)
+                    editing = false
+                    context.toast(savedMessage)
+                },
+                onDismiss = { editing = false }
             )
         }
 
