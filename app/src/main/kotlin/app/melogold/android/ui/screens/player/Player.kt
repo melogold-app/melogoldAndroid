@@ -347,7 +347,7 @@ fun Player(
 
         if (audioDialogOpen) SliderDialog(
             onDismiss = { audioDialogOpen = false },
-            title = stringResource(R.string.playback_settings)
+            title = stringResource(R.string.playback_speed)
         ) {
             SliderDialogBody(
                 provideState = { remember(speed) { mutableFloatStateOf(speed) } },
@@ -358,8 +358,7 @@ fun Player(
                     if (it <= 0.01f) stringResource(R.string.minimum_speed_value)
                     else stringResource(R.string.format_multiplier, "%.2f".format(it))
                 },
-                steps = 39,
-                label = stringResource(R.string.playback_speed)
+                steps = 39
             )
             Box(
                 modifier = Modifier.fillMaxWidth(),

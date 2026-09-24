@@ -517,7 +517,7 @@ fun MediaItemMenu(
             onShowSpeedDialog?.let {
                 MenuEntry(
                     icon = R.drawable.speed,
-                    text = stringResource(R.string.playback_settings),
+                    text = stringResource(R.string.playback_speed),
                     onClick = {
                         onDismiss()
                         onShowSpeedDialog()
