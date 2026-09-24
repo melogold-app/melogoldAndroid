@@ -6,13 +6,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.PowerManager
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.annotation.StringRes
 import androidx.core.app.PendingIntentCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.offline.DownloadRequest
@@ -79,11 +77,6 @@ fun Context.findActivity(): Activity {
     }
     error("Should be called in the context of an Activity")
 }
-
-fun Context.hasPermission(permission: String) = ContextCompat.checkSelfPermission(
-    applicationContext,
-    permission
-) == PackageManager.PERMISSION_GRANTED
 
 @OptIn(UnstableApi::class)
 inline fun <reified T : DownloadService> Context.download(request: DownloadRequest) = runCatching {

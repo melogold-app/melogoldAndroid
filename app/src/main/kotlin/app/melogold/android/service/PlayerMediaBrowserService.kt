@@ -18,7 +18,6 @@ import app.melogold.android.models.Album
 import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongWithContentLength
-import app.melogold.android.preferences.OrderPreferences
 import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.forcePlayAtIndex
@@ -31,7 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -108,7 +106,6 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
                             add(0, favoritesBrowserMediaItem)
                             add(1, offlineBrowserMediaItem)
                             add(2, topBrowserMediaItem)
-                            add(3, localBrowserMediaItem)
                         }
 
                 MediaId.ALBUMS ->
@@ -205,16 +202,6 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
             BrowserMediaItem.FLAG_PLAYABLE
         )
 
-    private val localBrowserMediaItem
-        inline get() = BrowserMediaItem(
-            BrowserMediaDescription.Builder()
-                .setMediaId(MediaId.LOCAL.id)
-                .setTitle(getString(R.string.local))
-                .setIconUri(uriFor(R.drawable.download))
-                .build(),
-            BrowserMediaItem.FLAG_PLAYABLE
-        )
-
     private val Song.asBrowserMediaItem
         inline get() = BrowserMediaItem(
             BrowserMediaDescription.Builder()
@@ -304,16 +291,6 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
                             .cancellable()
                             .first()
 
-                    MediaId.LOCAL ->
-                        Database
-                            .songs(
-                                sortBy = OrderPreferences.localSongSortBy,
-                                sortOrder = OrderPreferences.localSongSortOrder,
-                                isLocal = true
-                            )
-                            .map { songs -> songs.filter { it.durationText != "0:00" } }
-                            .first()
-
                     MediaId.PLAYLISTS ->
                         data
                             .getOrNull(1)
@@ -353,7 +330,6 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
             val FAVORITES = MediaId("favorites")
             val OFFLINE = MediaId("offline")
             val TOP = MediaId("top")
-            val LOCAL = MediaId("local")
             val SHUFFLE = MediaId("shuffle")
         }
 

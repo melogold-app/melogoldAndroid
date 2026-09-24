@@ -24,7 +24,6 @@ import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.builtInPlaylistRoute
 import app.melogold.android.ui.screens.home.HomeAlbums
 import app.melogold.android.ui.screens.home.HomeArtistList
-import app.melogold.android.ui.screens.home.HomeLocalSongs
 import app.melogold.android.ui.screens.home.HomePlaylists
 import app.melogold.android.ui.screens.home.HomeSongs
 import app.melogold.android.ui.screens.localPlaylistRoute
@@ -36,8 +35,7 @@ private enum class LibraryTab(val title: Int) {
     Playlists(R.string.playlists),
     Songs(R.string.library_tab_songs),
     Artists(R.string.artists),
-    Albums(R.string.albums),
-    OnDevice(R.string.library_tab_on_device)
+    Albums(R.string.albums)
 }
 
 /**
@@ -97,7 +95,6 @@ fun RouteHandlerScope.LibraryRoot() {
                                 onAlbumClick = { albumRoute(it.id) }
                             )
 
-                            LibraryTab.OnDevice -> HomeLocalSongs()
                         }
                     }
                 }
