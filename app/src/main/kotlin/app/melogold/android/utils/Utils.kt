@@ -155,7 +155,9 @@ fun String.thumbnail(
     return when {
         this.startsWith("https://lh3.googleusercontent.com") ||
             this.startsWith("https://yt3.googleusercontent.com") -> "$this-w$actualSize-h$actualSize"
+
         this.startsWith("https://yt3.ggpht.com") -> "$this-w$actualSize-h$actualSize-s$actualSize"
+
         else -> this
     }
 }

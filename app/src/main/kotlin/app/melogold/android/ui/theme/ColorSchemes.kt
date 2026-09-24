@@ -74,7 +74,6 @@ fun melogoldColorScheme(
     contrastLevel: Double
 ): ColorScheme = when (source) {
     ColorSource.System -> systemColorScheme(context = context, isDark = isDark)
-
     ColorSource.Brand, ColorSource.Custom -> null
 } ?: brandColorScheme(isDark = isDark, contrastLevel = contrastLevel)
 

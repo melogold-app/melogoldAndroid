@@ -44,12 +44,8 @@ private fun colorSourceOf(stored: String?): ColorSource =
 
 private fun storedColorSourceOf(stored: String?): ColorSource = when (stored) {
     null -> defaultColorSource
-
     "Default" -> ColorSource.Brand
-
     "MaterialYou" -> ColorSource.System
-
     "Dynamic" -> defaultColorSource
-
     else -> ColorSource.entries.firstOrNull { it.name == stored } ?: defaultColorSource
 }

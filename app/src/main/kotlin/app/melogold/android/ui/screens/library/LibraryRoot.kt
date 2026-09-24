@@ -94,7 +94,6 @@ fun RouteHandlerScope.LibraryRoot() {
                             LibraryTab.Albums -> HomeAlbums(
                                 onAlbumClick = { albumRoute(it.id) }
                             )
-
                         }
                     }
                 }

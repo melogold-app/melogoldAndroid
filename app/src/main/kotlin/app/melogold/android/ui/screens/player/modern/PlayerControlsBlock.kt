@@ -73,9 +73,9 @@ import app.melogold.android.R
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.screens.player.AnimatedPlayPauseButton
-import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
+import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.positionAndDurationState
 import app.melogold.android.utils.toast
 import app.melogold.core.ui.LocalAppearance
@@ -444,12 +444,12 @@ private fun ToolbarButton(
     @DrawableRes icon: Int,
     contentDescription: String,
     testTag: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     isToggle: Boolean = false,
     stateDescription: String? = null,
-    alpha: Float = 1f,
-    onClick: () -> Unit
+    alpha: Float = 1f
 ) {
     val selectedFraction = animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
