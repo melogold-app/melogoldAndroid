@@ -11,7 +11,9 @@ data class MusicShelfRenderer(
 ) {
     @Serializable
     data class Content(
-        val musicResponsiveListItemRenderer: MusicResponsiveListItemRenderer?
+        val musicResponsiveListItemRenderer: MusicResponsiveListItemRenderer?,
+        /** The newer way of pointing at the next page: the last "item" of the list. */
+        val continuationItemRenderer: ContinuationItemRenderer? = null
     ) {
         val runs: Pair<List<Runs.Run>, List<List<Runs.Run>>>
             get() = musicResponsiveListItemRenderer

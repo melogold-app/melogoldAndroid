@@ -55,6 +55,7 @@ import app.melogold.android.models.Song
 import app.melogold.android.models.SongAlbumMap
 import app.melogold.android.models.SongArtistMap
 import app.melogold.android.models.SongPlaylistMap
+import app.melogold.android.models.YtLinkMode
 import app.melogold.android.models.SongWithContentLength
 import app.melogold.android.models.SongWithLastPlayed
 import app.melogold.android.models.SongWithPlayTime
@@ -443,6 +444,23 @@ interface DatabaseAccessor {
 
     @Query("SELECT * FROM Playlist WHERE id = :id")
     fun playlist(id: Long): Flow<Playlist?>
+
+    // region R3.6: playlists saved from YouTube (REWRITE §3.8)
+    @Query("SELECT * FROM Playlist WHERE browseId = :browseId ORDER BY id LIMIT 1")
+    fun playlistByBrowseId(browseId: String): Flow<Playlist?>
+
+    @Query("SELECT songId FROM SongPlaylistMap WHERE playlistId = :id ORDER BY position")
+    fun playlistSongIds(id: Long): List<String>
+
+    @Query("DELETE FROM SongPlaylistMap WHERE playlistId = :id")
+    fun clearPlaylist(id: Long)
+
+    @Query("UPDATE Playlist SET ytSyncedAt = :syncedAt, ytSnapshot = :snapshot WHERE id = :id")
+    fun setYtSynced(id: Long, syncedAt: Long, snapshot: String)
+
+    @Query("UPDATE Playlist SET ytLinkMode = :mode WHERE id = :id")
+    fun setYtLinkMode(id: Long, mode: YtLinkMode?)
+    // endregion R3.6
 
     @RewriteQueriesToDropUnusedColumns
     @Transaction
@@ -913,7 +931,7 @@ interface DatabaseAccessor {
         PipedSession::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 31,
+    version = 32,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -941,7 +959,8 @@ interface DatabaseAccessor {
         AutoMigration(from = 27, to = 28),
         AutoMigration(from = 28, to = 29),
         AutoMigration(from = 29, to = 30),
-        AutoMigration(from = 30, to = 31)
+        AutoMigration(from = 30, to = 31),
+        AutoMigration(from = 31, to = 32)
     ]
 )
 @TypeConverters(Converters::class)
@@ -1220,6 +1239,15 @@ object Converters {
 
     @TypeConverter
     fun lyricsSourceToString(source: LyricsSource?) = source?.name
+
+    @TypeConverter
+    fun ytLinkModeToString(mode: YtLinkMode?) = mode?.name
+
+    /** An unknown mode (written by a newer version) reads as no link. */
+    @TypeConverter
+    fun stringToYtLinkMode(name: String?) = name?.let { value ->
+        YtLinkMode.entries.firstOrNull { it.name == value }
+    }
 
     /** An unknown name (written by a newer version) reads as an unknown source. */
     @TypeConverter

@@ -39,7 +39,7 @@ class PagedLoader<T>(
     val state: StateFlow<Paged<T>> = mutableState.asStateFlow()
 
     private var continuation: String? = null
-    private var started = false
+    private var firstLoaded = false
     private var job: Job? = null
 
     init {
@@ -52,6 +52,20 @@ class PagedLoader<T>(
         load()
     }
 
+    /**
+     * Loads the next page, or waits for the one in flight: false at the end or after an error.
+     * For code that walks the whole list (queueing a playlist), not for the UI.
+     */
+    suspend fun awaitNext(): Boolean {
+        job?.join()
+        val current = mutableState.value
+        if (current.end || current.error != null) return false
+
+        load()
+        job?.join()
+        return mutableState.value.error == null
+    }
+
     fun retry() {
         if (job?.isActive == true) return
         mutableState.update { it.copy(error = null) }
@@ -60,15 +74,17 @@ class PagedLoader<T>(
 
     private fun load() {
         val token = continuation
-        if (started && token == null) return
-        started = true
+        // After the first page, no token means the end; a failed first page is tried again
+        if (firstLoaded && token == null) return
 
         job = scope.launch {
             mutableState.update { it.copy(loading = true, error = null) }
-            val result = (if (token == null) first() else next(token)) ?: return@launch
+            val result = (if (token == null) first() else next(token))
+                ?: Result.failure(NoSuchElementException("No response"))
 
             result.fold(
                 onSuccess = { page ->
+                    firstLoaded = true
                     continuation = page.continuation
                     mutableState.update { state ->
                         state.copy(

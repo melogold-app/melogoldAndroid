@@ -2,6 +2,7 @@ package app.melogold.providers.innertube.requests
 
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.BrowseResponse
+import app.melogold.providers.innertube.models.Continuation
 import app.melogold.providers.innertube.models.ContinuationResponse
 import app.melogold.providers.innertube.models.MusicCarouselShelfRenderer
 import app.melogold.providers.innertube.models.MusicShelfRenderer
@@ -174,16 +175,23 @@ suspend fun Innertube.playlistPage(body: ContinuationBody) = runCatchingCancella
         .continuationContents
         ?.musicShelfContinuation
         ?.toSongsPage()
+        ?: response
+            .onResponseReceivedActions
+            ?.flatMap { it.appendContinuationItemsAction?.continuationItems.orEmpty() }
+            ?.toSongsPage(continuations = null)
 }
 
-private fun MusicShelfRenderer?.toSongsPage() = Innertube.ItemsPage(
-    items = this
-        ?.contents
-        ?.mapNotNull(MusicShelfRenderer.Content::musicResponsiveListItemRenderer)
-        ?.mapNotNull(Innertube.SongItem::from),
-    continuation = this
-        ?.continuations
+private fun MusicShelfRenderer?.toSongsPage() = this?.contents.orEmpty().toSongsPage(
+    continuations = this?.continuations
+)
+
+/** The songs of a list page and its next token: in the older `continuations`, or as the last item. */
+private fun List<MusicShelfRenderer.Content>.toSongsPage(continuations: List<Continuation>?) = Innertube.ItemsPage(
+    items = mapNotNull(MusicShelfRenderer.Content::musicResponsiveListItemRenderer)
+        .mapNotNull(Innertube.SongItem::from),
+    continuation = continuations
         ?.firstOrNull()
         ?.nextContinuationData
         ?.continuation
+        ?: firstNotNullOfOrNull { it.continuationItemRenderer?.token }
 )

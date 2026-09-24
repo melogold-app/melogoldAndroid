@@ -35,4 +35,18 @@
     <string name="channel_videos">Videos</string>
     <string name="channel_playlists">Channel playlists</string>
     <string name="channel_about">About the channel</string>
+
+    <string name="playlist_save_title">Save to library</string>
+    <string name="playlist_link_append">Link: add new tracks</string>
+    <string name="playlist_link_append_hint">New YouTube tracks are added at the end, your edits stay. Recommended</string>
+    <string name="playlist_link_mirror">Link: mirror</string>
+    <string name="playlist_link_mirror_hint">Always the same as on YouTube, your edits get overwritten</string>
+    <string name="playlist_link_off">Save a copy without a link</string>
+    <string name="playlist_link_off_hint">Not updated from YouTube</string>
+    <string name="playlist_saving">Saving the playlist…</string>
+    <string name="playlist_saved">Saved to Library</string>
+    <string name="playlist_open">Open</string>
+    <string name="playlist_incomplete">YouTube returned an incomplete list — the playlist was not saved</string>
+    <string name="playlist_save_failed">Couldn’t save the playlist</string>
+    <string name="playlist_loaded">Loaded %1$d</string>
 </resources>

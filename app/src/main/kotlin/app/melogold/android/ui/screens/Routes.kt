@@ -123,13 +123,9 @@ fun RouteHandlerScope.GlobalRoutes() {
         MoreAlbumsScreen()
     }
 
-    playlistRoute { browseId, params, maxDepth, shouldDedup ->
-        PlaylistScreen(
-            browseId = browseId,
-            params = params,
-            maxDepth = maxDepth,
-            shouldDedup = shouldDedup
-        )
+    // The whole list loads page by page now: the depth limit and dedup of the old screen are gone
+    playlistRoute { browseId, params, _, _ ->
+        PlaylistScreen(browseId = browseId, params = params)
     }
 
     searchResultRoute { query, source ->
