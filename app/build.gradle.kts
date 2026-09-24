@@ -102,6 +102,11 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
 
+    testOptions {
+        // Robolectric reads the merged resources and manifest (REWRITE §4.13)
+        unitTests.isIncludeAndroidResources = true
+    }
+
     packaging {
         resources.excludes.add("META-INF/**/*")
         jniLibs.useLegacyPackaging = true
@@ -164,6 +169,14 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+tasks.withType<Test>().configureEach {
+    // Robolectric reaches FileDescriptor internals through jdk.internal.access (JDK 17+)
+    jvmArgs(
+        "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+        "--add-opens=java.base/java.io=ALL-UNNAMED"
+    )
+}
+
 composeCompiler {
     if (project.findProperty("enableComposeCompilerReports") == "true") {
         val dest = layout.buildDirectory.dir("compose_metrics")
@@ -189,6 +202,7 @@ dependencies {
     implementation(projects.compose.preferences)
     implementation(projects.compose.routing)
     implementation(projects.compose.reordering)
+    implementation(libs.reorderable)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.activity)
@@ -208,7 +222,10 @@ dependencies {
     implementation(libs.exoplayer)
     implementation(libs.exoplayer.workmanager)
     implementation(libs.media3.session)
+    implementation(libs.media3.datasource.okhttp)
     implementation(libs.media)
+
+    implementation(libs.lifecycle.process)
 
     implementation(libs.workmanager)
     implementation(libs.workmanager.ktx)
@@ -225,6 +242,7 @@ dependencies {
 
     implementation(libs.room)
     ksp(libs.room.compiler)
+    implementation(libs.sqlite.framework)
 
     implementation(libs.log4j)
     implementation(libs.slf4j)
@@ -236,5 +254,14 @@ dependencies {
     implementation(projects.providers.lrclib)
     implementation(projects.providers.sponsorblock)
     implementation(projects.core.data)
+    implementation(projects.core.domain)
     implementation(projects.core.ui)
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlin.coroutines.test)
+    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.room.testing)
 }

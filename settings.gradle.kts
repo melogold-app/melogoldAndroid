@@ -29,6 +29,7 @@ rootProject.name = "melogold"
 
 include(":app")
 include(":core:data")
+include(":core:domain")
 include(":core:ui")
 include(":compose:persist")
 include(":compose:preferences")
