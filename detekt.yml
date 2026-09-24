@@ -94,11 +94,13 @@ ktlint:
     active: false # Broken, thanks context parameters!
   SpacingAroundColon:
     active: false # Broken
+  SpacingAroundSquareBrackets:
+    active: false # Takes the positional destructuring `val [a, b]` for an index access
   TrailingCommaOnCallSite:
     active: true
     useTrailingCommaOnCallSite: false
   TrailingCommaOnDeclarationSite:
-    active: true
+    active: false # Crashes the whole run on the positional destructuring `val [a, b]`
     useTrailingCommaOnDeclarationSite: false
   Wrapping:
     active: false # Broken

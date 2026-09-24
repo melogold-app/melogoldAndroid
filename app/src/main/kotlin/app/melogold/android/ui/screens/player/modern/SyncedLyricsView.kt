@@ -336,6 +336,8 @@ private fun DrawScope.drawFadeMask(controlsFraction: Float, controlsOverlap: Flo
     )
 }
 
+// The states are read in the draw phase so that a line change does not recompose every row
+@Suppress("StateParam")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LyricLineRow(
@@ -408,6 +410,8 @@ private fun LyricLineRow(
  * Three dots for an instrumental gap. While active and playing they fill one after the other and
  * "breathe"; the animation only touches the draw phase.
  */
+// The states are read in the draw phase so that the playback clock does not recompose the row
+@Suppress("StateParam", "MutableStateParam")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun InterludeRow(
