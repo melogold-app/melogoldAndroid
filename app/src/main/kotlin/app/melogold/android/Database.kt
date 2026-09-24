@@ -56,6 +56,8 @@ import app.melogold.android.models.SongAlbumMap
 import app.melogold.android.models.SongArtistMap
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.SongWithContentLength
+import app.melogold.android.models.SongWithLastPlayed
+import app.melogold.android.models.SongWithPlayTime
 import app.melogold.android.models.SortedSongPlaylistMap
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.core.data.enums.AlbumSortBy
@@ -248,6 +250,54 @@ interface DatabaseAccessor {
     )
     @RewriteQueriesToDropUnusedColumns
     fun history(size: Int = 100): Flow<List<Song>>
+
+    // region History (REWRITE §3.2.4)
+    /** Unique songs by their last play, newest first. */
+    @Query(
+        """
+        SELECT Song.*, MAX(Event.timestamp) AS lastPlayed FROM Event
+        JOIN Song ON Song.id = Event.songId
+        GROUP BY Event.songId
+        ORDER BY lastPlayed DESC
+        LIMIT :limit
+        """
+    )
+    fun recentlyPlayed(limit: Int = 500): Flow<List<SongWithLastPlayed>>
+
+    /** Songs by how long they played since [since], longest first. */
+    @Query(
+        """
+        SELECT Song.*, SUM(Event.playTime) AS playTime FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Event.timestamp >= :since
+        GROUP BY Event.songId
+        ORDER BY playTime DESC
+        LIMIT :limit
+        """
+    )
+    fun mostPlayed(since: Long, limit: Int = 100): Flow<List<SongWithPlayTime>>
+
+    @Query("SELECT COUNT(*) FROM Event")
+    fun eventCount(): Flow<Int>
+
+    @Query("SELECT * FROM Event WHERE songId = :songId")
+    fun eventsOf(songId: String): List<Event>
+
+    @Query("SELECT * FROM Event")
+    fun allEvents(): List<Event>
+
+    @Query("DELETE FROM Event WHERE songId = :songId")
+    fun deleteEventsOf(songId: String)
+
+    @Query("DELETE FROM Event")
+    fun deleteAllEvents()
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertEvents(events: List<Event>)
+
+    @Query("UPDATE Song SET totalPlayTimeMs = :totalPlayTimeMs WHERE id = :songId")
+    fun setTotalPlayTime(songId: String, totalPlayTimeMs: Long)
+    // endregion History
 
     // region R3.5: seeds of "For you" (REWRITE §4.10.5)
     @Query("SELECT * FROM Song WHERE likedAt IS NOT NULL AND id NOT LIKE '$LOCAL_KEY_PREFIX%' ORDER BY likedAt DESC LIMIT 1")

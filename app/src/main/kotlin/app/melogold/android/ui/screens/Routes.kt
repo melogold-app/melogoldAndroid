@@ -1,12 +1,15 @@
 package app.melogold.android.ui.screens
 
+import app.melogold.android.ui.screens.library.collections.CachedScreen
+import app.melogold.android.ui.screens.library.collections.FavoritesScreen
+import app.melogold.android.ui.screens.library.collections.HistoryMode
+import app.melogold.android.ui.screens.library.collections.HistoryScreen
 import app.melogold.android.ui.shell.SearchSource
 import app.melogold.compose.routing.Route2
 import androidx.compose.runtime.Composable
 import app.melogold.android.models.Mood
 import app.melogold.android.ui.screens.album.AlbumScreen
 import app.melogold.android.ui.screens.artist.ArtistScreen
-import app.melogold.android.ui.screens.builtinplaylist.BuiltInPlaylistScreen
 import app.melogold.android.ui.screens.library.LibraryAlbumsScreen
 import app.melogold.android.ui.screens.library.LibraryArtistsScreen
 import app.melogold.android.ui.screens.library.LibraryPlaylistsScreen
@@ -62,8 +65,14 @@ fun RouteHandlerScope.GlobalRoutes() {
         ArtistScreen(browseId = browseId)
     }
 
+    // The collections of the Library (REWRITE §3.2.2–3.2.4); "Top" became History › Most played
     builtInPlaylistRoute { builtInPlaylist ->
-        BuiltInPlaylistScreen(builtInPlaylist = builtInPlaylist)
+        when (builtInPlaylist) {
+            BuiltInPlaylist.Favorites -> FavoritesScreen()
+            BuiltInPlaylist.Offline -> CachedScreen()
+            BuiltInPlaylist.History -> HistoryScreen(initialMode = HistoryMode.Recent)
+            BuiltInPlaylist.Top -> HistoryScreen(initialMode = HistoryMode.MostPlayed)
+        }
     }
 
     libraryPlaylistsRoute {

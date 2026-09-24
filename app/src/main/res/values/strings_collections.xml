@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Favorites, History and Cached (REWRITE §3.2.2–3.2.4) -->
+<resources>
+    <string name="collection_play">Play</string>
+    <string name="collection_shuffle">Shuffle</string>
+    <string name="collection_filter">Filter</string>
+    <string name="collection_filter_hint">Title or artist</string>
+    <string name="collection_no_match">Nothing found for “%1$s”</string>
+    <string name="collection_sort">Sort</string>
+    <string name="sort_date_added">Date added</string>
+    <string name="sort_title">Title</string>
+    <string name="sort_artist">Artist</string>
+    <string name="sort_duration">Duration</string>
+    <string name="sort_play_time">Listening time</string>
+
+    <string name="favorites_empty">Tap ♡ — tracks will show up here</string>
+
+    <string name="history_recent">Recent</string>
+    <string name="history_most_played">Most played</string>
+    <string name="history_week">7 days</string>
+    <string name="history_month">30 days</string>
+    <string name="history_year">Year</string>
+    <string name="history_all_time">All time</string>
+    <string name="history_today">Today</string>
+    <string name="history_yesterday">Yesterday</string>
+    <string name="history_clear">Clear history…</string>
+    <string name="history_clear_prompt">Delete all plays (%1$d)? Favorites and playlists won\'t change.</string>
+    <string name="history_clear_confirm">Clear</string>
+    <string name="history_cleared">History cleared</string>
+    <string name="history_removed">Removed from history</string>
+    <string name="history_paused">History is not saved</string>
+    <string name="history_resume">Turn on</string>
+    <string name="history_empty">Listen to something — your history will show up here</string>
+    <string name="history_period_empty">No plays in this period</string>
+
+    <string name="cached_subtitle">Tracks from the cache — the system may delete them</string>
+    <string name="cached_empty">Tracks played in full stay in the cache and play without a network</string>
+</resources>

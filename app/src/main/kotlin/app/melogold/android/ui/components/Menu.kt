@@ -9,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -43,8 +42,9 @@ class MenuState {
  * Shows the menus of [state] in an M3 modal bottom sheet (REDESIGN-M3E T2.6): 28 dp top corners,
  * a drag handle and `surfaceContainerLow`; the sheet slides away before it leaves.
  *
- * The sheet lives in its own window and places itself: it takes no modifier, as an alignment from
- * the caller's layout would move it a second time.
+ * [MenuState.isDisplayed] is the only switch: the sheet is composed while it is displayed or still
+ * sliding away, and shows itself when it enters. The sheet lives in its own window and places
+ * itself, so it takes no modifier (an alignment from the caller's layout would move it twice).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,21 +53,16 @@ fun BottomSheetMenu(state: MenuState = LocalMenuState.current) {
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
     )
-    var shown by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isDisplayed) {
         when {
-            // Displayed again while the sheet was sliding away
-            state.isDisplayed && shown -> sheetState.show()
-            state.isDisplayed -> shown = true
-            shown -> {
-                sheetState.hide()
-                shown = false
-            }
+            // Displayed again while it was sliding away
+            state.isDisplayed -> if (sheetState.isVisible) sheetState.show()
+            sheetState.isVisible -> sheetState.hide()
         }
     }
 
-    if (shown) ModalBottomSheet(
+    if (state.isDisplayed || sheetState.isVisible) ModalBottomSheet(
         onDismissRequest = state::hide,
         sheetState = sheetState,
         modifier = Modifier.testTag("menu_sheet")
