@@ -209,8 +209,7 @@ fun BaseMediaItemMenu(
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onHideFromDatabase: (() -> Unit)? = null,
     onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onShowSpeedDialog: (() -> Unit)? = null,
-    onShowNormalizationDialog: (() -> Unit)? = null
+    onShowSpeedDialog: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
 
@@ -253,7 +252,6 @@ fun BaseMediaItemMenu(
         },
         onRemoveFromQuickPicks = onRemoveFromQuickPicks,
         onShowSpeedDialog = onShowSpeedDialog,
-        onShowNormalizationDialog = onShowNormalizationDialog,
         modifier = modifier
     )
 }
@@ -276,8 +274,7 @@ fun MediaItemMenu(
     onGoToAlbum: ((String) -> Unit)? = null,
     onGoToArtist: ((String) -> Unit)? = null,
     onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onShowSpeedDialog: (() -> Unit)? = null,
-    onShowNormalizationDialog: (() -> Unit)? = null
+    onShowSpeedDialog: (() -> Unit)? = null
 ) {
     val (colorPalette, typography) = LocalAppearance.current
     val density = LocalDensity.current
@@ -528,17 +525,6 @@ fun MediaItemMenu(
                     onClick = {
                         onDismiss()
                         onShowSpeedDialog()
-                    }
-                )
-            }
-
-            onShowNormalizationDialog?.let {
-                MenuEntry(
-                    icon = R.drawable.volume_up,
-                    text = stringResource(R.string.volume_boost),
-                    onClick = {
-                        onDismiss()
-                        onShowNormalizationDialog()
                     }
                 )
             }

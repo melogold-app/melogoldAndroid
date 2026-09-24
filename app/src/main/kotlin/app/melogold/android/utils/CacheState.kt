@@ -158,16 +158,9 @@ class ConditionalCacheDataSourceFactory(
             selectedFactory =
                 if (shouldCache(dataSpec)) cacheDataSourceFactory else upstreamDataSourceFactory
 
-            return runCatching {
-                // Source is still considered 'open' even when an error occurs. See DataSource::close
-                open.set(true)
-                source.open(dataSpec)
-            }.getOrElse {
-                if (it is ReadOnlyException) {
-                    source = createSource(upstreamDataSourceFactory)
-                    source.open(dataSpec)
-                } else throw it
-            }
+            // Source is still considered 'open' even when an error occurs. See DataSource::close
+            open.set(true)
+            return source.open(dataSpec)
         }
 
         override fun getUri() = if (open.get()) source.uri else null

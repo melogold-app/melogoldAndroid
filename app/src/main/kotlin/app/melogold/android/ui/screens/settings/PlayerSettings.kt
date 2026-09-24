@@ -2,27 +2,16 @@ package app.melogold.android.ui.screens.settings
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.preferences.PlayerPreferences
-import app.melogold.android.service.PlayerService
-import app.melogold.android.ui.components.themed.SecondaryTextButton
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.utils.rememberEqualizerLauncher
 import app.melogold.core.ui.utils.isAtLeastAndroid6
@@ -33,7 +22,6 @@ import app.melogold.core.ui.utils.isAtLeastAndroid6
 fun PlayerSettings() = with(PlayerPreferences) {
     val binder = LocalPlayerServiceBinder.current
     val launchEqualizer by rememberEqualizerLauncher(audioSessionId = { binder?.player?.audioSessionId })
-    var changed by rememberSaveable { mutableStateOf(false) }
 
     SettingsCategoryScreen(title = stringResource(R.string.player)) {
         SettingsGroup(title = stringResource(R.string.player)) {
@@ -61,13 +49,6 @@ fun PlayerSettings() = with(PlayerPreferences) {
             )
 
             SwitchSettingsEntry(
-                title = stringResource(R.string.pause_minimum_volume),
-                text = stringResource(R.string.pause_minimum_volume_description),
-                isChecked = stopOnMinimumVolume,
-                onCheckedChange = { stopOnMinimumVolume = it }
-            )
-
-            SwitchSettingsEntry(
                 title = stringResource(R.string.skip_on_error),
                 text = stringResource(R.string.skip_on_error_description),
                 isChecked = skipOnError,
@@ -75,41 +56,6 @@ fun PlayerSettings() = with(PlayerPreferences) {
             )
         }
         SettingsGroup(title = stringResource(R.string.audio)) {
-            AnimatedVisibility(visible = changed) {
-                RestartPlayerSettingsEntry(
-                    onRestart = { changed = false }
-                )
-            }
-
-            SwitchSettingsEntry(
-                title = stringResource(R.string.skip_silence),
-                text = stringResource(R.string.skip_silence_description),
-                isChecked = skipSilence,
-                onCheckedChange = {
-                    skipSilence = it
-                }
-            )
-
-            AnimatedVisibility(visible = skipSilence) {
-                val initialValue by remember { derivedStateOf { minimumSilence.toFloat() / 1000L } }
-                var newValue by remember(initialValue) { mutableFloatStateOf(initialValue) }
-
-                Column {
-                    SliderSettingsEntry(
-                        title = stringResource(R.string.minimum_silence_length),
-                        text = stringResource(R.string.minimum_silence_length_description),
-                        state = newValue,
-                        onSlide = { newValue = it },
-                        onSlideComplete = {
-                            minimumSilence = newValue.toLong() * 1000L
-                            changed = true
-                        },
-                        toDisplay = { stringResource(R.string.format_ms, it.toLong()) },
-                        range = 1f..2000f
-                    )
-                }
-            }
-
             SwitchSettingsEntry(
                 title = stringResource(R.string.loudness_normalization),
                 text = stringResource(R.string.loudness_normalization_description),
@@ -136,27 +82,6 @@ fun PlayerSettings() = with(PlayerPreferences) {
             }
 
             SwitchSettingsEntry(
-                title = stringResource(R.string.bass_boost),
-                text = stringResource(R.string.bass_boost_description),
-                isChecked = bassBoost,
-                onCheckedChange = { bassBoost = it }
-            )
-
-            AnimatedVisibility(visible = bassBoost) {
-                var newValue by remember(bassBoostLevel) { mutableFloatStateOf(bassBoostLevel.toFloat()) }
-
-                SliderSettingsEntry(
-                    title = stringResource(R.string.bass_boost_level),
-                    text = stringResource(R.string.bass_boost_level_description),
-                    state = newValue,
-                    onSlide = { newValue = it },
-                    onSlideComplete = { bassBoostLevel = newValue.toInt() },
-                    toDisplay = { (it * 1000f).toInt().toString() },
-                    range = 0f..1f
-                )
-            }
-
-            SwitchSettingsEntry(
                 title = stringResource(R.string.sponsor_block),
                 text = stringResource(R.string.sponsor_block_description),
                 isChecked = sponsorBlockEnabled,
@@ -165,21 +90,11 @@ fun PlayerSettings() = with(PlayerPreferences) {
                 }
             )
 
-            EnumValueSelectorSettingsEntry(
-                title = stringResource(R.string.reverb),
-                selectedValue = reverb,
-                onValueSelect = { reverb = it },
-                valueText = { it.displayName() }
-            )
-
             SwitchSettingsEntry(
                 title = stringResource(R.string.audio_focus),
                 text = stringResource(R.string.audio_focus_description),
                 isChecked = handleAudioFocus,
-                onCheckedChange = {
-                    handleAudioFocus = it
-                    changed = true
-                }
+                onCheckedChange = { handleAudioFocus = it }
             )
 
             SettingsEntry(
@@ -189,29 +104,4 @@ fun PlayerSettings() = with(PlayerPreferences) {
             )
         }
     }
-}
-
-@Composable
-fun RestartPlayerSettingsEntry(
-    onRestart: () -> Unit,
-    modifier: Modifier = Modifier,
-    binder: PlayerService.Binder? = LocalPlayerServiceBinder.current
-) = Row(
-    horizontalArrangement = Arrangement.spacedBy(4.dp),
-    modifier = modifier
-) {
-    SettingsDescription(
-        text = stringResource(R.string.minimum_silence_length_warning),
-        important = true,
-        modifier = Modifier.weight(2f)
-    )
-    SecondaryTextButton(
-        text = stringResource(R.string.restart_service),
-        onClick = {
-            binder?.restartForegroundOrStop()?.let { onRestart() }
-        },
-        modifier = Modifier
-            .weight(1f)
-            .padding(end = 24.dp)
-    )
 }

@@ -627,12 +627,6 @@ interface DatabaseAccessor {
     @Query("SELECT loudnessDb FROM Format WHERE songId = :songId")
     fun loudnessDb(songId: String): Flow<Float?>
 
-    @Query("SELECT Song.loudnessBoost FROM Song WHERE id = :songId")
-    fun loudnessBoost(songId: String): Flow<Float?>
-
-    @Query("UPDATE Song SET loudnessBoost = :loudnessBoost WHERE id = :songId")
-    fun setLoudnessBoost(songId: String, loudnessBoost: Float?)
-
     @Query("SELECT * FROM Song WHERE title LIKE :query OR artistsText LIKE :query")
     fun search(query: String): Flow<List<Song>>
 

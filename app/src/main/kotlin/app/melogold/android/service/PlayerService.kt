@@ -12,9 +12,7 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.MediaDescription
 import android.media.MediaMetadata
-import android.media.audiofx.BassBoost
 import android.media.audiofx.LoudnessEnhancer
-import android.media.audiofx.PresetReverb
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Bundle
@@ -32,13 +30,11 @@ import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
-import androidx.media3.common.AuxEffectInfo
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
-import androidx.media3.common.audio.SonicAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
@@ -57,8 +53,6 @@ import androidx.media3.exoplayer.analytics.PlaybackStatsListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioOffloadSupportProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink.DefaultAudioProcessorChain
-import androidx.media3.exoplayer.audio.SilenceSkippingAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -95,8 +89,6 @@ import app.melogold.android.utils.get
 import app.melogold.android.utils.handleUnknownErrors
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.mediaItems
-import app.melogold.android.utils.readOnlyWhen
-import app.melogold.android.utils.setPlaybackPitch
 import app.melogold.android.utils.shouldBePlaying
 import app.melogold.android.utils.thumbnail
 import app.melogold.android.utils.timer
@@ -110,9 +102,7 @@ import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid13
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 import app.melogold.core.ui.utils.isAtLeastAndroid8
-import app.melogold.core.ui.utils.isAtLeastAndroid9
 import app.melogold.core.ui.utils.songBundle
-import app.melogold.core.ui.utils.streamVolumeFlow
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import app.melogold.providers.innertube.models.bodies.PlayerBody
@@ -234,8 +224,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     private var audioDeviceCallback: AudioDeviceCallback? = null
 
     private var loudnessEnhancer: LoudnessEnhancer? = null
-    private var bassBoost: BassBoost? = null
-    private var reverb: PresetReverb? = null
 
     private val binder = Binder()
 
@@ -304,7 +292,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             .setUsePlatformDiagnostics(false)
             .build()
             .apply {
-                skipSilenceEnabled = PlayerPreferences.skipSilence
                 addListener(this@PlayerService)
                 addAnalyticsListener(
                     PlaybackStatsListener(
@@ -355,20 +342,13 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                 maybeShowSongCoverInLockScreen()
             }
 
-            subscribe(PlayerPreferences.bassBoostLevelProperty) { maybeBassBoost() }
-            subscribe(PlayerPreferences.bassBoostProperty) { maybeBassBoost() }
-            subscribe(PlayerPreferences.reverbProperty) { maybeReverb() }
             subscribe(PlayerPreferences.isInvincibilityEnabledProperty) {
                 this@PlayerService.isInvincibilityEnabled = it
-            }
-            subscribe(PlayerPreferences.pitchProperty) {
-                player.setPlaybackPitch(it.coerceAtLeast(0.01f))
             }
             subscribe(PlayerPreferences.queueLoopEnabledProperty) { updateRepeatMode() }
             subscribe(PlayerPreferences.resumePlaybackWhenDeviceConnectedProperty) {
                 maybeResumePlaybackWhenDeviceConnected()
             }
-            subscribe(PlayerPreferences.skipSilenceProperty) { player.skipSilenceEnabled = it }
             subscribe(PlayerPreferences.speedProperty) {
                 player.setPlaybackSpeed(it.coerceAtLeast(0.01f))
             }
@@ -379,20 +359,8 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             subscribe(PlayerPreferences.volumeNormalizationBaseGainProperty) { maybeNormalizeVolume() }
             subscribe(PlayerPreferences.volumeNormalizationProperty) { maybeNormalizeVolume() }
             subscribe(PlayerPreferences.sponsorBlockEnabledProperty) { maybeSponsorBlock() }
-
-            launch {
-                val audioManager = getSystemService<AudioManager>()
-                val stream = AudioManager.STREAM_MUSIC
-
-                val min = when {
-                    audioManager == null -> 0
-                    isAtLeastAndroid9 -> audioManager.getStreamMinVolume(stream)
-                    else -> 0
-                }
-
-                streamVolumeFlow(stream).collectLatest {
-                    if (PlayerPreferences.stopOnMinimumVolume && it == min) handler.post(player::pause)
-                }
+            subscribe(PlayerPreferences.handleAudioFocusProperty) {
+                player.setAudioAttributes(player.audioAttributes, it)
             }
         }
     }
@@ -678,13 +646,11 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                         }
                     }
 
-                    Database.loudnessBoost(songId).cancellable().collectLatest { boost ->
-                        withContext(Dispatchers.Main) {
-                            loudnessEnhancer?.setTargetGain(
-                                PlayerPreferences.volumeNormalizationBaseGain.toMb() + boost.toMb() - loudnessMb
-                            )
-                            loudnessEnhancer?.enabled = true
-                        }
+                    withContext(Dispatchers.Main) {
+                        loudnessEnhancer?.setTargetGain(
+                            PlayerPreferences.volumeNormalizationBaseGain.toMb() - loudnessMb
+                        )
+                        loudnessEnhancer?.enabled = true
                     }
                 }
             }
@@ -765,45 +731,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                         it.printStackTrace()
                     }
             }
-        }
-    }
-
-    private fun maybeBassBoost() {
-        if (!PlayerPreferences.bassBoost) {
-            runCatching {
-                bassBoost?.enabled = false
-                bassBoost?.release()
-            }
-            bassBoost = null
-            maybeNormalizeVolume()
-            return
-        }
-
-        runCatching {
-            if (bassBoost == null) bassBoost = BassBoost(0, player.audioSessionId)
-            bassBoost?.setStrength(PlayerPreferences.bassBoostLevel.toShort())
-            bassBoost?.enabled = true
-        }.onFailure {
-            toast(getString(R.string.error_bassboost_init))
-        }
-    }
-
-    private fun maybeReverb() {
-        if (PlayerPreferences.reverb == PlayerPreferences.Reverb.None) {
-            runCatching {
-                reverb?.enabled = false
-                player.clearAuxEffectInfo()
-                reverb?.release()
-            }
-            reverb = null
-            return
-        }
-
-        runCatching {
-            if (reverb == null) reverb = PresetReverb(1, player.audioSessionId)
-            reverb?.preset = PlayerPreferences.reverb.preset
-            reverb?.enabled = true
-            reverb?.id?.let { player.setAuxEffectInfo(AuxEffectInfo(it, 1f)) }
         }
     }
 
@@ -1075,33 +1002,12 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             enableFloatOutput: Boolean,
             enableAudioTrackPlaybackParams: Boolean
         ): AudioSink {
-            val minimumSilenceDuration =
-                PlayerPreferences.minimumSilence.coerceIn(1000L..2_000_000L)
-
             @Suppress("DEPRECATION")
             return DefaultAudioSink.Builder(applicationContext)
                 .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                 .setAudioOffloadSupportProvider(
                     DefaultAudioOffloadSupportProvider(applicationContext)
-                )
-                .setAudioProcessorChain(
-                    DefaultAudioProcessorChain(
-                        arrayOf(),
-                        SilenceSkippingAudioProcessor(
-                            /* minimumSilenceDurationUs = */
-                            minimumSilenceDuration,
-                            /* silenceRetentionRatio = */
-                            0.01f,
-                            /* maxSilenceToKeepDurationUs = */
-                            minimumSilenceDuration,
-                            /* minVolumeToKeepPercentageWhenMuting = */
-                            0,
-                            /* silenceThresholdLevel = */
-                            256
-                        ),
-                        SonicAudioProcessor()
-                    )
                 )
                 .build()
                 .apply {
@@ -1340,7 +1246,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             uriCache: UriCache<String, Long?> = UriCache()
         ): DataSource.Factory = ResolvingDataSource.Factory(
             ConditionalCacheDataSourceFactory(
-                cacheDataSourceFactory = cache.readOnlyWhen { PlayerPreferences.pauseCache }.asDataSource,
+                cacheDataSourceFactory = cache.asDataSource,
                 upstreamDataSourceFactory = context.defaultDataSource,
                 shouldCache = { !it.isLocal }
             )

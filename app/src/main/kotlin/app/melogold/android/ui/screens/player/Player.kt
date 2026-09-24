@@ -68,7 +68,6 @@ import app.melogold.android.models.ui.toUiMedia
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.service.PlayerService
-import app.melogold.android.transaction
 import app.melogold.android.ui.components.BottomSheet
 import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.components.LocalMenuState
@@ -356,7 +355,6 @@ fun Player(
         }
     ) {
         var audioDialogOpen by rememberSaveable { mutableStateOf(false) }
-        var boostDialogOpen by rememberSaveable { mutableStateOf(false) }
 
         val openPlayerMenu: () -> Unit = {
             mediaItem?.let {
@@ -365,10 +363,7 @@ fun Player(
                         onDismiss = menuState::hide,
                         mediaItem = it,
                         binder = binder,
-                        onShowSpeedDialog = { audioDialogOpen = true },
-                        onShowNormalizationDialog = {
-                            boostDialogOpen = true
-                        }.takeIf { volumeNormalization }
+                        onShowSpeedDialog = { audioDialogOpen = true }
                     )
                 }
             }
@@ -411,75 +406,14 @@ fun Player(
                 steps = 39,
                 label = stringResource(R.string.playback_speed)
             )
-            SliderDialogBody(
-                provideState = { remember(pitch) { mutableFloatStateOf(pitch) } },
-                onSlideComplete = { pitch = it },
-                min = 0f,
-                max = 2f,
-                toDisplay = {
-                    if (it <= 0.01f) stringResource(R.string.minimum_speed_value)
-                    else stringResource(R.string.format_multiplier, "%.2f".format(it))
-                },
-                steps = 39,
-                label = stringResource(R.string.playback_pitch)
-            )
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 SecondaryTextButton(
                     text = stringResource(R.string.reset),
-                    onClick = {
-                        speed = 1f
-                        pitch = 1f
-                    }
+                    onClick = { speed = 1f }
                 )
-            }
-        }
-
-        if (boostDialogOpen) {
-            fun submit(state: Float) = transaction {
-                mediaItem?.mediaId?.let { mediaId ->
-                    Database.setLoudnessBoost(
-                        songId = mediaId,
-                        loudnessBoost = state.takeUnless { it == 0f }
-                    )
-                }
-            }
-
-            SliderDialog(
-                onDismiss = { boostDialogOpen = false },
-                title = stringResource(R.string.volume_boost)
-            ) {
-                SliderDialogBody(
-                    provideState = {
-                        val state = remember { mutableFloatStateOf(0f) }
-
-                        LaunchedEffect(mediaItem) {
-                            mediaItem?.mediaId?.let { mediaId ->
-                                Database
-                                    .loudnessBoost(mediaId)
-                                    .distinctUntilChanged()
-                                    .collect { state.floatValue = it ?: 0f }
-                            }
-                        }
-
-                        state
-                    },
-                    onSlideComplete = { submit(it) },
-                    min = -20f,
-                    max = 20f,
-                    toDisplay = { stringResource(R.string.format_db, "%.2f".format(it)) }
-                )
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    SecondaryTextButton(
-                        text = stringResource(R.string.reset),
-                        onClick = { submit(0f) }
-                    )
-                }
             }
         }
     }
@@ -655,8 +589,7 @@ private fun PlayerMenu(
     binder: PlayerService.Binder,
     mediaItem: MediaItem,
     onDismiss: () -> Unit,
-    onShowSpeedDialog: (() -> Unit)? = null,
-    onShowNormalizationDialog: (() -> Unit)? = null
+    onShowSpeedDialog: (() -> Unit)? = null
 ) {
     val launchEqualizer by rememberEqualizerLauncher(audioSessionId = { binder.player.audioSessionId })
 
@@ -670,8 +603,7 @@ private fun PlayerMenu(
         onGoToEqualizer = launchEqualizer,
         onShowSleepTimer = {},
         onDismiss = onDismiss,
-        onShowSpeedDialog = onShowSpeedDialog,
-        onShowNormalizationDialog = onShowNormalizationDialog
+        onShowSpeedDialog = onShowSpeedDialog
     )
 }
 
