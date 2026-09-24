@@ -9,7 +9,9 @@ import app.melogold.compose.routing.Route2
 import androidx.compose.runtime.Composable
 import app.melogold.android.models.Mood
 import app.melogold.android.ui.screens.album.AlbumScreen
+import app.melogold.android.ui.screens.artist.ArtistItemsScreen
 import app.melogold.android.ui.screens.artist.ArtistScreen
+import app.melogold.android.ui.screens.library.collections.ArtistFavoritesScreen
 import app.melogold.android.ui.screens.library.LibraryAlbumsScreen
 import app.melogold.android.ui.screens.library.LibraryArtistsScreen
 import app.melogold.android.ui.screens.library.LibraryPlaylistsScreen
@@ -38,6 +40,8 @@ annotation class Route
 
 val albumRoute = Route1<String>("albumRoute")
 val artistRoute = Route1<String>("artistRoute")
+val artistItemsRoute = Route4<String, String?, String, String?>("artistItemsRoute")
+val artistFavoritesRoute = Route2<String, String>("artistFavoritesRoute")
 val builtInPlaylistRoute = Route1<BuiltInPlaylist>("builtInPlaylistRoute")
 val localPlaylistRoute = Route1<Long>("localPlaylistRoute")
 val logsRoute = Route0("logsRoute")
@@ -63,6 +67,14 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     artistRoute { browseId ->
         ArtistScreen(browseId = browseId)
+    }
+
+    artistItemsRoute { browseId, params, title, subtitle ->
+        ArtistItemsScreen(browseId = browseId, params = params, title = title, subtitle = subtitle)
+    }
+
+    artistFavoritesRoute { artistId, name ->
+        ArtistFavoritesScreen(artistId = artistId, name = name)
     }
 
     // The collections of the Library (REWRITE §3.2.2–3.2.4); "Top" became History › Most played

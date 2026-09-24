@@ -222,7 +222,10 @@ object Innertube {
         val albumsEndpoint: NavigationEndpoint.Endpoint.Browse?,
         val singles: List<AlbumItem>?,
         val singlesEndpoint: NavigationEndpoint.Endpoint.Browse?,
-        val subscribersCountText: String?
+        val subscribersCountText: String?,
+        val videos: List<VideoItem>? = null,
+        val videosEndpoint: NavigationEndpoint.Endpoint.Browse? = null,
+        val relatedArtists: List<ArtistItem>? = null
     )
 
     data class PlaylistOrAlbumPage(

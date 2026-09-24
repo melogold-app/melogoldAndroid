@@ -14,9 +14,6 @@ object UIStatePreferences : GlobalPreferencesHolder() {
     var homeScreenTabIndex by int(0)
     var searchResultScreenTabIndex by int(0)
 
-    var artistScreenTabIndexProperty = int(0)
-    var artistScreenTabIndex by artistScreenTabIndexProperty
-
     var playlistsAsGrid by boolean(true)
 
     /** The two-sources tip of Search was dismissed (`search.tipDismissed`, REWRITE §3.1.1). */

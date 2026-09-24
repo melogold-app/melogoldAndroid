@@ -78,6 +78,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -234,8 +235,14 @@ fun CollectionHeader(
     subtitle: AnnotatedString? = null,
     status: (@Composable () -> Unit)? = null,
     compact: Boolean = false,
+    centered: Boolean = false,
     onTitleBottom: (Int) -> Unit = { }
-) = Column(modifier = modifier.fillMaxWidth()) {
+) = Column(
+    modifier = modifier.fillMaxWidth(),
+    horizontalAlignment = if (centered && !compact) Alignment.CenterHorizontally else Alignment.Start
+) {
+    val textAlign = if (centered && !compact) TextAlign.Center else TextAlign.Start
+
     if (compact) Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -259,6 +266,7 @@ fun CollectionHeader(
         HeaderTitle(
             title = title,
             style = MaterialTheme.typography.headlineMediumEmphasized,
+            textAlign = textAlign,
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .onGloballyPositioned { onTitleBottom((it.positionInParent().y + it.size.height).roundToInt()) }
@@ -266,6 +274,7 @@ fun CollectionHeader(
 
         if (subtitle != null) HeaderSubtitle(
             subtitle = subtitle,
+            textAlign = textAlign,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp)
         )
     }
@@ -281,11 +290,13 @@ fun CollectionHeader(
 private fun HeaderTitle(
     title: String,
     style: TextStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
 ) = Text(
     text = title,
     style = style,
     color = MaterialTheme.colorScheme.onSurface,
+    textAlign = textAlign,
     maxLines = 3,
     overflow = TextOverflow.Ellipsis,
     modifier = modifier.semantics { heading() }
@@ -294,11 +305,13 @@ private fun HeaderTitle(
 @Composable
 private fun HeaderSubtitle(
     subtitle: AnnotatedString,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
 ) = Text(
     text = subtitle,
     style = MaterialTheme.typography.bodyMedium,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textAlign = textAlign,
     modifier = modifier
 )
 

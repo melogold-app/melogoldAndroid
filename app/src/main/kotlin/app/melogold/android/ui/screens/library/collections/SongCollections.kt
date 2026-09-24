@@ -105,6 +105,32 @@ fun FavoritesScreen() = RouteHandler {
     }
 }
 
+/** An artist's tracks in Favorites: "In your library › All" of the artist (REWRITE §3.7.1). */
+class ArtistFavoritesModel(artistId: String) : ScreenModel() {
+    val songs: StateFlow<List<Song>?> = Database
+        .artistFavorites(artistId)
+        .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
+}
+
+@Route
+@Composable
+fun ArtistFavoritesScreen(artistId: String, name: String) = RouteHandler {
+    GlobalRoutes()
+
+    Content {
+        val model = rememberScreenModel("artist_favorites/$artistId") { ArtistFavoritesModel(artistId) }
+        val songs by model.songs.collectAsState()
+
+        SongCollection(
+            title = name,
+            songs = songs,
+            empty = R.string.favorites_empty,
+            note = R.string.artist_in_library_note,
+            onBack = pop
+        )
+    }
+}
+
 /**
  * Tracks from the cache, the "Downloads" of the Library until real downloads (REDESIGN §2.3):
  * the subtitle says the system may delete them.

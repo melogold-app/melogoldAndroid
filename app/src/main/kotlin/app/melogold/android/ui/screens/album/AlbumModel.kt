@@ -6,7 +6,9 @@ import app.melogold.android.models.Song
 import app.melogold.android.models.SongAlbumMap
 import app.melogold.android.query
 import app.melogold.android.transaction
+import app.melogold.android.ui.model.Fetch
 import app.melogold.android.ui.model.Loadable
+import app.melogold.android.ui.model.STALE_AFTER_MS
 import app.melogold.android.ui.model.ScreenModel
 import app.melogold.android.ui.model.classify
 import app.melogold.android.utils.asMediaItem
@@ -24,7 +26,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val STALE_AFTER_MS = 24 * 60 * 60 * 1000L
 private const val KEEP_WHILE_HIDDEN_MS = 5_000L
 
 /** A name in "Artist · 2024 · …": a link when [id] is known, plain text (" & ") otherwise. */
@@ -42,12 +43,6 @@ data class AlbumDetails(
     val related: List<Innertube.AlbumItem>,
     val relatedTitle: String?
 )
-
-private sealed interface Fetch {
-    data object Running : Fetch
-    data object Done : Fetch
-    data class Failed(val kind: Loadable.Error.Kind) : Fetch
-}
 
 /**
  * An album, read by §4.11.2: Room first; the page is fetched on every visit for the sections only

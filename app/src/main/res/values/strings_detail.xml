@@ -14,4 +14,20 @@
         <item quantity="other">%1$d tracks added to “%2$s”</item>
     </plurals>
     <string name="add_to_playlist_all_present">All tracks are already in “%1$s”</string>
+
+    <string name="artist_radio">Radio</string>
+    <string name="artist_subscribe">Subscribe</string>
+    <string name="artist_subscribed">Subscribed</string>
+    <string name="artist_subscribed_message">Subscribed</string>
+    <string name="artist_unsubscribed_message">Unsubscribed</string>
+    <string name="artist_popular">Popular</string>
+    <string name="artist_albums">Albums</string>
+    <string name="artist_singles">Singles &amp; EPs</string>
+    <string name="artist_videos">Videos</string>
+    <string name="artist_in_library">In your library</string>
+    <string name="artist_in_library_note">Their tracks in Favorites</string>
+    <string name="artist_related">Fans also like</string>
+    <string name="artist_about">About</string>
+    <string name="artist_all">All</string>
+    <string name="artist_all_count">All (%1$d)</string>
 </resources>

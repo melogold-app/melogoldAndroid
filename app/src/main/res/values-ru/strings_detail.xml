@@ -15,4 +15,20 @@
         <item quantity="other">%1$d трека добавлено в „%2$s“</item>
     </plurals>
     <string name="add_to_playlist_all_present">Все треки уже есть в „%1$s“</string>
+
+    <string name="artist_radio">Радио</string>
+    <string name="artist_subscribe">Подписаться</string>
+    <string name="artist_subscribed">Вы подписаны</string>
+    <string name="artist_subscribed_message">Вы подписались</string>
+    <string name="artist_unsubscribed_message">Подписка отменена</string>
+    <string name="artist_popular">Популярное</string>
+    <string name="artist_albums">Альбомы</string>
+    <string name="artist_singles">Синглы и EP</string>
+    <string name="artist_videos">Клипы</string>
+    <string name="artist_in_library">В вашей библиотеке</string>
+    <string name="artist_in_library_note">Треки исполнителя из Избранного</string>
+    <string name="artist_related">Похожие исполнители</string>
+    <string name="artist_about">Об исполнителе</string>
+    <string name="artist_all">Все</string>
+    <string name="artist_all_count">Все (%1$d)</string>
 </resources>

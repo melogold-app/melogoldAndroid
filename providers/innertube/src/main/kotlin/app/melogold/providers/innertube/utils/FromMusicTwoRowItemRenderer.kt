@@ -69,3 +69,29 @@ fun Innertube.PlaylistItem.Companion.from(renderer: MusicTwoRowItemRenderer) =
             ?.thumbnails
             ?.firstOrNull()
     ).takeIf { it.info?.endpoint?.browseId != null }
+
+/** A video of a carousel (an artist's "Videos"): the item itself is the watch link. */
+fun Innertube.VideoItem.Companion.from(renderer: MusicTwoRowItemRenderer) = Innertube.VideoItem(
+    info = Innertube.Info(
+        name = renderer.title?.runs?.firstOrNull()?.text,
+        endpoint = renderer.navigationEndpoint?.watchEndpoint
+    ),
+    authors = renderer
+        .subtitle
+        ?.runs
+        ?.filter { it.navigationEndpoint?.browseEndpoint != null }
+        ?.map(Innertube::Info),
+    viewsText = renderer
+        .subtitle
+        ?.runs
+        ?.lastOrNull()
+        ?.takeIf { it.navigationEndpoint == null }
+        ?.text,
+    durationText = null,
+    thumbnail = renderer
+        .thumbnailRenderer
+        ?.musicThumbnailRenderer
+        ?.thumbnail
+        ?.thumbnails
+        ?.maxByOrNull { (it.width ?: 0) * (it.height ?: 0) }
+).takeIf { it.info?.endpoint?.videoId != null }

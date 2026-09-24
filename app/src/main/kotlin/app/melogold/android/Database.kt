@@ -558,6 +558,20 @@ interface DatabaseAccessor {
     @RewriteQueriesToDropUnusedColumns
     fun artistSongs(artistId: String): Flow<List<Song>>
 
+    // "In your library" of an artist (REWRITE §3.7.1): their tracks in Favorites, newest like first
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM Song
+        JOIN SongArtistMap ON Song.id = SongArtistMap.songId
+        WHERE SongArtistMap.artistId = :artistId AND
+        likedAt IS NOT NULL
+        ORDER BY likedAt DESC
+        """
+    )
+    @RewriteQueriesToDropUnusedColumns
+    fun artistFavorites(artistId: String): Flow<List<Song>>
+
     @Query("SELECT * FROM Format WHERE songId = :songId")
     fun format(songId: String): Flow<Format?>
 

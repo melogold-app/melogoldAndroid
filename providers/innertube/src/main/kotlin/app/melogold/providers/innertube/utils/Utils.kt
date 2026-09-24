@@ -3,7 +3,7 @@ package app.melogold.providers.innertube.utils
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.SectionListRenderer
 
-private val SectionListRenderer.Content.title: String?
+internal val SectionListRenderer.Content.title: String?
     get() {
         val title = musicCarouselShelfRenderer
             ?.header

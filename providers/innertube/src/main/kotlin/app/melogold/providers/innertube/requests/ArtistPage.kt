@@ -5,8 +5,10 @@ import app.melogold.providers.innertube.models.BrowseResponse
 import app.melogold.providers.innertube.models.Context
 import app.melogold.providers.innertube.models.MusicCarouselShelfRenderer
 import app.melogold.providers.innertube.models.MusicShelfRenderer
+import app.melogold.providers.innertube.models.SectionListRenderer
 import app.melogold.providers.innertube.models.bodies.BrowseBody
 import app.melogold.providers.innertube.utils.findSectionByTitle
+import app.melogold.providers.innertube.utils.title
 import app.melogold.providers.innertube.utils.from
 import app.melogold.providers.utils.runCatchingCancellable
 import io.ktor.client.call.body
@@ -33,28 +35,35 @@ suspend fun Innertube.artistPage(body: BrowseBody) = runCatchingCancellable {
         }
     }
 
-    suspend fun findSectionByTitle(text: String) = response
-        .contents
+    fun BrowseResponse.sections() = contents
         ?.singleColumnBrowseResultsRenderer
         ?.tabs
         ?.get(0)
         ?.tabRenderer
         ?.content
         ?.sectionListRenderer
-        ?.findSectionByTitle(text) ?: responseNoLang.await()
-        .contents
-        ?.singleColumnBrowseResultsRenderer
-        ?.tabs
-        ?.get(0)
-        ?.tabRenderer
-        ?.content
-        ?.sectionListRenderer
-        ?.findSectionByTitle(text)
+
+    // The titles are English only in the response without a language: find the section there,
+    // then take the same one from the localized response, whose items read "1,2 млн просмотров"
+    suspend fun findSectionByTitle(text: String): SectionListRenderer.Content? {
+        val localized = response.sections()
+        localized?.findSectionByTitle(text)?.let { return it }
+
+        val english = responseNoLang.await().sections()?.contents ?: return null
+        val index = english.indexOfFirst { it.title == text }
+            .takeIf { it >= 0 }
+            ?: english.indexOfFirst { it.title?.contains(text, ignoreCase = true) == true }
+        val section = english.getOrNull(index) ?: return null
+
+        return localized?.contents?.getOrNull(index)?.takeIf { it.isSameKindAs(section) } ?: section
+    }
 
     val songsSection = findSectionByTitle("Songs")?.musicShelfRenderer
     val albumsSection = findSectionByTitle("Albums")?.musicCarouselShelfRenderer
     val singlesSection = (findSectionByTitle("Singles & EPs") ?: findSectionByTitle("Singles"))
         ?.musicCarouselShelfRenderer
+    val videosSection = findSectionByTitle("Videos")?.musicCarouselShelfRenderer
+    val relatedSection = findSectionByTitle("Fans might also like")?.musicCarouselShelfRenderer
 
     Innertube.ArtistPage(
         name = response
@@ -130,6 +139,27 @@ suspend fun Innertube.artistPage(body: BrowseBody) = runCatchingCancellable {
             ?.subscriptionButton
             ?.subscribeButtonRenderer
             ?.subscriberCountText
-            ?.text
+            ?.text,
+        videos = videosSection
+            ?.contents
+            ?.mapNotNull(MusicCarouselShelfRenderer.Content::musicTwoRowItemRenderer)
+            ?.mapNotNull(Innertube.VideoItem::from),
+        videosEndpoint = videosSection
+            ?.header
+            ?.musicCarouselShelfBasicHeaderRenderer
+            ?.moreContentButton
+            ?.buttonRenderer
+            ?.navigationEndpoint
+            ?.browseEndpoint,
+        relatedArtists = relatedSection
+            ?.contents
+            ?.mapNotNull(MusicCarouselShelfRenderer.Content::musicTwoRowItemRenderer)
+            ?.mapNotNull(Innertube.ArtistItem::from)
     )
 }
+
+private fun SectionListRenderer.Content.isSameKindAs(other: SectionListRenderer.Content) =
+    (musicShelfRenderer != null) == (other.musicShelfRenderer != null) &&
+        (musicCarouselShelfRenderer != null) == (other.musicCarouselShelfRenderer != null) &&
+        musicCarouselShelfRenderer?.contents?.size == other.musicCarouselShelfRenderer?.contents?.size &&
+        musicShelfRenderer?.contents?.size == other.musicShelfRenderer?.contents?.size

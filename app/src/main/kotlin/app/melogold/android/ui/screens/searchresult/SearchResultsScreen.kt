@@ -66,6 +66,7 @@ import app.melogold.android.ui.kit.ErrorState
 import app.melogold.android.ui.kit.SectionError
 import app.melogold.android.ui.kit.SectionHeader
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.VideoThumbnail
 import app.melogold.android.ui.model.Loadable
 import app.melogold.android.ui.model.Paged
 import app.melogold.android.ui.model.PagedLoader
@@ -89,8 +90,6 @@ import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.toImmutableList
 
 private const val LOAD_MORE_AHEAD = 5
-private val VideoThumbnailWidth = 114.dp
-private val VideoThumbnailHeight = 64.dp
 
 /**
  * `searchResultRoute` (REWRITE §3.1.3, M3 search guidelines): the query stays visible on top —
@@ -611,45 +610,6 @@ private fun ResultRow(
             overflow = TextOverflow.Ellipsis
         )
     }
-}
-
-/**
- * A 16:9 preview with its duration, "LIVE" or video count at the bottom end (REWRITE §3.11.2).
- */
-@Composable
-private fun VideoThumbnail(
-    url: String?,
-    badge: String?,
-    live: Boolean = false,
-    width: Dp = VideoThumbnailWidth,
-    height: Dp = VideoThumbnailHeight
-) = Box(
-    modifier = Modifier
-        .size(width = width, height = height)
-        .clip(RoundedCornerShape(8.dp))
-        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-) {
-    val widthPx = width.px
-    if (url != null) AsyncImage(
-        model = url.thumbnail(widthPx),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.fillMaxSize()
-    )
-    if (!badge.isNullOrBlank()) Text(
-        text = badge,
-        style = MaterialTheme.typography.labelSmall,
-        color = if (live) MaterialTheme.colorScheme.onErrorContainer else Color.White,
-        maxLines = 1,
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(4.dp)
-            .background(
-                color = if (live) MaterialTheme.colorScheme.errorContainer else Color.Black.copy(alpha = 0.75f),
-                shape = RoundedCornerShape(4.dp)
-            )
-            .padding(horizontal = 4.dp, vertical = 1.dp)
-    )
 }
 
 @Composable
