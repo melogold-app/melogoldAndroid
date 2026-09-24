@@ -6,7 +6,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -29,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.melogold.android.R
 import app.melogold.android.ui.components.m3e.IconShape
@@ -109,14 +113,7 @@ fun ErrorState(
         )
 
         Text(
-            text = stringResource(
-                when (kind) {
-                    Loadable.Error.Kind.Offline -> R.string.kit_error_offline
-                    Loadable.Error.Kind.Blocked -> R.string.kit_error_blocked
-                    Loadable.Error.Kind.Parser -> R.string.kit_error_parser
-                    Loadable.Error.Kind.Unknown -> R.string.kit_error_unknown
-                }
-            ),
+            text = stringResource(kind.message),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
@@ -166,4 +163,67 @@ fun StaleChip(
         },
         modifier = modifier
     )
+}
+
+/**
+ * A failed section on a screen with several independent sections (REWRITE §3.4): one line and
+ * [Retry][onRetry] in place of the section.
+ */
+@Composable
+fun SectionError(
+    kind: Loadable.Error.Kind,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) = Row(
+    modifier = modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp)
+) {
+    Icon(
+        painter = painterResource(
+            if (kind == Loadable.Error.Kind.Offline) R.drawable.ms_cloud_off else R.drawable.ms_error
+        ),
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.size(20.dp)
+    )
+    Text(
+        text = stringResource(kind.message),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.weight(1f)
+    )
+    TextButton(onClick = onRetry) { Text(stringResource(R.string.kit_retry)) }
+}
+
+private val Loadable.Error.Kind.message
+    get() = when (this) {
+        Loadable.Error.Kind.Offline -> R.string.kit_error_offline
+        Loadable.Error.Kind.Blocked -> R.string.kit_error_blocked
+        Loadable.Error.Kind.Parser -> R.string.kit_error_parser
+        Loadable.Error.Kind.Unknown -> R.string.kit_error_unknown
+    }
+
+/**
+ * One section of a screen whose sections load on their own: a short loading area, [SectionError],
+ * or [content].
+ */
+@Composable
+fun <T> LoadableSection(
+    loadable: Loadable<T>,
+    onRetry: () -> Unit,
+    loadingHeight: Dp,
+    content: @Composable (Loadable.Content<T>) -> Unit
+) = when (loadable) {
+    Loadable.Loading -> Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(loadingHeight),
+        contentAlignment = Alignment.Center
+    ) {
+        DelayedLoadingIndicator()
+    }
+
+    is Loadable.Error -> SectionError(kind = loadable.kind, onRetry = onRetry)
+    is Loadable.Content -> content(loadable)
 }

@@ -248,6 +248,39 @@ interface DatabaseAccessor {
     @RewriteQueriesToDropUnusedColumns
     fun history(size: Int = 100): Flow<List<Song>>
 
+    // region R3.5: seeds of "For you" (REWRITE §4.10.5)
+    @Query("SELECT * FROM Song WHERE likedAt IS NOT NULL AND id NOT LIKE '$LOCAL_KEY_PREFIX%' ORDER BY likedAt DESC LIMIT 1")
+    suspend fun lastLikedSong(): Song?
+
+    @Query(
+        """
+        SELECT Song.* FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Event.timestamp >= :since AND Song.id NOT LIKE '$LOCAL_KEY_PREFIX%'
+        GROUP BY Event.songId
+        ORDER BY SUM(Event.playTime) DESC
+        LIMIT 1
+        """
+    )
+    @RewriteQueriesToDropUnusedColumns
+    suspend fun mostPlayedSongSince(since: Long): Song?
+
+    @Query(
+        """
+        SELECT Song.* FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Song.id NOT LIKE '$LOCAL_KEY_PREFIX%'
+        ORDER BY Event.timestamp DESC
+        LIMIT 1
+        """
+    )
+    @RewriteQueriesToDropUnusedColumns
+    suspend fun lastPlayedSong(): Song?
+
+    @Query("SELECT id FROM Song WHERE blacklisted = 1")
+    suspend fun hiddenSongIds(): List<String>
+    // endregion R3.5
+
     @Query("DELETE FROM QueuedMediaItem")
     fun clearQueue()
 

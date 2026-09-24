@@ -34,6 +34,8 @@ sealed interface Loadable<out T> {
 
 val <T> Loadable<T>.valueOrNull get() = (this as? Loadable.Content<T>)?.value
 
+val Loadable<*>.isRefreshing get() = (this as? Loadable.Content<*>)?.refreshing == true
+
 /**
  * Sorts a failure into what the user can do about it.
  */

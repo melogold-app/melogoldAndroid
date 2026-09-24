@@ -1,8 +1,6 @@
 package app.melogold.android.ui.screens.trends
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -13,13 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -29,19 +22,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
-import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.toUiMood
-import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.LoadableContent
 import app.melogold.android.ui.kit.MoodTile
 import app.melogold.android.ui.kit.SectionHeader
 import app.melogold.android.ui.kit.StaleChip
-import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.TrackGrid
 import app.melogold.android.ui.model.Loadable
 import app.melogold.android.ui.model.rememberScreenModel
 import app.melogold.android.ui.screens.Route
@@ -51,14 +40,9 @@ import app.melogold.android.ui.screens.playlistRoute
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
 import app.melogold.android.ui.shell.TopLevelDestination
-import app.melogold.android.utils.asMediaItem
-import app.melogold.android.utils.forcePlayAtIndex
-import app.melogold.android.utils.playingSong
 import app.melogold.compose.routing.RouteHandlerScope
 import app.melogold.providers.innertube.Innertube
 
-private const val TRENDING_ROWS = 4
-private val TrackRowHeight = 72.dp
 private val MoodTileMinWidth = 168.dp
 
 /**
@@ -144,7 +128,7 @@ private fun TrendsContent(
                 )
             }
             item(key = "trending") {
-                TrendingGrid(songs = page.trending.songs, itemWidth = trackWidth)
+                TrackGrid(songs = page.trending.songs, itemWidth = trackWidth, numbered = true)
             }
         }
 
@@ -179,57 +163,5 @@ private fun TrendsContent(
         }
 
         item(key = "bottom") { Spacer(Modifier.height(16.dp)) }
-    }
-}
-
-/**
- * "Trending": four rows that scroll sideways, the next column peeking in. A tap plays the chart
- * from that track.
- */
-@Composable
-private fun TrendingGrid(
-    songs: List<Innertube.SongItem>,
-    itemWidth: Dp
-) {
-    val binder = LocalPlayerServiceBinder.current
-    val menuState = LocalMenuState.current
-    val (currentMediaId, playing) = playingSong(binder)
-    val gridState = rememberLazyGridState()
-
-    LazyHorizontalGrid(
-        state = gridState,
-        rows = GridCells.Fixed(TRENDING_ROWS),
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        flingBehavior = rememberSnapFlingBehavior(
-            lazyGridState = gridState,
-            snapPosition = SnapPosition.Start
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(TrackRowHeight * TRENDING_ROWS)
-    ) {
-        itemsIndexed(items = songs, key = { _, song -> song.key }) { index, song ->
-            TrackRow(
-                title = song.info?.name.orEmpty(),
-                subtitle = song.authors?.joinToString { it.name.orEmpty() },
-                artworkUrl = song.thumbnail?.url,
-                number = index + 1,
-                explicit = song.explicit,
-                isPlaying = playing && currentMediaId == song.key,
-                onClick = {
-                    binder?.stopRadio()
-                    binder?.player?.forcePlayAtIndex(songs.map { it.asMediaItem }, index)
-                },
-                onMenu = {
-                    menuState.display {
-                        NonQueuedMediaItemMenu(
-                            onDismiss = menuState::hide,
-                            mediaItem = song.asMediaItem
-                        )
-                    }
-                },
-                modifier = Modifier.width(itemWidth)
-            )
-        }
     }
 }

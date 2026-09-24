@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- New (REWRITE §3.4) -->
+<resources>
+    <string name="whatsnew_new_releases">New albums &amp; singles</string>
+    <string name="whatsnew_for_you">For you</string>
+    <string name="whatsnew_play_all">Play all</string>
+    <string name="whatsnew_based_on">Based on: %1$s</string>
+    <string name="whatsnew_similar_artists">Similar artists</string>
+    <string name="whatsnew_similar_albums">Similar albums</string>
+    <string name="whatsnew_playlists_for_you">Playlists for you</string>
+    <string name="whatsnew_no_history">Play a couple of tracks — your picks will appear here</string>
+    <string name="whatsnew_whats_trending">What\'s trending</string>
+</resources>

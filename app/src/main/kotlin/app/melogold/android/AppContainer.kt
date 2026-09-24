@@ -2,6 +2,7 @@ package app.melogold.android
 
 import android.app.Application
 import androidx.compose.runtime.staticCompositionLocalOf
+import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,13 @@ class AppContainer(private val application: Application) {
     val catalog by lazy {
         CatalogRepository(
             dir = application.filesDir.resolve("catalog"),
+            json = json
+        )
+    }
+
+    val forYou by lazy {
+        ForYouBuilder(
+            file = application.filesDir.resolve("foryou.json"),
             json = json
         )
     }
