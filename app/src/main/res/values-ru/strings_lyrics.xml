@@ -9,4 +9,13 @@
     <string name="lyrics_source_kugou">Текст: KuGou</string>
     <string name="lyrics_source_file">Текст импортирован из файла</string>
     <string name="lyrics_source_user">Ваш текст</string>
+
+    <string name="lyrics_show_plain">Текст без синхронизации</string>
+    <string name="lyrics_show_synced">Синхронизированный текст</string>
+    <string name="lyrics_edit">Редактировать текст</string>
+    <string name="lyrics_search_web">Найти текст в интернете</string>
+    <string name="lyrics_refetch">Загрузить заново</string>
+    <string name="lyrics_pick_lrclib">Выбрать на LRCLIB</string>
+    <string name="lyrics_set_start">Текст начинается отсюда</string>
+    <string name="lyrics_set_start_description">Сдвигает синхронизацию к текущей позиции</string>
 </resources>

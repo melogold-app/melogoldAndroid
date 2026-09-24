@@ -40,13 +40,8 @@ fun LyricsMenu(
         header()
 
         MenuEntry(
-            icon = R.drawable.time,
-            text = stringResource(
-                if (showingSynced) R.string.show_unsynchronized_lyrics
-                else R.string.show_synchronized_lyrics
-            ),
-            secondaryText = if (showingSynced) null
-            else stringResource(R.string.provided_lyrics_by),
+            icon = R.drawable.ms_lyrics,
+            text = stringResource(if (showingSynced) R.string.lyrics_show_plain else R.string.lyrics_show_synced),
             onClick = {
                 menuState.hide()
                 onToggleSynced()
@@ -54,8 +49,8 @@ fun LyricsMenu(
         )
 
         MenuEntry(
-            icon = R.drawable.pencil,
-            text = stringResource(R.string.edit_lyrics),
+            icon = R.drawable.ms_edit,
+            text = stringResource(R.string.lyrics_edit),
             onClick = {
                 menuState.hide()
                 onEdit()
@@ -63,8 +58,8 @@ fun LyricsMenu(
         )
 
         MenuEntry(
-            icon = R.drawable.search,
-            text = stringResource(R.string.search_lyrics_online),
+            icon = R.drawable.ms_travel_explore,
+            text = stringResource(R.string.lyrics_search_web),
             onClick = {
                 menuState.hide()
                 onSearchOnline()
@@ -72,8 +67,8 @@ fun LyricsMenu(
         )
 
         MenuEntry(
-            icon = R.drawable.sync,
-            text = stringResource(R.string.refetch_lyrics),
+            icon = R.drawable.ms_refresh,
+            text = stringResource(R.string.lyrics_refetch),
             enabled = onRefetch != null,
             onClick = {
                 menuState.hide()
@@ -82,7 +77,7 @@ fun LyricsMenu(
         )
 
         MenuEntry(
-            icon = R.drawable.ms_input,
+            icon = R.drawable.ms_file_open,
             text = stringResource(R.string.lyrics_import_file),
             onClick = {
                 menuState.hide()
@@ -91,8 +86,8 @@ fun LyricsMenu(
         )
 
         if (onPickFromLrcLib != null) MenuEntry(
-            icon = R.drawable.download,
-            text = stringResource(R.string.pick_from_lrclib),
+            icon = R.drawable.ms_manage_search,
+            text = stringResource(R.string.lyrics_pick_lrclib),
             onClick = {
                 menuState.hide()
                 onPickFromLrcLib()
@@ -100,9 +95,9 @@ fun LyricsMenu(
         )
 
         if (onSetStartOffset != null) MenuEntry(
-            icon = R.drawable.play_skip_forward,
-            text = stringResource(R.string.set_lyrics_start_offset),
-            secondaryText = stringResource(R.string.set_lyrics_start_offset_description),
+            icon = R.drawable.ms_start,
+            text = stringResource(R.string.lyrics_set_start),
+            secondaryText = stringResource(R.string.lyrics_set_start_description),
             onClick = {
                 menuState.hide()
                 onSetStartOffset()

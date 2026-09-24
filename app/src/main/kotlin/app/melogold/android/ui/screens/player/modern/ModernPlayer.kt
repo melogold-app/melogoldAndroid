@@ -149,7 +149,7 @@ fun ModernPlayer(
     likedAt: Long?,
     setLikedAt: (Long?) -> Unit,
     shouldBePlaying: Boolean,
-    openPlayerMenu: () -> Unit,
+    openPlayerMenu: (onStreamInfo: (() -> Unit)?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val appearance = LocalAppearance.current
@@ -284,6 +284,7 @@ fun ModernPlayer(
     var editingSynced by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
     var showingStats by rememberSaveable(mediaId) { mutableStateOf(false) }
+    val showPlayerMenu: () -> Unit = { openPlayerMenu { showingStats = true } }
 
     val copiedMessage = stringResource(R.string.copied)
     val importedMessage = stringResource(R.string.lyrics_imported)
@@ -343,9 +344,9 @@ fun ModernPlayer(
             header = header,
             footer = {
                 MenuEntry(
-                    icon = R.drawable.ellipsis_horizontal,
+                    icon = R.drawable.ms_more_horiz,
                     text = stringResource(R.string.more_options),
-                    onClick = openPlayerMenu
+                    onClick = showPlayerMenu
                 )
             }
         )
@@ -355,7 +356,7 @@ fun ModernPlayer(
         showLyricsMenu(
             header = {
                 MenuEntry(
-                    icon = R.drawable.text,
+                    icon = R.drawable.ms_content_copy,
                     text = stringResource(R.string.lyrics_copy_line),
                     secondaryText = line.text,
                     onClick = {
@@ -554,7 +555,7 @@ fun ModernPlayer(
                 // The overflow menu follows what is shown: the lyrics actions (with "More options"
                 // leading to the track menu) while the lyrics are
                 val onMore: () -> Unit = {
-                    if (mode == PlayerMode.Lyrics) showLyricsMenu() else openPlayerMenu()
+                    if (mode == PlayerMode.Lyrics) showLyricsMenu() else showPlayerMenu()
                 }
 
                 if (landscape) LandscapeLayout(

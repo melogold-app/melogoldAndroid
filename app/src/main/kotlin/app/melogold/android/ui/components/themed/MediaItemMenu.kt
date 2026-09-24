@@ -1,91 +1,43 @@
 package app.melogold.android.ui.components.themed
 
+import android.content.Context
 import android.content.Intent
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Companion.Left
-import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Companion.Right
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandIn
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.Info
-import app.melogold.android.models.Playlist
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.query
 import app.melogold.android.service.PrecacheService
 import app.melogold.android.service.isLocal
 import app.melogold.android.transaction
-import app.melogold.android.ui.items.SongItem
+import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.screens.albumRoute
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.home.HideSongDialog
+import app.melogold.android.ui.shell.LocalMainNav
+import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.utils.addNext
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.enqueue
 import app.melogold.android.utils.forcePlay
-import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.isCached
-import app.melogold.android.utils.medium
-import app.melogold.android.utils.semiBold
-import app.melogold.core.data.enums.PlaylistSortBy
-import app.melogold.core.data.enums.SortOrder
-import app.melogold.core.ui.Dimensions
-import app.melogold.core.ui.LocalAppearance
-import app.melogold.core.ui.favoritesIcon
-import app.melogold.core.ui.utils.px
-import app.melogold.core.ui.utils.roundedShape
 import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -197,586 +149,260 @@ fun BaseMediaItemMenu(
     onDismiss: () -> Unit,
     mediaItem: MediaItem,
     modifier: Modifier = Modifier,
-    onGoToEqualizer: (() -> Unit)? = null,
-    onShowSleepTimer: (() -> Unit)? = null,
     onStartRadio: (() -> Unit)? = null,
     onPlayNext: (() -> Unit)? = null,
     onEnqueue: (() -> Unit)? = null,
     onRemoveFromQueue: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onHideFromDatabase: (() -> Unit)? = null,
-    onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onShowSpeedDialog: (() -> Unit)? = null
-) {
-    val context = LocalContext.current
-
-    MediaItemMenu(
+    onRemoveFromQuickPicks: (() -> Unit)? = null
+) = Menu(modifier = modifier) {
+    MediaItemMenuHeader(mediaItem = mediaItem)
+    TrackMenuEntries(
         mediaItem = mediaItem,
         onDismiss = onDismiss,
-        onGoToEqualizer = onGoToEqualizer,
-        onShowSleepTimer = onShowSleepTimer,
         onStartRadio = onStartRadio,
         onPlayNext = onPlayNext,
         onEnqueue = onEnqueue,
-        onAddToPlaylist = { playlist, position ->
-            transaction {
-                Database.insert(mediaItem)
-                Database.insert(
-                    SongPlaylistMap(
-                        songId = mediaItem.mediaId,
-                        playlistId = Database.insert(playlist).takeIf { it != -1L } ?: playlist.id,
-                        position = position
-                    )
-                )
-            }
-        },
-        onHideFromDatabase = onHideFromDatabase,
-        onRemoveFromPlaylist = onRemoveFromPlaylist,
         onRemoveFromQueue = onRemoveFromQueue,
-        onGoToAlbum = albumRoute::global,
-        onGoToArtist = artistRoute::global,
-        onShare = {
-            val sendIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(
-                    Intent.EXTRA_TEXT,
-                    "https://music.youtube.com/watch?v=${mediaItem.mediaId}"
-                )
-            }
+        onRemoveFromPlaylist = onRemoveFromPlaylist,
+        onHideFromDatabase = onHideFromDatabase,
+        onRemoveFromQuickPicks = onRemoveFromQuickPicks
+    )
+}
 
-            context.startActivity(Intent.createChooser(sendIntent, null))
-        },
-        onRemoveFromQuickPicks = onRemoveFromQuickPicks,
-        onShowSpeedDialog = onShowSpeedDialog,
+/** The track the menu is about: cover, title and "Artist · Album". */
+@Composable
+fun MediaItemMenuHeader(
+    mediaItem: MediaItem,
+    modifier: Modifier = Modifier
+) {
+    val metadata = mediaItem.mediaMetadata
+
+    MenuHeader(
+        title = metadata.title?.toString().orEmpty(),
+        subtitle = listOfNotNull(metadata.artist, metadata.albumTitle)
+            .map { it.toString() }
+            .filter { it.isNotBlank() }
+            .joinToString(" · ")
+            .ifEmpty { null },
+        artworkUrl = metadata.artworkUri?.toString(),
         modifier = modifier
     )
 }
 
+/**
+ * The entries of the track menu in the order every client uses (GLOSSARY "Меню трека"): the
+ * actions on the track, then, after a divider, the ones that hide or remove it.
+ *
+ * Every entry hides the menu. [onNavigate] runs before an entry leaves for another screen (the
+ * player collapses itself there).
+ */
 @Composable
-fun MediaItemMenu(
+fun TrackMenuEntries(
     mediaItem: MediaItem,
     onDismiss: () -> Unit,
-    onShare: () -> Unit,
-    modifier: Modifier = Modifier,
-    onGoToEqualizer: (() -> Unit)? = null,
-    onShowSleepTimer: (() -> Unit)? = null,
     onStartRadio: (() -> Unit)? = null,
     onPlayNext: (() -> Unit)? = null,
     onEnqueue: (() -> Unit)? = null,
-    onHideFromDatabase: (() -> Unit)? = null,
     onRemoveFromQueue: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
-    onAddToPlaylist: ((Playlist, Int) -> Unit)? = null,
-    onGoToAlbum: ((String) -> Unit)? = null,
-    onGoToArtist: ((String) -> Unit)? = null,
+    onHideFromDatabase: (() -> Unit)? = null,
     onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onShowSpeedDialog: (() -> Unit)? = null
+    onNavigate: () -> Unit = {}
 ) {
-    val (colorPalette, typography) = LocalAppearance.current
-    val density = LocalDensity.current
-    val binder = LocalPlayerServiceBinder.current
     val context = LocalContext.current
-
-    val isLocal by remember { derivedStateOf { mediaItem.isLocal } }
-
-    var isViewingPlaylists by remember { mutableStateOf(false) }
-    var height by remember { mutableStateOf(0.dp) }
-    var likedAt by remember { mutableStateOf<Long?>(null) }
-    var isBlacklisted by remember { mutableStateOf(false) }
-
+    val menuState = LocalMenuState.current
+    val nav = LocalMainNav.current
+    val songId = mediaItem.mediaId
+    val isLocal = mediaItem.isLocal
     val extras = remember(mediaItem) { mediaItem.mediaMetadata.extras?.songBundle }
 
-    var albumInfo by remember {
-        mutableStateOf(
-            extras?.albumId?.let {
-                Info(id = it, name = null)
-            }
-        )
-    }
+    val likedAt by remember(songId) { Database.likedAt(songId) }
+        .collectAsState(initial = null, context = Dispatchers.IO)
+    val blacklisted by remember(songId) { Database.blacklisted(songId) }
+        .collectAsState(initial = false, context = Dispatchers.IO)
 
-    var artistsInfo by remember {
+    var albumId by remember(mediaItem) { mutableStateOf(extras?.albumId) }
+    var artists by remember(mediaItem) {
         mutableStateOf(
             extras?.artistNames?.let { names ->
-                extras.artistIds?.let { ids ->
-                    names.zip(ids) { name, id -> Info(id, name) }
-                }
+                extras.artistIds?.let { ids -> names.zip(ids) { name, id -> Info(id, name) } }
             }
         )
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(mediaItem) {
         withContext(Dispatchers.IO) {
-            if (albumInfo == null) albumInfo = Database.songAlbumInfo(mediaItem.mediaId)
-            if (artistsInfo == null) artistsInfo = Database.songArtistInfo(mediaItem.mediaId)
-
-            launch {
-                Database
-                    .likedAt(mediaItem.mediaId)
-                    .collect { likedAt = it }
-            }
-            launch {
-                Database
-                    .blacklisted(mediaItem.mediaId)
-                    .collect { isBlacklisted = it }
-            }
+            if (albumId == null) albumId = Database.songAlbumInfo(songId)?.id
+            if (artists == null) artists = Database.songArtistInfo(songId)
         }
     }
 
-    AnimatedContent(
-        targetState = isViewingPlaylists,
-        transitionSpec = {
-            val animationSpec = tween<IntOffset>(400)
-            val slideDirection = if (targetState) Left else Right
+    fun entry(action: () -> Unit): () -> Unit = {
+        onDismiss()
+        action()
+    }
 
-            slideIntoContainer(slideDirection, animationSpec) togetherWith
-                slideOutOfContainer(slideDirection, animationSpec)
-        },
-        label = ""
-    ) { currentIsViewingPlaylists ->
-        if (currentIsViewingPlaylists) {
-            val playlistPreviews by remember {
-                Database.playlistPreviews(
-                    sortBy = PlaylistSortBy.DateAdded,
-                    sortOrder = SortOrder.Descending
-                )
-            }.collectAsState(initial = emptyList(), context = Dispatchers.IO)
-
-            var isCreatingNewPlaylist by rememberSaveable { mutableStateOf(false) }
-
-            if (isCreatingNewPlaylist && onAddToPlaylist != null) TextFieldDialog(
-                hintText = stringResource(R.string.enter_playlist_name_prompt),
-                onDismiss = { isCreatingNewPlaylist = false },
-                onAccept = { text ->
-                    onDismiss()
-                    onAddToPlaylist(Playlist(name = text), 0)
-                }
-            )
-
-            BackHandler { isViewingPlaylists = false }
-
-            Menu(modifier = modifier.requiredHeight(height)) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .fillMaxWidth()
-                ) {
-                    IconButton(
-                        onClick = { isViewingPlaylists = false },
-                        icon = R.drawable.chevron_back,
-                        color = colorPalette.textSecondary,
-                        modifier = Modifier
-                            .padding(all = 4.dp)
-                            .size(20.dp)
-                    )
-
-                    if (onAddToPlaylist != null) SecondaryTextButton(
-                        text = stringResource(R.string.new_playlist),
-                        onClick = { isCreatingNewPlaylist = true },
-                        alternative = true
-                    )
-                }
-
-                onAddToPlaylist?.let { onAddToPlaylist ->
-                    playlistPreviews.forEach { playlistPreview ->
-                        MenuEntry(
-                            icon = R.drawable.playlist,
-                            text = playlistPreview.playlist.name,
-                            secondaryText = pluralStringResource(
-                                id = R.plurals.song_count_plural,
-                                count = playlistPreview.songCount,
-                                playlistPreview.songCount
-                            ),
-                            onClick = {
-                                onDismiss()
-                                onAddToPlaylist(playlistPreview.playlist, playlistPreview.songCount)
-                            }
-                        )
-                    }
-                }
-            }
-        } else Menu(
-            modifier = modifier.onPlaced {
-                height = it.size.height.px.dp(density)
-            }
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(end = 12.dp)
-            ) {
-                SongItem(
-                    song = mediaItem,
-                    thumbnailSize = Dimensions.thumbnails.song,
-                    modifier = Modifier.weight(1f),
-                    showDuration = false
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(
-                        icon = if (likedAt == null) R.drawable.heart_outline else R.drawable.heart,
-                        color = colorPalette.favoritesIcon,
-                        onClick = {
-                            query {
-                                if (
-                                    Database.like(
-                                        songId = mediaItem.mediaId,
-                                        likedAt = if (likedAt == null) System.currentTimeMillis() else null
-                                    ) != 0
-                                ) return@query
-
-                                Database.insert(mediaItem, Song::toggleLike)
-                            }
-                        },
-                        modifier = Modifier
-                            .padding(all = 4.dp)
-                            .size(18.dp)
-                    )
-
-                    if (!isLocal) IconButton(
-                        icon = R.drawable.share_social,
-                        color = colorPalette.text,
-                        onClick = {
-                            onDismiss()
-                            onShare()
-                        },
-                        modifier = Modifier
-                            .padding(all = 4.dp)
-                            .size(17.dp)
-                    )
-                }
-            }
-
-            HorizontalDivider(
-                modifier = Modifier
-                    .alpha(0.5f)
-                    .padding(vertical = 8.dp)
-            )
-
-            onPlayNext?.let {
-                MenuEntry(
-                    icon = R.drawable.play_skip_forward,
-                    text = stringResource(R.string.play_next),
-                    onClick = {
-                        onDismiss()
-                        onPlayNext()
-                    }
-                )
-            }
-
-            onEnqueue?.let {
-                MenuEntry(
-                    icon = R.drawable.enqueue,
-                    text = stringResource(R.string.enqueue),
-                    onClick = {
-                        onDismiss()
-                        onEnqueue()
-                    }
-                )
-            }
-
-            if (!isLocal) onStartRadio?.let {
-                MenuEntry(
-                    icon = R.drawable.radio,
-                    text = stringResource(R.string.start_radio),
-                    onClick = {
-                        onDismiss()
-                        onStartRadio()
-                    }
-                )
-            }
-
-            onAddToPlaylist?.let {
-                MenuEntry(
-                    icon = R.drawable.playlist,
-                    text = stringResource(R.string.add_to_playlist),
-                    onClick = { isViewingPlaylists = true },
-                    trailingContent = {
-                        Image(
-                            painter = painterResource(R.drawable.chevron_forward),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(colorPalette.textSecondary),
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                )
-            }
-
-            onGoToEqualizer?.let {
-                MenuEntry(
-                    icon = R.drawable.equalizer,
-                    text = stringResource(R.string.equalizer),
-                    onClick = {
-                        onDismiss()
-                        onGoToEqualizer()
-                    }
-                )
-            }
-
-            onShowSpeedDialog?.let {
-                MenuEntry(
-                    icon = R.drawable.speed,
-                    text = stringResource(R.string.playback_speed),
-                    onClick = {
-                        onDismiss()
-                        onShowSpeedDialog()
-                    }
-                )
-            }
-
-            onShowSleepTimer?.let {
-                var isShowingSleepTimerDialog by remember { mutableStateOf(false) }
-                var sleepTimerMillisLeft by remember { mutableLongStateOf(0L) }
-
-                LaunchedEffect(binder, binder?.sleepTimerMillisLeft) {
-                    binder?.sleepTimerMillisLeft?.collectLatest {
-                        sleepTimerMillisLeft = it ?: 0L
-                    } ?: run { sleepTimerMillisLeft = 0L }
-                }
-
-                val stopAfterSong = {
-                    runCatching {
-                        binder?.startSleepTimer(
-                            binder.player.duration - binder.player.contentPosition
-                        )
-                    }
-                    isShowingSleepTimerDialog = false
-                }
-
-                if (isShowingSleepTimerDialog) {
-                    if (sleepTimerMillisLeft == 0L) DefaultDialog(
-                        onDismiss = { isShowingSleepTimerDialog = false }
-                    ) {
-                        var amount by remember { mutableIntStateOf(1) }
-
-                        BasicText(
-                            text = stringResource(R.string.set_sleep_timer),
-                            style = typography.s.semiBold,
-                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 24.dp)
-                        )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(
-                                space = 16.dp,
-                                alignment = Alignment.CenterHorizontally
-                            ),
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .alpha(if (amount <= 1) 0.5f else 1f)
-                                    .clip(CircleShape)
-                                    .clickable(enabled = amount > 1) { amount-- }
-                                    .size(48.dp)
-                                    .background(colorPalette.background0)
-                            ) {
-                                BasicText(
-                                    text = "-",
-                                    style = typography.xs.semiBold
-                                )
-                            }
-
-                            Box(contentAlignment = Alignment.Center) {
-                                BasicText(
-                                    text = "88h 88m", // invisible placeholder, no need to localize
-                                    style = typography.s.semiBold,
-                                    modifier = Modifier.alpha(0f)
-                                )
-                                BasicText(
-                                    text = "${stringResource(R.string.format_hours, amount / 6)} ${
-                                        stringResource(
-                                            R.string.format_minutes,
-                                            (amount % 6) * 10
-                                        )
-                                    }",
-                                    style = typography.s.semiBold
-                                )
-                            }
-
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .alpha(if (amount >= 60) 0.5f else 1f)
-                                    .clip(CircleShape)
-                                    .clickable(enabled = amount < 60) { amount++ }
-                                    .size(48.dp)
-                                    .background(colorPalette.background0)
-                            ) {
-                                BasicText(
-                                    text = "+",
-                                    style = typography.xs.semiBold
-                                )
-                            }
-                        }
-
-                        SecondaryTextButton(
-                            text = stringResource(R.string.sleep_timer_until_song_end),
-                            onClick = stopAfterSong,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-
-                        Row(
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            DialogTextButton(
-                                text = stringResource(R.string.cancel),
-                                onClick = { isShowingSleepTimerDialog = false }
-                            )
-
-                            DialogTextButton(
-                                text = stringResource(R.string.set),
-                                enabled = amount > 0,
-                                primary = true,
-                                onClick = {
-                                    binder?.startSleepTimer(amount * 10 * 60 * 1000L)
-                                    isShowingSleepTimerDialog = false
-                                }
-                            )
-                        }
-                    } else ConfirmationDialog(
-                        text = stringResource(R.string.stop_sleep_timer_prompt),
-                        cancelText = stringResource(R.string.no),
-                        confirmText = stringResource(R.string.stop),
-                        onDismiss = { isShowingSleepTimerDialog = false },
-                        onConfirm = { binder?.cancelSleepTimer() }
-                    )
-                }
-
-                MenuEntry(
-                    icon = R.drawable.alarm,
-                    text = stringResource(R.string.sleep_timer),
-                    onClick = { isShowingSleepTimerDialog = true },
-                    onLongClick = stopAfterSong,
-                    trailingContent = {
-                        AnimatedVisibility(
-                            visible = sleepTimerMillisLeft != 0L,
-                            label = "",
-                            enter = fadeIn() + expandIn(),
-                            exit = fadeOut() + shrinkOut()
-                        ) {
-                            BasicText(
-                                text = stringResource(
-                                    R.string.format_time_left,
-                                    formatAsDuration(sleepTimerMillisLeft)
-                                ),
-                                style = typography.xxs.medium,
-                                modifier = Modifier
-                                    .background(
-                                        color = colorPalette.background0,
-                                        shape = 16.dp.roundedShape
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                                    .animateContentSize()
-                            )
-                        }
-                    }
-                )
-            }
-
-            if (!isLocal) onGoToAlbum?.let {
-                albumInfo?.let { [id] ->
-                    MenuEntry(
-                        icon = R.drawable.disc,
-                        text = stringResource(R.string.go_to_album),
-                        onClick = {
-                            onDismiss()
-                            onGoToAlbum(id)
-                        }
-                    )
-                }
-            }
-
-            if (!isLocal) onGoToArtist?.let {
-                artistsInfo?.forEach { (id, name) ->
-                    name?.let {
-                        MenuEntry(
-                            icon = R.drawable.person,
-                            text = stringResource(R.string.format_go_to_artist, name),
-                            onClick = {
-                                onDismiss()
-                                onGoToArtist(id)
-                            }
-                        )
-                    }
-                }
-            }
-
-            if (!isLocal && !isCached(mediaItem.mediaId)) MenuEntry(
-                icon = R.drawable.download,
-                text = stringResource(R.string.pre_cache),
-                onClick = {
-                    onDismiss()
-                    runCatching {
-                        PrecacheService.scheduleCache(
-                            context = context.applicationContext,
-                            mediaItem = mediaItem
-                        )
-                    }.exceptionOrNull()?.printStackTrace()
-                }
-            )
-
-            if (!mediaItem.isLocal) AnimatedContent(
-                targetState = isBlacklisted,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = ""
-            ) { blacklisted ->
-                MenuEntry(
-                    icon = R.drawable.remove_circle_outline,
-                    text = if (blacklisted) stringResource(R.string.remove_from_blacklist)
-                    else stringResource(R.string.add_to_blacklist),
-                    onClick = {
-                        transaction {
-                            Database.insert(mediaItem)
-                            Database.toggleBlacklist(mediaItem.mediaId)
-                        }
-                    }
-                )
-            }
-
-            onRemoveFromQueue?.let {
-                MenuEntry(
-                    icon = R.drawable.trash,
-                    text = stringResource(R.string.remove_from_queue),
-                    onClick = {
-                        onDismiss()
-                        onRemoveFromQueue()
-                    }
-                )
-            }
-
-            onRemoveFromPlaylist?.let {
-                MenuEntry(
-                    icon = R.drawable.trash,
-                    text = stringResource(R.string.remove_from_playlist),
-                    onClick = {
-                        onDismiss()
-                        onRemoveFromPlaylist()
-                    }
-                )
-            }
-
-            onHideFromDatabase?.let {
-                MenuEntry(
-                    icon = R.drawable.trash,
-                    text = stringResource(R.string.hide),
-                    onClick = onHideFromDatabase
-                )
-            }
-
-            if (!isLocal) onRemoveFromQuickPicks?.let {
-                MenuEntry(
-                    icon = R.drawable.trash,
-                    text = stringResource(R.string.hide_from_quick_picks),
-                    onClick = {
-                        onDismiss()
-                        onRemoveFromQuickPicks()
-                    }
-                )
+    val liked = likedAt != null
+    MenuEntry(
+        icon = if (liked) R.drawable.ms_favorite_fill else R.drawable.ms_favorite,
+        text = stringResource(if (liked) R.string.menu_favorite_remove else R.string.menu_favorite_add),
+        onClick = entry {
+            query {
+                val changed = Database.like(
+                    songId = songId,
+                    likedAt = if (liked) null else System.currentTimeMillis()
+                ) != 0
+                if (!changed) Database.insert(mediaItem, Song::toggleLike)
             }
         }
+    )
+
+    onPlayNext?.let {
+        MenuEntry(
+            icon = R.drawable.ms_playlist_play,
+            text = stringResource(R.string.menu_play_next),
+            onClick = entry(it)
+        )
     }
+
+    onEnqueue?.let {
+        MenuEntry(
+            icon = R.drawable.ms_queue_music,
+            text = stringResource(R.string.menu_add_to_queue),
+            onClick = entry(it)
+        )
+    }
+
+    MenuEntry(
+        icon = R.drawable.ms_playlist_add,
+        text = stringResource(R.string.menu_add_to_playlist),
+        onClick = {
+            // In the same sheet: the menu becomes the playlist picker
+            menuState.display { AddToPlaylistMenu(mediaItem = mediaItem, onDone = menuState::hide) }
+        }
+    )
+
+    if (!isLocal && !isCached(songId)) MenuEntry(
+        icon = R.drawable.ms_download,
+        text = stringResource(R.string.menu_download),
+        onClick = entry {
+            runCatching {
+                PrecacheService.scheduleCache(context = context.applicationContext, mediaItem = mediaItem)
+            }.exceptionOrNull()?.printStackTrace()
+        }
+    )
+
+    if (!isLocal) {
+        MenuEntry(
+            icon = R.drawable.ms_manage_search,
+            text = stringResource(R.string.other_versions),
+            onClick = entry {
+                onNavigate()
+                val metadata = mediaItem.mediaMetadata
+                nav.openSearch(
+                    query = listOfNotNull(metadata.artist, metadata.title).joinToString(" ").trim(),
+                    source = SearchSource.YouTube
+                )
+            }
+        )
+
+        onStartRadio?.let {
+            MenuEntry(
+                icon = R.drawable.ms_sensors,
+                text = stringResource(R.string.menu_start_radio),
+                onClick = entry(it)
+            )
+        }
+
+        albumId?.let { id ->
+            MenuEntry(
+                icon = R.drawable.ms_album,
+                text = stringResource(R.string.menu_go_to_album),
+                secondaryText = mediaItem.mediaMetadata.albumTitle?.toString(),
+                onClick = entry {
+                    onNavigate()
+                    albumRoute.global(id)
+                }
+            )
+        }
+
+        artists?.forEach { (id, name) ->
+            MenuEntry(
+                icon = R.drawable.ms_person,
+                text = stringResource(R.string.menu_go_to_artist),
+                secondaryText = name,
+                onClick = entry {
+                    onNavigate()
+                    artistRoute.global(id)
+                }
+            )
+        }
+
+        MenuEntry(
+            icon = R.drawable.ms_share,
+            text = stringResource(R.string.menu_share),
+            onClick = entry { context.shareTrack(mediaItem, isMusic = albumId != null) }
+        )
+    }
+
+    val hasRemovals = !isLocal || onRemoveFromPlaylist != null || onHideFromDatabase != null ||
+        onRemoveFromQueue != null
+    if (hasRemovals) MenuDivider()
+
+    if (!isLocal) MenuEntry(
+        icon = R.drawable.ms_visibility_off,
+        text = stringResource(if (blacklisted) R.string.menu_show_again else R.string.menu_dont_show),
+        onClick = entry {
+            transaction {
+                Database.insert(mediaItem)
+                Database.toggleBlacklist(songId)
+            }
+        }
+    )
+
+    onRemoveFromPlaylist?.let {
+        MenuEntry(
+            icon = R.drawable.ms_playlist_remove,
+            text = stringResource(R.string.menu_remove_from_playlist),
+            onClick = entry(it)
+        )
+    }
+
+    // Asks for confirmation in a dialog, which then closes the menu
+    onHideFromDatabase?.let {
+        MenuEntry(
+            icon = R.drawable.ms_delete_history,
+            text = stringResource(R.string.menu_remove_from_history),
+            onClick = it
+        )
+    }
+
+    onRemoveFromQueue?.let {
+        MenuEntry(
+            icon = R.drawable.ms_playlist_remove,
+            text = stringResource(R.string.menu_remove_from_queue),
+            onClick = entry(it)
+        )
+    }
+
+    if (!isLocal) onRemoveFromQuickPicks?.let {
+        MenuEntry(
+            icon = R.drawable.ms_block,
+            text = stringResource(R.string.menu_not_interested),
+            onClick = entry(it)
+        )
+    }
+}
+
+/** Shares the link of the track: YouTube Music for music, YouTube for videos (FEATURES "Поделиться"). */
+private fun Context.shareTrack(mediaItem: MediaItem, isMusic: Boolean) {
+    val host = if (isMusic) "music.youtube.com" else "www.youtube.com"
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, "https://$host/watch?v=${mediaItem.mediaId}")
+    }
+
+    startActivity(Intent.createChooser(intent, null))
 }

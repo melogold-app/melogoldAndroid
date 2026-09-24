@@ -1,51 +1,52 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package app.melogold.android.ui.components.themed
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.melogold.android.utils.medium
-import app.melogold.android.utils.secondary
-import app.melogold.core.ui.LocalAppearance
+import app.melogold.android.ui.kit.Artwork
+import androidx.compose.material3.HorizontalDivider as M3HorizontalDivider
 
+/**
+ * The content of a menu sheet (REDESIGN-M3E T2.6): a scrolling column of [MenuHeader],
+ * [MenuEntry], [MenuSectionTitle] and [MenuDivider].
+ */
 @Composable
 inline fun Menu(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp),
     content: @Composable ColumnScope.() -> Unit
 ) = Column(
     modifier = modifier
         .fillMaxWidth()
-        .clip(shape)
         .verticalScroll(rememberScrollState())
-        .background(LocalAppearance.current.colorPalette.background1)
-        .padding(top = 2.dp)
-        .padding(vertical = 8.dp)
-        .navigationBarsPadding(),
+        .padding(bottom = 8.dp),
     content = content
 )
 
+/**
+ * One action of a menu: a list row of 56 dp (72 dp with [secondaryText]) with a 24 dp icon.
+ */
 @Composable
 fun MenuEntry(
     @DrawableRes icon: Int,
@@ -56,47 +57,72 @@ fun MenuEntry(
     enabled: Boolean = true,
     onLongClick: (() -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null
-) {
-    val (colorPalette, typography) = LocalAppearance.current
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-        modifier = modifier
-            .combinedClickable(
-                enabled = enabled,
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
-            .fillMaxWidth()
-            .alpha(if (enabled) 1f else 0.4f)
-            .padding(horizontal = 24.dp)
-    ) {
-        Image(
+) = ListItem(
+    onClick = onClick,
+    onLongClick = onLongClick,
+    enabled = enabled,
+    leadingContent = {
+        Icon(
             painter = painterResource(icon),
             contentDescription = null,
-            colorFilter = ColorFilter.tint(colorPalette.text),
-            modifier = Modifier.size(15.dp)
+            modifier = Modifier.size(24.dp)
         )
-
-        Column(
-            modifier = Modifier
-                .padding(vertical = 16.dp)
-                .weight(1f)
-        ) {
-            BasicText(
-                text = text,
-                style = typography.xs.medium
-            )
-
-            secondaryText?.let { secondaryText ->
-                BasicText(
-                    text = secondaryText,
-                    style = typography.xxs.medium.secondary
-                )
-            }
-        }
-
-        trailingContent?.invoke()
-    }
+    },
+    supportingContent = secondaryText?.let { { Text(text = it) } },
+    trailingContent = trailingContent,
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    modifier = modifier.testTag("menu_entry")
+) {
+    Text(text = text)
 }
+
+/**
+ * What the menu is about, as its first row: a 56 dp cover, the title and one line under it.
+ */
+@Composable
+fun MenuHeader(
+    title: String,
+    subtitle: String?,
+    artworkUrl: String?,
+    modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null
+) = ListItem(
+    supportingContent = subtitle?.let {
+        { Text(text = it, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+    },
+    leadingContent = { Artwork(url = artworkUrl, size = 56.dp) },
+    trailingContent = trailingContent,
+    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    modifier = modifier.testTag("menu_header")
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+/** Where the text of a [MenuEntry] starts: 16 dp padding, the 24 dp icon and 12 dp between. */
+val MenuEntryTextStart = 52.dp
+
+/** Names the group of entries under it (the player menu's "Track" and "Playback"). */
+@Composable
+fun MenuSectionTitle(
+    text: String,
+    modifier: Modifier = Modifier
+) = Text(
+    text = text,
+    style = MaterialTheme.typography.titleSmall,
+    color = MaterialTheme.colorScheme.primary,
+    modifier = modifier
+        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp)
+        .semantics { heading() }
+)
+
+/** Separates groups of entries. */
+@Composable
+fun MenuDivider(modifier: Modifier = Modifier) = M3HorizontalDivider(
+    modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    color = MaterialTheme.colorScheme.outlineVariant
+)

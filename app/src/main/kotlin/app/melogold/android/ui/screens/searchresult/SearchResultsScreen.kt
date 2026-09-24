@@ -1,5 +1,6 @@
 package app.melogold.android.ui.screens.searchresult
 
+import app.melogold.android.ui.shell.SearchSource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -100,6 +101,7 @@ private val VideoThumbnailHeight = 64.dp
 @Composable
 fun SearchResultsScreen(
     query: String,
+    initialSource: SearchSource,
     onEditQuery: () -> Unit
 ) {
     PersistMapCleanup(prefix = "searchResults/$query/")
@@ -108,7 +110,7 @@ fun SearchResultsScreen(
         GlobalRoutes()
 
         Content {
-            val model = rememberScreenModel("searchResults/$query/model") { SearchResultsModel(query) }
+            val model = rememberScreenModel("searchResults/$query/model") { SearchResultsModel(query, initialSource) }
             val source by model.source.collectAsState()
             val insets = LocalPlayerAwareWindowInsets.current
             val contentPadding = insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal).asPaddingValues()
@@ -126,15 +128,15 @@ fun SearchResultsScreen(
                 )
 
                 ConnectedToggleGroup(
-                    options = ResultsSource.entries.toImmutableList(),
+                    options = SearchSource.entries.toImmutableList(),
                     selected = source,
                     onSelect = { model.source.value = it },
                     label = {
                         stringResource(
                             when (it) {
-                                ResultsSource.All -> R.string.results_all
-                                ResultsSource.Music -> R.string.results_music
-                                ResultsSource.YouTube -> R.string.results_youtube
+                                SearchSource.All -> R.string.results_all
+                                SearchSource.Music -> R.string.results_music
+                                SearchSource.YouTube -> R.string.results_youtube
                             }
                         )
                     },
@@ -145,20 +147,20 @@ fun SearchResultsScreen(
 
                 Box(modifier = Modifier.weight(1f)) {
                     when (source) {
-                        ResultsSource.All -> AllResultsList(
+                        SearchSource.All -> AllResultsList(
                             model = model,
                             contentPadding = contentPadding,
-                            onMoreMusic = { model.source.value = ResultsSource.Music },
-                            onMoreYouTube = { model.source.value = ResultsSource.YouTube }
+                            onMoreMusic = { model.source.value = SearchSource.Music },
+                            onMoreYouTube = { model.source.value = SearchSource.YouTube }
                         )
 
-                        ResultsSource.Music -> MusicResults(
+                        SearchSource.Music -> MusicResults(
                             model = model,
                             contentPadding = contentPadding,
-                            onSearchYouTube = { model.source.value = ResultsSource.YouTube }
+                            onSearchYouTube = { model.source.value = SearchSource.YouTube }
                         )
 
-                        ResultsSource.YouTube -> YouTubeResults(model = model, contentPadding = contentPadding)
+                        SearchSource.YouTube -> YouTubeResults(model = model, contentPadding = contentPadding)
                     }
                 }
             }

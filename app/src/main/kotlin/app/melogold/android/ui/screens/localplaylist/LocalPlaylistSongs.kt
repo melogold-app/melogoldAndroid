@@ -156,7 +156,7 @@ fun LocalPlaylistSongs(
                                     menuState.display {
                                         Menu {
                                             MenuEntry(
-                                                icon = R.drawable.pencil,
+                                                icon = R.drawable.ms_edit,
                                                 text = stringResource(R.string.rename),
                                                 onClick = {
                                                     menuState.hide()
@@ -165,7 +165,7 @@ fun LocalPlaylistSongs(
                                             )
 
                                             MenuEntry(
-                                                icon = R.drawable.trash,
+                                                icon = R.drawable.ms_delete,
                                                 text = stringResource(R.string.delete),
                                                 onClick = {
                                                     menuState.hide()

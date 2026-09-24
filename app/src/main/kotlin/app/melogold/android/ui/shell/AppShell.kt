@@ -189,5 +189,5 @@ fun AppShell(
             )
     )
 
-    BottomSheetMenu(modifier = Modifier.align(Alignment.BottomCenter))
+    BottomSheetMenu()
 }

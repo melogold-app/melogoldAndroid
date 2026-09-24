@@ -1,5 +1,6 @@
 package app.melogold.android.ui.screens.searchresult
 
+import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.ui.model.Loadable
 import app.melogold.android.ui.model.Page
 import app.melogold.android.ui.model.PagedLoader
@@ -24,8 +25,6 @@ import kotlinx.coroutines.launch
 
 private const val ALL_SONGS = 4
 private const val ALL_VIDEOS = 4
-
-enum class ResultsSource { All, Music, YouTube }
 
 /**
  * The narrowing chips of the Music segment (REWRITE §3.1.3).
@@ -56,8 +55,11 @@ data class AllResults(
  * The results of one query (REWRITE §3.1.3): "All" and the endless lists of each segment and chip.
  * The chosen segment and chips live here, so they survive going back from a detail screen.
  */
-class SearchResultsModel(private val query: String) : ScreenModel() {
-    val source = MutableStateFlow(ResultsSource.All)
+class SearchResultsModel(
+    private val query: String,
+    initialSource: SearchSource = SearchSource.All
+) : ScreenModel() {
+    val source = MutableStateFlow(initialSource)
     val musicFilter = MutableStateFlow(MusicFilter.Songs)
     val youTubeFilter = MutableStateFlow(YouTubeSearchFilter.Videos)
 

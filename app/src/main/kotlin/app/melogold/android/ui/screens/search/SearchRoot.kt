@@ -90,6 +90,7 @@ import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.screens.searchresult.SearchResultsScreen
 import app.melogold.android.ui.shell.LocalLinkHandler
 import app.melogold.android.ui.shell.LocalMainNav
+import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.playWithRadio
@@ -125,14 +126,21 @@ fun RouteHandlerScope.SearchRoot() {
         snapshotFlow { textFieldState.text.toString() }.collect(model::onQueryChange)
     }
 
-    // A query or focus request of MainNavState.openSearch() / a repeated tap on the Search item
+    // A query or focus request of MainNavState.openSearch() / a repeated tap on the Search item.
+    // A query with a segment ("Other versions": YouTube) shows its results right away
     val pendingQuery = nav.pendingSearchQuery
     LaunchedEffect(pendingQuery) {
-        nav.consumeSearchQuery()?.let { text ->
-            textFieldState.setTextAndPlaceCursorAtEnd(text)
-            searchBarState.animateToExpanded()
+        val text = nav.consumeSearchQuery()
+        val source = nav.consumeSearchSource() ?: SearchSource.All
+
+        when {
+            text.isNullOrBlank() -> Unit
+            source != SearchSource.All -> searchFor(text.trim(), source)
+            else -> {
+                textFieldState.setTextAndPlaceCursorAtEnd(text)
+                searchBarState.animateToExpanded()
+            }
         }
-        nav.consumeSearchSource()
     }
     val focusRequested = nav.searchFocusRequested
     LaunchedEffect(focusRequested) {
@@ -679,25 +687,26 @@ private fun LinkRow(target: LinkTarget, onOpen: () -> Unit) {
 }
 
 /**
- * `searchResultRoute`: the results of [query]. A tap on the query goes back to Search with the
- * query in the field.
+ * `searchResultRoute`: the results of [query], starting on [source]. A tap on the query goes back
+ * to Search with the query in the field.
  */
 @Route
 @Composable
-fun SearchResultsEntry(query: String) {
+fun SearchResultsEntry(query: String, source: SearchSource) {
     val nav = LocalMainNav.current
 
     SearchResultsScreen(
         query = query,
+        initialSource = source,
         onEditQuery = { nav.openSearch(query) }
     )
 }
 
 /**
- * Shows the results of [text] and remembers it in the search history (unless paused).
+ * Shows the results of [text] on [source] and remembers it in the search history (unless paused).
  */
-private fun RouteHandlerScope.searchFor(text: String) {
-    searchResultRoute(text)
+private fun RouteHandlerScope.searchFor(text: String, source: SearchSource = SearchSource.All) {
+    searchResultRoute(text, source)
 
     if (!DataPreferences.pauseSearchHistory) query {
         Database.insert(SearchQuery(query = text))

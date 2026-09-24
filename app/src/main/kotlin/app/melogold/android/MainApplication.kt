@@ -1,5 +1,6 @@
 package app.melogold.android
 
+import app.melogold.android.ui.shell.SearchSource
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
@@ -326,7 +327,7 @@ class MainActivity : ComponentActivity() {
                 extras.query = null
 
                 awaitShell().nav.navigate(TopLevelDestination.Search) {
-                    searchResultRoute.ensureGlobal(query)
+                    searchResultRoute.ensureGlobal(query, SearchSource.All)
                 }
             }
 

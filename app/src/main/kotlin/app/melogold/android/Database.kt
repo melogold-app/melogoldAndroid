@@ -603,6 +603,16 @@ interface DatabaseAccessor {
     @Query("SELECT blacklisted FROM Song WHERE id = :songId")
     fun blacklisted(songId: String): Flow<Boolean>
 
+    /** The playlists [songId] is in. */
+    @Query("SELECT playlistId FROM SongPlaylistMap WHERE songId = :songId")
+    fun playlistIdsOf(songId: String): Flow<List<Long>>
+
+    @Query("SELECT position FROM SongPlaylistMap WHERE songId = :songId AND playlistId = :playlistId")
+    fun positionIn(songId: String, playlistId: Long): Int?
+
+    @Query("SELECT COUNT(*) FROM SongPlaylistMap WHERE playlistId = :playlistId")
+    fun songCountOf(playlistId: Long): Int
+
     @Query("SELECT COUNT (*) FROM Song where blacklisted")
     fun blacklistLength(): Flow<Int>
 

@@ -1,38 +1,37 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package app.melogold.android.ui.screens.player
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.OptIn
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SnapshotMutationPolicy
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,17 +39,11 @@ import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
@@ -65,35 +58,33 @@ import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.BottomSheet
 import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.BaseMediaItemMenu
-import app.melogold.android.ui.components.themed.IconButton
-import app.melogold.android.ui.components.themed.SecondaryTextButton
-import app.melogold.android.ui.components.themed.SliderDialog
-import app.melogold.android.ui.components.themed.SliderDialogBody
+import app.melogold.android.ui.components.themed.MediaItemMenuHeader
+import app.melogold.android.ui.components.themed.Menu
+import app.melogold.android.ui.components.themed.MenuDivider
+import app.melogold.android.ui.components.themed.MenuEntry
+import app.melogold.android.ui.components.themed.MenuEntryTextStart
+import app.melogold.android.ui.components.themed.MenuSectionTitle
+import app.melogold.android.ui.components.themed.TrackMenuEntries
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
 import app.melogold.android.ui.shell.AppSnackbar
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.utils.DisposableListener
-import app.melogold.android.utils.forceSeekToNext
-import app.melogold.android.utils.positionAndDurationState
+import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.rememberEqualizerLauncher
 import app.melogold.android.utils.seamlessPlay
-import app.melogold.android.utils.secondary
-import app.melogold.android.utils.semiBold
 import app.melogold.android.utils.shouldBePlaying
-import app.melogold.android.utils.thumbnail
 import app.melogold.compose.persist.PersistMapCleanup
 import app.melogold.compose.routing.OnGlobalRoute
-import app.melogold.core.ui.Dimensions
-import app.melogold.core.ui.LocalAppearance
-import app.melogold.core.ui.collapsedPlayerProgressBar
-import app.melogold.core.ui.utils.px
-import app.melogold.core.ui.utils.roundedShape
 import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.models.NavigationEndpoint
-import coil3.compose.AsyncImage
-import kotlin.math.absoluteValue
+import java.text.NumberFormat
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+
+private val sleepTimerMinutes = listOf(15, 30, 45, 60)
+private val speedPresets = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
 /**
  * @param collapsedBottomExtra the space under the mini player that other content covers: the
@@ -104,14 +95,9 @@ fun Player(
     layoutState: BottomSheetState,
     modifier: Modifier = Modifier,
     collapsedBottomExtra: Dp = 0.dp,
-    shape: RoundedCornerShape = RoundedCornerShape(
-        topStart = 12.dp,
-        topEnd = 12.dp
-    ),
     windowInsets: WindowInsets = WindowInsets.systemBars
-) = with(PlayerPreferences) {
+) {
     val menuState = LocalMenuState.current
-    val [colorPalette, typography, thumbnailCornerSize] = LocalAppearance.current
     val binder = LocalPlayerServiceBinder.current
 
     PersistMapCleanup(prefix = "queue/suggestions")
@@ -177,6 +163,25 @@ fun Player(
 
     OnGlobalRoute { if (layoutState.expanded) layoutState.collapseSoft() }
 
+    var speedDialogOpen by rememberSaveable { mutableStateOf(false) }
+
+    /** Opens the player menu; [onStreamInfo] is only there while the player is expanded. */
+    fun openPlayerMenu(onStreamInfo: (() -> Unit)?) {
+        val item = mediaItem ?: return
+        val service = binder ?: return
+
+        menuState.display {
+            PlayerMenu(
+                binder = service,
+                mediaItem = item,
+                onDismiss = menuState::hide,
+                onNavigate = { if (layoutState.expanded) layoutState.collapseSoft() },
+                onCustomSpeed = { speedDialogOpen = true },
+                onStreamInfo = onStreamInfo
+            )
+        }
+    }
+
     if (mediaItem != null) BottomSheet(
         state = layoutState,
         modifier = modifier.fillMaxSize(),
@@ -192,12 +197,7 @@ fun Player(
                 explicit = extras?.explicit == true,
                 shouldBePlaying = shouldBePlaying,
                 onExpand = layoutState::expandSoft,
-                onMenu = {
-                    val item = mediaItem
-                    if (binder != null && item != null) menuState.display {
-                        PlayerMenu(onDismiss = menuState::hide, mediaItem = item, binder = binder)
-                    }
-                },
+                onMenu = { openPlayerMenu(onStreamInfo = null) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontalBottomPaddingValues)
@@ -205,21 +205,6 @@ fun Player(
             )
         }
     ) {
-        var audioDialogOpen by rememberSaveable { mutableStateOf(false) }
-
-        val openPlayerMenu: () -> Unit = {
-            mediaItem?.let {
-                if (binder != null) menuState.display {
-                    PlayerMenu(
-                        onDismiss = menuState::hide,
-                        mediaItem = it,
-                        binder = binder,
-                        onShowSpeedDialog = { audioDialogOpen = true }
-                    )
-                }
-            }
-        }
-
         mediaItem?.let { currentMediaItem ->
             if (binder != null) ModernPlayer(
                 layoutState = layoutState,
@@ -228,59 +213,226 @@ fun Player(
                 likedAt = likedAt,
                 setLikedAt = { likedAt = it },
                 shouldBePlaying = shouldBePlaying,
-                openPlayerMenu = openPlayerMenu
+                openPlayerMenu = { onStreamInfo -> openPlayerMenu(onStreamInfo) }
             )
-        }
-
-        if (audioDialogOpen) SliderDialog(
-            onDismiss = { audioDialogOpen = false },
-            title = stringResource(R.string.playback_speed)
-        ) {
-            SliderDialogBody(
-                provideState = { remember(speed) { mutableFloatStateOf(speed) } },
-                onSlideComplete = { speed = it },
-                min = 0f,
-                max = 2f,
-                toDisplay = {
-                    if (it <= 0.01f) stringResource(R.string.minimum_speed_value)
-                    else stringResource(R.string.format_multiplier, "%.2f".format(it))
-                },
-                steps = 39
-            )
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                SecondaryTextButton(
-                    text = stringResource(R.string.reset),
-                    onClick = { speed = 1f }
-                )
-            }
         }
     }
+
+    if (speedDialogOpen) SpeedDialog(onDismiss = { speedDialogOpen = false })
 }
 
+/**
+ * The ⋮ menu of the player (FEATURES "Меню ⋮ плеера"): the track entries, then "Playback" with
+ * the sleep timer and the speed as chips, the equalizer and the stream info.
+ */
 @Composable
 @OptIn(UnstableApi::class)
 private fun PlayerMenu(
     binder: PlayerService.Binder,
     mediaItem: MediaItem,
     onDismiss: () -> Unit,
-    onShowSpeedDialog: (() -> Unit)? = null
+    onNavigate: () -> Unit,
+    onCustomSpeed: () -> Unit,
+    onStreamInfo: (() -> Unit)?
 ) {
     val launchEqualizer by rememberEqualizerLauncher(audioSessionId = { binder.player.audioSessionId })
 
-    BaseMediaItemMenu(
-        mediaItem = mediaItem,
-        onStartRadio = {
-            binder.stopRadio()
-            binder.player.seamlessPlay(mediaItem)
-            binder.setupRadio(NavigationEndpoint.Endpoint.Watch(videoId = mediaItem.mediaId))
+    Menu(modifier = Modifier.testTag("player_menu")) {
+        MediaItemMenuHeader(mediaItem = mediaItem)
+
+        MenuSectionTitle(text = stringResource(R.string.menu_section_track))
+        TrackMenuEntries(
+            mediaItem = mediaItem,
+            onDismiss = onDismiss,
+            onStartRadio = {
+                binder.stopRadio()
+                binder.player.seamlessPlay(mediaItem)
+                binder.setupRadio(NavigationEndpoint.Endpoint.Watch(videoId = mediaItem.mediaId))
+            },
+            onNavigate = onNavigate
+        )
+
+        MenuDivider()
+        MenuSectionTitle(text = stringResource(R.string.menu_section_playback))
+        SleepTimerRow(binder = binder)
+        SpeedRow(
+            onCustom = {
+                onDismiss()
+                onCustomSpeed()
+            }
+        )
+        MenuEntry(
+            icon = R.drawable.ms_equalizer,
+            text = stringResource(R.string.menu_equalizer),
+            onClick = {
+                onDismiss()
+                launchEqualizer()
+            }
+        )
+        onStreamInfo?.let {
+            MenuEntry(
+                icon = R.drawable.ms_info,
+                text = stringResource(R.string.menu_stream_info),
+                onClick = {
+                    onDismiss()
+                    it()
+                }
+            )
+        }
+    }
+}
+
+/** A row of the "Playback" group: an icon, a title with the current value, then a row of chips. */
+@Composable
+private fun ChipsRow(
+    @DrawableRes icon: Int,
+    title: String,
+    value: String?,
+    chips: @Composable () -> Unit
+) = Column(modifier = Modifier.fillMaxWidth()) {
+    ListItem(
+        supportingContent = value?.let { { Text(text = it) } },
+        leadingContent = {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
         },
-        onGoToEqualizer = launchEqualizer,
-        onShowSleepTimer = {},
-        onDismiss = onDismiss,
-        onShowSpeedDialog = onShowSpeedDialog
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    ) {
+        Text(text = title)
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(start = MenuEntryTextStart, end = 16.dp, bottom = 4.dp)
+    ) {
+        chips()
+    }
+}
+
+/** The sleep timer as chips: off, 15/30/45 min, 1 h and "End of track"; the time left when on. */
+@Composable
+private fun SleepTimerRow(binder: PlayerService.Binder) {
+    val millisLeft by remember(binder) { binder.sleepTimerMillisLeft ?: MutableStateFlow<Long?>(null) }
+        .collectAsState()
+    // Which chip started the running timer; unknown after the menu is opened again
+    var chosen by rememberSaveable { mutableStateOf<Int?>(null) }
+    val running = millisLeft != null
+
+    ChipsRow(
+        icon = R.drawable.ms_bedtime,
+        title = stringResource(R.string.menu_sleep_timer),
+        value = millisLeft?.let { stringResource(R.string.menu_sleep_timer_left, formatAsDuration(it)) }
+    ) {
+        FilterChip(
+            selected = !running,
+            onClick = {
+                chosen = null
+                binder.cancelSleepTimer()
+            },
+            label = { Text(text = stringResource(R.string.menu_sleep_timer_off)) }
+        )
+        sleepTimerMinutes.forEach { minutes ->
+            FilterChip(
+                selected = running && chosen == minutes,
+                onClick = {
+                    chosen = minutes
+                    binder.startSleepTimer(minutes * 60_000L)
+                },
+                label = {
+                    Text(
+                        text = if (minutes == 60) stringResource(R.string.menu_sleep_timer_hour)
+                        else stringResource(R.string.menu_sleep_timer_minutes, minutes)
+                    )
+                }
+            )
+        }
+        FilterChip(
+            selected = running && chosen == 0,
+            onClick = {
+                chosen = 0
+                runCatching {
+                    binder.startSleepTimer(binder.player.duration - binder.player.contentPosition)
+                }
+            },
+            label = { Text(text = stringResource(R.string.menu_sleep_timer_end_of_track)) }
+        )
+    }
+}
+
+/** The playback speed as chips, with "Custom…" for anything in between. */
+@Composable
+private fun SpeedRow(onCustom: () -> Unit) {
+    val speed = PlayerPreferences.speed
+
+    ChipsRow(
+        icon = R.drawable.ms_speed,
+        title = stringResource(R.string.menu_speed),
+        value = stringResource(R.string.menu_speed_value, formatSpeed(speed))
+    ) {
+        speedPresets.forEach { preset ->
+            FilterChip(
+                selected = abs(speed - preset) < 0.01f,
+                onClick = { PlayerPreferences.speed = preset },
+                label = { Text(text = stringResource(R.string.menu_speed_value, formatSpeed(preset))) }
+            )
+        }
+        FilterChip(
+            selected = speedPresets.none { abs(speed - it) < 0.01f },
+            onClick = onCustom,
+            label = { Text(text = stringResource(R.string.menu_speed_custom)) }
+        )
+    }
+}
+
+private fun formatSpeed(speed: Float): String = NumberFormat.getInstance().apply {
+    minimumFractionDigits = 0
+    maximumFractionDigits = 2
+}.format(speed)
+
+/** Any speed from 0.25× to 2× in steps of 0.05×. */
+@Composable
+private fun SpeedDialog(onDismiss: () -> Unit) {
+    var value by remember { mutableFloatStateOf(PlayerPreferences.speed.coerceIn(0.25f, 2f)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.menu_speed)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.menu_speed_value, formatSpeed(value)),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Slider(
+                    value = value,
+                    onValueChange = { value = (it * 20).roundToInt() / 20f },
+                    onValueChangeFinished = { PlayerPreferences.speed = value },
+                    valueRange = 0.25f..2f,
+                    steps = 34
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    PlayerPreferences.speed = value
+                    onDismiss()
+                }
+            ) { Text(text = stringResource(R.string.done)) }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    value = 1f
+                    PlayerPreferences.speed = 1f
+                }
+            ) { Text(text = stringResource(R.string.reset)) }
+        }
     )
 }
 

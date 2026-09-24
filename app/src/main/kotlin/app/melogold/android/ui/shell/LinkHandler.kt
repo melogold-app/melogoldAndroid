@@ -70,7 +70,7 @@ class LinkHandler internal constructor(
         scope.launch {
             when (target) {
                 is LinkTarget.Search -> nav.navigate(TopLevelDestination.Search) {
-                    searchResultRoute.ensureGlobal(target.query)
+                    searchResultRoute.ensureGlobal(target.query, SearchSource.All)
                 }
 
                 is LinkTarget.Playlist -> openPlaylist(target.playlistId)

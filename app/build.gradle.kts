@@ -91,6 +91,20 @@ android {
             buildConfigField("boolean", "ACCOUNT_UI", "true")
             signingConfig = signingConfigs.findByName("ci")
         }
+
+        // The release build (R8, not debuggable) signed with the debug key: it installs over the
+        // debug app and keeps its data. For checks on slow devices and emulators, where a
+        // debuggable app runs in the slowest interpreter
+        create("staging") {
+            initWith(getByName("release"))
+            matchingFallbacks += "release"
+
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-STAGING"
+            manifestPlaceholders["appName"] = "Melogold Debug"
+            buildConfigField("boolean", "ACCOUNT_UI", "true")
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 
     buildFeatures {

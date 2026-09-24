@@ -542,7 +542,7 @@ fun Queue(
 
                                     playlistPreviews?.forEach { playlistPreview ->
                                         MenuEntry(
-                                            icon = R.drawable.playlist,
+                                            icon = R.drawable.ms_playlist_play,
                                             text = playlistPreview.playlist.name,
                                             secondaryText = pluralStringResource(
                                                 id = R.plurals.song_count_plural,

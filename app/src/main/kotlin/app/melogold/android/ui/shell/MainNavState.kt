@@ -146,7 +146,8 @@ class MainNavState internal constructor(
     }
 
     /**
-     * Opens the Search section at its root with [query] in the field and [source] preselected.
+     * Opens the Search section at its root with [query] in the field; with a [source] other than
+     * "All" and a query, it shows the results on that segment instead.
      */
     fun openSearch(query: String = "", source: SearchSource = SearchSource.All) {
         val search = TopLevelDestination.Search
@@ -159,7 +160,7 @@ class MainNavState internal constructor(
             resetTab(search)
             select(search)
         }
-        searchFocusRequested = true
+        searchFocusRequested = source == SearchSource.All || query.isBlank()
     }
 
     /**

@@ -1,38 +1,26 @@
 package app.melogold.android.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.LocalOverscrollFactory
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.times
-import app.melogold.android.LocalPlayerAwareWindowInsets
-import app.melogold.android.ui.modifiers.pressable
+import androidx.compose.ui.platform.testTag
 
 val LocalMenuState = staticCompositionLocalOf { MenuState() }
 
+/**
+ * The menu sheet of the app. [display] replaces what it shows, so one menu can lead to another in
+ * place (the lyrics menu's "More options" opens the track menu).
+ */
 @Stable
 class MenuState {
     var isDisplayed by mutableStateOf(false)
@@ -51,63 +39,39 @@ class MenuState {
     }
 }
 
+/**
+ * Shows the menus of [state] in an M3 modal bottom sheet (REDESIGN-M3E T2.6): 28 dp top corners,
+ * a drag handle and `surfaceContainerLow`; the sheet slides away before it leaves.
+ *
+ * The sheet lives in its own window and places itself: it takes no modifier, as an alignment from
+ * the caller's layout would move it a second time.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomSheetMenu(
-    modifier: Modifier = Modifier,
-    state: MenuState = LocalMenuState.current
-) = BoxWithConstraints(modifier = modifier) {
-    val windowInsets = LocalPlayerAwareWindowInsets.current
-
-    val height = 0.8f * maxHeight
-
-    val bottomSheetState = rememberBottomSheetState(
-        dismissedBound = -windowInsets
-            .only(WindowInsetsSides.Bottom)
-            .asPaddingValues()
-            .calculateBottomPadding(),
-        expandedBound = height
+fun BottomSheetMenu(state: MenuState = LocalMenuState.current) {
+    val sheetState = rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
     )
+    var shown by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.isDisplayed) {
-        if (state.isDisplayed) bottomSheetState.expandSoft()
-        else bottomSheetState.dismissSoft()
-    }
-
-    LaunchedEffect(bottomSheetState.collapsed) {
-        if (bottomSheetState.collapsed) state.hide()
-    }
-
-    AnimatedVisibility(
-        visible = state.isDisplayed,
-        enter = fadeIn(),
-        exit = fadeOut()
-    ) {
-        Spacer(
-            modifier = Modifier
-                .pressable(onRelease = state::hide)
-                .alpha(bottomSheetState.progress * 0.5f)
-                .background(Color.Black)
-                .fillMaxSize()
-        )
-    }
-
-    CompositionLocalProvider(LocalOverscrollFactory provides null) {
-        if (!bottomSheetState.dismissed) BottomSheet( // This way the back gesture gets handled correctly
-            state = bottomSheetState,
-            collapsedContent = { },
-            onDismiss = { state.hide() },
-            indication = null,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.Bottom,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .sizeIn(maxHeight = height)
-                    .nestedScroll(bottomSheetState.preUpPostDownNestedScrollConnection)
-            ) {
-                state.content()
+        when {
+            // Displayed again while the sheet was sliding away
+            state.isDisplayed && shown -> sheetState.show()
+            state.isDisplayed -> shown = true
+            shown -> {
+                sheetState.hide()
+                shown = false
             }
         }
+    }
+
+    if (shown) ModalBottomSheet(
+        onDismissRequest = state::hide,
+        sheetState = sheetState,
+        modifier = Modifier.testTag("menu_sheet")
+    ) {
+        state.content()
     }
 }

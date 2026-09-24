@@ -1,5 +1,7 @@
 package app.melogold.android.ui.screens
 
+import app.melogold.android.ui.shell.SearchSource
+import app.melogold.compose.routing.Route2
 import androidx.compose.runtime.Composable
 import app.melogold.android.models.Mood
 import app.melogold.android.ui.screens.album.AlbumScreen
@@ -44,7 +46,7 @@ val libraryPlaylistsRoute = Route0("libraryPlaylistsRoute")
 val libraryAlbumsRoute = Route0("libraryAlbumsRoute")
 val libraryArtistsRoute = Route0("libraryArtistsRoute")
 val settingsPageRoute = Route1<SettingsPage>("settingsPageRoute")
-val searchResultRoute = Route1<String>("searchResultRoute")
+val searchResultRoute = Route2<String, SearchSource>("searchResultRoute")
 
 /**
  * The detail screens every stack knows: they open in the stack of the current section
@@ -109,7 +111,7 @@ fun RouteHandlerScope.GlobalRoutes() {
         )
     }
 
-    searchResultRoute { query ->
-        SearchResultsEntry(query = query)
+    searchResultRoute { query, source ->
+        SearchResultsEntry(query = query, source = source)
     }
 }
