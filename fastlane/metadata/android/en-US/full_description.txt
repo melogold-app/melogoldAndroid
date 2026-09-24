@@ -3,13 +3,12 @@ Melogold is a free and open-source music player for YouTube Music. Use it withou
 <b>Features:</b>
 
 * Play (almost) any song or video from YouTube Music
-* Play music stored on your device
 * Background playback and offline cache
 * Search songs, albums, artists, videos and playlists
 * Discover new music by mood and genre
 * Import playlists from YouTube
 * Plain and synchronized lyrics, with editing
-* Dynamic theme and Material You
+* Material You colors (Android 12+) and artwork colors in the player
 * Loudness normalization and SponsorBlock
 * Android Auto
 * Open YouTube and YouTube Music links (watch, playlist, channel and more)

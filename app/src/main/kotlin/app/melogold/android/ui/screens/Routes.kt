@@ -9,19 +9,15 @@ import app.melogold.android.ui.screens.localplaylist.LocalPlaylistScreen
 import app.melogold.android.ui.screens.mood.MoodScreen
 import app.melogold.android.ui.screens.mood.MoreAlbumsScreen
 import app.melogold.android.ui.screens.mood.MoreMoodsScreen
-import app.melogold.android.ui.screens.pipedplaylist.PipedPlaylistScreen
 import app.melogold.android.ui.screens.playlist.PlaylistScreen
 import app.melogold.android.ui.screens.search.SearchResultsEntry
 import app.melogold.android.ui.screens.search.SearchRouteEntry
 import app.melogold.android.ui.screens.settings.LogsScreen
 import app.melogold.compose.routing.Route0
 import app.melogold.compose.routing.Route1
-import app.melogold.compose.routing.Route3
 import app.melogold.compose.routing.Route4
 import app.melogold.compose.routing.RouteHandlerScope
 import app.melogold.core.data.enums.BuiltInPlaylist
-import io.ktor.http.Url
-import java.util.UUID
 
 /**
  * Marker class for linters that a composable is a route and should not be handled like a regular
@@ -36,7 +32,6 @@ val artistRoute = Route1<String>("artistRoute")
 val builtInPlaylistRoute = Route1<BuiltInPlaylist>("builtInPlaylistRoute")
 val localPlaylistRoute = Route1<Long>("localPlaylistRoute")
 val logsRoute = Route0("logsRoute")
-val pipedPlaylistRoute = Route3<String, String, String>("pipedPlaylistRoute")
 val playlistRoute = Route4<String, String?, Int?, Boolean>("playlistRoute")
 val moodRoute = Route1<Mood>("moodRoute")
 val moreMoodsRoute = Route0("moreMoodsRoute")
@@ -80,17 +75,6 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     moreAlbumsRoute {
         MoreAlbumsScreen()
-    }
-
-    pipedPlaylistRoute { apiBaseUrl, sessionToken, playlistId ->
-        PipedPlaylistScreen(
-            apiBaseUrl = runCatching { Url(apiBaseUrl) }.getOrNull()
-                ?: error("Invalid apiBaseUrl: $apiBaseUrl is not a valid Url"),
-            sessionToken = sessionToken,
-            playlistId = runCatching {
-                UUID.fromString(playlistId)
-            }.getOrNull() ?: error("Invalid playlistId: $playlistId is not a valid UUID")
-        )
     }
 
     playlistRoute { browseId, params, maxDepth, shouldDedup ->

@@ -24,22 +24,17 @@ import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.builtInPlaylistRoute
 import app.melogold.android.ui.screens.home.HomeAlbums
 import app.melogold.android.ui.screens.home.HomeArtistList
-import app.melogold.android.ui.screens.home.HomeLocalSongs
 import app.melogold.android.ui.screens.home.HomePlaylists
 import app.melogold.android.ui.screens.home.HomeSongs
 import app.melogold.android.ui.screens.localPlaylistRoute
-import app.melogold.android.ui.screens.pipedPlaylistRoute
-import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
-import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.compose.routing.RouteHandlerScope
 
 private enum class LibraryTab(val title: Int) {
     Playlists(R.string.playlists),
     Songs(R.string.library_tab_songs),
     Artists(R.string.artists),
-    Albums(R.string.albums),
-    OnDevice(R.string.library_tab_on_device)
+    Albums(R.string.albums)
 }
 
 /**
@@ -49,12 +44,10 @@ private enum class LibraryTab(val title: Int) {
 @Route
 @Composable
 fun RouteHandlerScope.LibraryRoot() {
-    val nav = LocalMainNav.current
     val saveableStateHolder = rememberSaveableStateHolder()
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     // The old lists own their scroll state: "to the top" recreates the list
     var generation by rememberSaveable { mutableIntStateOf(0) }
-    val onSearchClick = { nav.select(TopLevelDestination.Search) }
 
     TabRootScaffold(
         title = stringResource(R.string.nav_library),
@@ -81,30 +74,18 @@ fun RouteHandlerScope.LibraryRoot() {
                         when (LibraryTab.entries[tabIndex]) {
                             LibraryTab.Playlists -> HomePlaylists(
                                 onBuiltInPlaylist = { builtInPlaylistRoute(it) },
-                                onPlaylistClick = { localPlaylistRoute(it.id) },
-                                onPipedPlaylistClick = { session, playlist ->
-                                    pipedPlaylistRoute(
-                                        p0 = session.apiBaseUrl.toString(),
-                                        p1 = session.token,
-                                        p2 = playlist.id.toString()
-                                    )
-                                },
-                                onSearchClick = onSearchClick
+                                onPlaylistClick = { localPlaylistRoute(it.id) }
                             )
 
-                            LibraryTab.Songs -> HomeSongs(onSearchClick = onSearchClick)
+                            LibraryTab.Songs -> HomeSongs()
 
                             LibraryTab.Artists -> HomeArtistList(
-                                onArtistClick = { artistRoute(it.id) },
-                                onSearchClick = onSearchClick
+                                onArtistClick = { artistRoute(it.id) }
                             )
 
                             LibraryTab.Albums -> HomeAlbums(
-                                onAlbumClick = { albumRoute(it.id) },
-                                onSearchClick = onSearchClick
+                                onAlbumClick = { albumRoute(it.id) }
                             )
-
-                            LibraryTab.OnDevice -> HomeLocalSongs(onSearchClick = onSearchClick)
                         }
                     }
                 }

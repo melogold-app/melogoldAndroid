@@ -54,11 +54,9 @@ import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.Song
-import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.OrderPreferences
 import app.melogold.android.query
 import app.melogold.android.service.isLocal
-import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.themed.ConfirmationDialog
 import app.melogold.android.ui.components.themed.FloatingActionsContainerWithScrollToTop
@@ -67,7 +65,6 @@ import app.melogold.android.ui.components.themed.HeaderIconButton
 import app.melogold.android.ui.components.themed.InHistoryMediaItemMenu
 import app.melogold.android.ui.components.themed.TextField
 import app.melogold.android.ui.items.SongItem
-import app.melogold.android.ui.modifiers.swipeToClose
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.center
@@ -92,11 +89,8 @@ import kotlin.time.Duration.Companion.milliseconds
 private val Song.formattedTotalPlayTime @Composable get() = totalPlayTimeMs.milliseconds.formatted
 
 @Composable
-fun HomeSongs(
-    onSearchClick: () -> Unit
-) = with(OrderPreferences) {
+fun HomeSongs() = with(OrderPreferences) {
     HomeSongs(
-        onSearchClick = onSearchClick,
         songProvider = {
             Database.songs(songSortBy, songSortOrder)
                 .map { songs -> songs.filter { it.totalPlayTimeMs > 0L } }
@@ -113,7 +107,6 @@ fun HomeSongs(
 @Route
 @Composable
 fun HomeSongs(
-    onSearchClick: () -> Unit,
     songProvider: () -> Flow<List<Song>>,
     sortBy: SongSortBy,
     setSortBy: (SongSortBy) -> Unit,
@@ -263,21 +256,7 @@ fun HomeSongs(
                                 )
                             }
                         )
-                        .animateItem()
-                        .let {
-                            if (AppearancePreferences.swipeToHideSong) it.swipeToClose(
-                                key = filteredItems,
-                                requireUnconsumed = true
-                            ) { animationJob ->
-                                if (AppearancePreferences.swipeToHideSongConfirm)
-                                    hidingSong = song.id
-                                else {
-                                    if (!song.isLocal) binder?.cache?.removeResource(song.id)
-                                    transaction { Database.delete(song) }
-                                }
-                                animationJob.join()
-                            } else it
-                        },
+                        .animateItem(),
                     song = song,
                     thumbnailSize = Dimensions.thumbnails.song,
                     onThumbnailContent = if (sortBy == SongSortBy.PlayTime) {
@@ -308,11 +287,7 @@ fun HomeSongs(
             }
         }
 
-        FloatingActionsContainerWithScrollToTop(
-            lazyListState = lazyListState,
-            icon = R.drawable.search,
-            onClick = onSearchClick
-        )
+        FloatingActionsContainerWithScrollToTop(lazyListState = lazyListState)
     }
 }
 

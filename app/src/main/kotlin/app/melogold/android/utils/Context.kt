@@ -2,26 +2,22 @@ package app.melogold.android.utils
 
 import android.app.Activity
 import android.app.PendingIntent
-import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.annotation.StringRes
 import androidx.core.app.PendingIntentCompat
-import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
-import androidx.core.net.toUri
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.offline.DownloadRequest
 import androidx.media3.exoplayer.offline.DownloadService
 import androidx.media3.exoplayer.offline.DownloadService.sendAddDownload
-import app.melogold.android.BuildConfig
-import app.melogold.core.ui.utils.isAtLeastAndroid11
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 
 context(context: Context)
@@ -64,46 +60,22 @@ fun Context.toast(
     duration = duration
 )
 
-fun Context.toast(message: String, duration: ToastDuration = ToastDuration.Short) =
-    Toast.makeText(this, message, duration.length).show()
+/**
+ * Shows a toast from any thread: off the main thread (e.g. PrecacheService's download callbacks)
+ * `Toast.makeText` would crash, so it is posted to the main looper.
+ */
+fun Context.toast(message: String, duration: ToastDuration = ToastDuration.Short) {
+    val show = { Toast.makeText(this, message, duration.length).show() }
+    val mainLooper = Looper.getMainLooper()
+
+    if (Looper.myLooper() == mainLooper) show() else Handler(mainLooper).post(show)
+}
 
 @JvmInline
 value class ToastDuration private constructor(internal val length: Int) {
     companion object {
         val Short = ToastDuration(length = Toast.LENGTH_SHORT)
         val Long = ToastDuration(length = Toast.LENGTH_LONG)
-    }
-}
-
-fun launchYouTubeMusic(
-    context: Context,
-    endpoint: String,
-    tryWithoutBrowser: Boolean = true
-): Boolean {
-    return try {
-        val intent = Intent(
-            Intent.ACTION_VIEW,
-            "https://music.youtube.com/${endpoint.dropWhile { it == '/' }}".toUri()
-        ).apply {
-            if (tryWithoutBrowser && isAtLeastAndroid11) {
-                flags = Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER
-            }
-        }
-        intent.`package` =
-            context.applicationContext.packageManager.queryIntentActivities(intent, 0)
-                .firstOrNull {
-                    it?.activityInfo?.packageName != null &&
-                        BuildConfig.APPLICATION_ID !in it.activityInfo.packageName
-                }?.activityInfo?.packageName
-                ?: return false
-        context.startActivity(intent)
-        true
-    } catch (_: ActivityNotFoundException) {
-        tryWithoutBrowser && launchYouTubeMusic(
-            context = context,
-            endpoint = endpoint,
-            tryWithoutBrowser = false
-        )
     }
 }
 
@@ -115,11 +87,6 @@ fun Context.findActivity(): Activity {
     }
     error("Should be called in the context of an Activity")
 }
-
-fun Context.hasPermission(permission: String) = ContextCompat.checkSelfPermission(
-    applicationContext,
-    permission
-) == PackageManager.PERMISSION_GRANTED
 
 @OptIn(UnstableApi::class)
 inline fun <reified T : DownloadService> Context.download(request: DownloadRequest) = runCatching {

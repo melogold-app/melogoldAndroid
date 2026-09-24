@@ -2,7 +2,6 @@ package app.melogold.android.utils
 
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import app.melogold.android.preferences.AppearancePreferences
@@ -116,10 +115,6 @@ fun Player.findNextMediaItemById(mediaId: String): MediaItem? = runCatching {
     }
     return null
 }.getOrNull()
-
-fun Player.setPlaybackPitch(pitch: Float) {
-    playbackParameters = PlaybackParameters(playbackParameters.speed, pitch)
-}
 
 operator fun Timeline.get(
     index: Int,

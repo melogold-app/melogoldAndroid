@@ -10,7 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.res.stringResource
 import app.melogold.android.R
-import app.melogold.android.preferences.DataPreferences
+import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.preferences.UIStatePreferences
 import app.melogold.android.ui.components.themed.Scaffold
 import app.melogold.android.ui.screens.GlobalRoutes
@@ -46,7 +46,7 @@ fun BuiltInPlaylistScreen(builtInPlaylist: BuiltInPlaylist) {
         GlobalRoutes()
 
         Content {
-            val topTabTitle = stringResource(R.string.format_top_playlist, DataPreferences.topListLength)
+            val topTabTitle = stringResource(R.string.format_top_playlist, TOP_LIST_LENGTH)
 
             Scaffold(
                 key = BuiltInPlaylistScreen.KEY,

@@ -194,14 +194,6 @@ class MainNavState internal constructor(
         .filter { it != current }
         .forEach { persistMap?.clean(it.persistNamespace) }
 
-    /**
-     * Keeps the cached data of the current section while it is out of composition for a while
-     * (picture-in-picture), see [TabParking].
-     */
-    fun parkCurrent(parked: Boolean) {
-        parkingOf(current).isParked = parked
-    }
-
     private fun resetTab(tab: TopLevelDestination) {
         if (tab == current) return
 

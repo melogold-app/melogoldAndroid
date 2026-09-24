@@ -17,4 +17,3 @@ suspend fun LazyListState.smoothScrollToTop() {
 }
 
 suspend fun ScrollState.smoothScrollToTop() = animateScrollTo(0)
-suspend fun ScrollState.smoothScrollToBottom() = animateScrollTo(maxValue)

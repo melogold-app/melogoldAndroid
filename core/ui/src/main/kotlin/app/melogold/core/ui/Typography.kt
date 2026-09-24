@@ -26,13 +26,12 @@ data class Typography(internal val style: TextStyle) {
 
 fun typographyOf(
     color: Color,
-    applyFontPadding: Boolean,
     fontFamily: FontFamily = FontFamily.Default
 ) = Typography(
     style = TextStyle(
         fontFamily = fontFamily,
         fontWeight = FontWeight.Normal,
         color = color,
-        platformStyle = PlatformTextStyle(includeFontPadding = applyFontPadding)
+        platformStyle = PlatformTextStyle(includeFontPadding = false)
     )
 )

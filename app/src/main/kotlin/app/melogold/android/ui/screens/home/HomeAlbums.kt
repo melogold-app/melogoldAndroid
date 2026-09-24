@@ -42,8 +42,7 @@ import app.melogold.core.ui.LocalAppearance
 @Route
 @Composable
 fun HomeAlbums(
-    onAlbumClick: (Album) -> Unit,
-    onSearchClick: () -> Unit
+    onAlbumClick: (Album) -> Unit
 ) = with(OrderPreferences) {
     val (colorPalette) = LocalAppearance.current
 
@@ -118,10 +117,6 @@ fun HomeAlbums(
             }
         }
 
-        FloatingActionsContainerWithScrollToTop(
-            lazyListState = lazyListState,
-            icon = R.drawable.search,
-            onClick = onSearchClick
-        )
+        FloatingActionsContainerWithScrollToTop(lazyListState = lazyListState)
     }
 }

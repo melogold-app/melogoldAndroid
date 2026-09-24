@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -73,10 +72,8 @@ import app.melogold.android.utils.enqueue
 import app.melogold.android.utils.forcePlay
 import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.isCached
-import app.melogold.android.utils.launchYouTubeMusic
 import app.melogold.android.utils.medium
 import app.melogold.android.utils.semiBold
-import app.melogold.android.utils.toast
 import app.melogold.core.data.enums.PlaylistSortBy
 import app.melogold.core.data.enums.SortOrder
 import app.melogold.core.ui.Dimensions
@@ -209,8 +206,7 @@ fun BaseMediaItemMenu(
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onHideFromDatabase: (() -> Unit)? = null,
     onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onShowSpeedDialog: (() -> Unit)? = null,
-    onShowNormalizationDialog: (() -> Unit)? = null
+    onShowSpeedDialog: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
 
@@ -253,7 +249,6 @@ fun BaseMediaItemMenu(
         },
         onRemoveFromQuickPicks = onRemoveFromQuickPicks,
         onShowSpeedDialog = onShowSpeedDialog,
-        onShowNormalizationDialog = onShowNormalizationDialog,
         modifier = modifier
     )
 }
@@ -276,12 +271,10 @@ fun MediaItemMenu(
     onGoToAlbum: ((String) -> Unit)? = null,
     onGoToArtist: ((String) -> Unit)? = null,
     onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onShowSpeedDialog: (() -> Unit)? = null,
-    onShowNormalizationDialog: (() -> Unit)? = null
+    onShowSpeedDialog: (() -> Unit)? = null
 ) {
     val (colorPalette, typography) = LocalAppearance.current
     val density = LocalDensity.current
-    val uriHandler = LocalUriHandler.current
     val binder = LocalPlayerServiceBinder.current
     val context = LocalContext.current
 
@@ -524,21 +517,10 @@ fun MediaItemMenu(
             onShowSpeedDialog?.let {
                 MenuEntry(
                     icon = R.drawable.speed,
-                    text = stringResource(R.string.playback_settings),
+                    text = stringResource(R.string.playback_speed),
                     onClick = {
                         onDismiss()
                         onShowSpeedDialog()
-                    }
-                )
-            }
-
-            onShowNormalizationDialog?.let {
-                MenuEntry(
-                    icon = R.drawable.volume_up,
-                    text = stringResource(R.string.volume_boost),
-                    onClick = {
-                        onDismiss()
-                        onShowNormalizationDialog()
                     }
                 )
             }
@@ -722,29 +704,6 @@ fun MediaItemMenu(
                     }
                 }
             }
-
-            if (!isLocal) MenuEntry(
-                icon = R.drawable.play,
-                text = stringResource(R.string.watch_on_youtube),
-                onClick = {
-                    onDismiss()
-                    binder?.player?.pause()
-                    uriHandler.openUri("https://youtube.com/watch?v=${mediaItem.mediaId}")
-                }
-            )
-
-            val errorMsg = stringResource(R.string.youtube_music_not_installed)
-            if (!isLocal) MenuEntry(
-                icon = R.drawable.musical_notes,
-                text = stringResource(R.string.open_in_youtube_music),
-                onClick = {
-                    onDismiss()
-                    binder?.player?.pause()
-                    if (!launchYouTubeMusic(context, "watch?v=${mediaItem.mediaId}")) {
-                        context.toast(errorMsg)
-                    }
-                }
-            )
 
             if (!isLocal && !isCached(mediaItem.mediaId)) MenuEntry(
                 icon = R.drawable.download,

@@ -84,7 +84,6 @@ import app.melogold.android.ui.components.themed.TextFieldDialog
 import app.melogold.android.ui.components.themed.TextToggle
 import app.melogold.android.ui.items.SongItem
 import app.melogold.android.ui.items.SongItemPlaceholder
-import app.melogold.android.ui.modifiers.swipeToClose
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.addNext
 import app.melogold.android.utils.asMediaItem
@@ -113,7 +112,6 @@ import com.valentinilk.shimmer.shimmer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun Queue(
@@ -341,18 +339,7 @@ fun Queue(
                                         reorderingState = reorderingState,
                                         index = i
                                     )
-                                    .background(colorPalette.background1)
-                                    .let {
-                                        if (PlayerPreferences.horizontalSwipeToRemoveItem && !isPlayingThisMediaItem)
-                                            it.swipeToClose(
-                                                key = windows,
-                                                delay = 100.milliseconds,
-                                                requireUnconsumed = true
-                                            ) {
-                                                binder.player.removeMediaItem(window.firstPeriodIndex)
-                                            }
-                                        else it
-                                    },
+                                    .background(colorPalette.background1),
                                 clip = !reorderingState.isDragging,
                                 hideExplicit = !isPlayingThisMediaItem && AppearancePreferences.hideExplicit
                             )

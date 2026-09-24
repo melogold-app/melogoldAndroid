@@ -20,6 +20,7 @@ import app.melogold.android.utils.toast
  * Every entry hides the menu before invoking its callback. [onRefetch] being null shows a disabled
  * entry; [onPickFromLrcLib] and [onSetStartOffset] being null hides their entries.
  */
+@Suppress("ParameterNaming") // "synced" names the lyrics kind, not a past event
 @Composable
 fun LyricsMenu(
     showingSynced: Boolean,

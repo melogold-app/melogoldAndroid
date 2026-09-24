@@ -1,6 +1,7 @@
 package app.melogold.android.service
 
 import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -12,12 +13,12 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.media.MediaDescription
 import android.media.MediaMetadata
-import android.media.audiofx.BassBoost
 import android.media.audiofx.LoudnessEnhancer
-import android.media.audiofx.PresetReverb
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
@@ -32,13 +33,11 @@ import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
-import androidx.media3.common.AuxEffectInfo
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
-import androidx.media3.common.audio.SonicAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
@@ -57,8 +56,6 @@ import androidx.media3.exoplayer.analytics.PlaybackStatsListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioOffloadSupportProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink.DefaultAudioProcessorChain
-import androidx.media3.exoplayer.audio.SilenceSkippingAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -78,8 +75,7 @@ import app.melogold.android.query
 import app.melogold.android.transaction
 import app.melogold.android.utils.ActionReceiver
 import app.melogold.android.utils.ConditionalCacheDataSourceFactory
-import app.melogold.android.utils.GlyphInterface
-import app.melogold.android.utils.InvincibleService
+import app.melogold.android.utils.MAX_THUMBNAIL_SIZE
 import app.melogold.android.utils.TimerJob
 import app.melogold.android.utils.YouTubeDLResponse
 import app.melogold.android.utils.YouTubeRadio
@@ -96,9 +92,6 @@ import app.melogold.android.utils.get
 import app.melogold.android.utils.handleUnknownErrors
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.mediaItems
-import app.melogold.android.utils.progress
-import app.melogold.android.utils.readOnlyWhen
-import app.melogold.android.utils.setPlaybackPitch
 import app.melogold.android.utils.shouldBePlaying
 import app.melogold.android.utils.thumbnail
 import app.melogold.android.utils.timer
@@ -112,9 +105,7 @@ import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid13
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 import app.melogold.core.ui.utils.isAtLeastAndroid8
-import app.melogold.core.ui.utils.isAtLeastAndroid9
 import app.melogold.core.ui.utils.songBundle
-import app.melogold.core.ui.utils.streamVolumeFlow
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import app.melogold.providers.innertube.models.bodies.PlayerBody
@@ -129,7 +120,6 @@ import app.melogold.providers.sponsorblock.requests.segments
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
@@ -141,7 +131,6 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
@@ -149,7 +138,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -178,7 +166,9 @@ private const val LOOP_ACTION = "app.melogold.android.LOOP"
 @kotlin.OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LargeClass", "TooManyFunctions") // intended in this class: it is a service
 @OptIn(UnstableApi::class)
-class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListener.Callback {
+class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback {
+    private val handler = Handler(Looper.getMainLooper())
+
     private lateinit var mediaSession: MediaSession
     private lateinit var cache: Cache
     private lateinit var player: ExoPlayer
@@ -233,19 +223,14 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     private var volumeNormalizationJob: Job? = null
     private var sponsorBlockJob: Job? = null
 
-    override var isInvincibilityEnabled by mutableStateOf(false)
-
     private var audioManager: AudioManager? = null
     private var audioDeviceCallback: AudioDeviceCallback? = null
 
     private var loudnessEnhancer: LoudnessEnhancer? = null
-    private var bassBoost: BassBoost? = null
-    private var reverb: PresetReverb? = null
 
     private val binder = Binder()
 
     private var isNotificationStarted = false
-    override val notificationId get() = ServiceNotifications.default.notificationId!!
     private val notificationActionReceiver = NotificationActionReceiver()
 
     private val mediaItemState = MutableStateFlow<MediaItem?>(null)
@@ -268,27 +253,21 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             initialValue = false
         )
 
-    private val glyphInterface by lazy { GlyphInterface(applicationContext) }
-
     private var poiTimestamp: Long? by mutableStateOf(null)
 
-    override fun onBind(intent: Intent?): AndroidBinder {
-        super.onBind(intent)
-        return binder
-    }
+    override fun onBind(intent: Intent?): AndroidBinder = binder
 
     @Suppress("CyclomaticComplexMethod")
     override fun onCreate() {
         super.onCreate()
 
-        glyphInterface.tryInit()
         notificationActionReceiver.register(flags = ContextCompat.RECEIVER_EXPORTED)
 
         bitmapProvider = BitmapProvider(
             getBitmapSize = {
                 (512 * resources.displayMetrics.density)
                     .roundToInt()
-                    .coerceAtMost(AppearancePreferences.maxThumbnailSize)
+                    .coerceAtMost(MAX_THUMBNAIL_SIZE)
             },
             getColor = { isSystemInDarkMode ->
                 if (isSystemInDarkMode) Color.BLACK else Color.WHITE
@@ -312,7 +291,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             .setUsePlatformDiagnostics(false)
             .build()
             .apply {
-                skipSilenceEnabled = PlayerPreferences.skipSilence
                 addListener(this@PlayerService)
                 addAnalyticsListener(
                     PlaybackStatsListener(
@@ -359,24 +337,10 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                 callback: (T) -> Unit
             ) = launch { prop.stateFlow.collectLatest { handler.post { callback(it) } } }
 
-            subscribe(AppearancePreferences.isShowingThumbnailInLockscreenProperty) {
-                maybeShowSongCoverInLockScreen()
-            }
-
-            subscribe(PlayerPreferences.bassBoostLevelProperty) { maybeBassBoost() }
-            subscribe(PlayerPreferences.bassBoostProperty) { maybeBassBoost() }
-            subscribe(PlayerPreferences.reverbProperty) { maybeReverb() }
-            subscribe(PlayerPreferences.isInvincibilityEnabledProperty) {
-                this@PlayerService.isInvincibilityEnabled = it
-            }
-            subscribe(PlayerPreferences.pitchProperty) {
-                player.setPlaybackPitch(it.coerceAtLeast(0.01f))
-            }
             subscribe(PlayerPreferences.queueLoopEnabledProperty) { updateRepeatMode() }
             subscribe(PlayerPreferences.resumePlaybackWhenDeviceConnectedProperty) {
                 maybeResumePlaybackWhenDeviceConnected()
             }
-            subscribe(PlayerPreferences.skipSilenceProperty) { player.skipSilenceEnabled = it }
             subscribe(PlayerPreferences.speedProperty) {
                 player.setPlaybackSpeed(it.coerceAtLeast(0.01f))
             }
@@ -387,20 +351,8 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             subscribe(PlayerPreferences.volumeNormalizationBaseGainProperty) { maybeNormalizeVolume() }
             subscribe(PlayerPreferences.volumeNormalizationProperty) { maybeNormalizeVolume() }
             subscribe(PlayerPreferences.sponsorBlockEnabledProperty) { maybeSponsorBlock() }
-
-            launch {
-                val audioManager = getSystemService<AudioManager>()
-                val stream = AudioManager.STREAM_MUSIC
-
-                val min = when {
-                    audioManager == null -> 0
-                    isAtLeastAndroid9 -> audioManager.getStreamMinVolume(stream)
-                    else -> 0
-                }
-
-                streamVolumeFlow(stream).collectLatest {
-                    if (PlayerPreferences.stopOnMinimumVolume && it == min) handler.post(player::pause)
-                }
+            subscribe(PlayerPreferences.handleAudioFocusProperty) {
+                player.setAudioAttributes(player.audioAttributes, it)
             }
         }
     }
@@ -441,13 +393,10 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             preferenceUpdaterJob?.cancel()
 
             coroutineScope.cancel()
-            glyphInterface.close()
         }
 
         super.onDestroy()
     }
-
-    override fun shouldBeInvincible() = !player.shouldBePlaying
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         handler.post {
@@ -535,7 +484,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             return
         }
 
-        if (!PlayerPreferences.skipOnError || !player.hasNextMediaItem()) return
+        if (!player.hasNextMediaItem()) return
 
         val prev = player.currentMediaItem ?: return
         player.seekToNextMediaItem()
@@ -585,8 +534,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     }
 
     private fun maybeSavePlayerQueue() {
-        if (!PlayerPreferences.persistentQueue) return
-
         val mediaItems = player.currentTimeline.mediaItems
         val mediaItemIndex = player.currentMediaItemIndex
         val mediaItemPosition = player.currentPosition
@@ -607,8 +554,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     }
 
     private fun maybeRestorePlayerQueue() {
-        if (!PlayerPreferences.persistentQueue) return
-
         transaction {
             val queue = Database.queue()
             if (queue.isEmpty()) return@transaction
@@ -627,11 +572,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                                 .setUri(item.mediaItem.mediaId)
                                 .setCustomCacheKey(item.mediaItem.mediaId)
                                 .build()
-                                .apply {
-                                    mediaMetadata.extras?.songBundle?.apply {
-                                        isFromPersistentQueue = true
-                                    }
-                                }
                         },
                         /* startIndex = */
                         index,
@@ -687,13 +627,11 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                         }
                     }
 
-                    Database.loudnessBoost(songId).cancellable().collectLatest { boost ->
-                        withContext(Dispatchers.Main) {
-                            loudnessEnhancer?.setTargetGain(
-                                PlayerPreferences.volumeNormalizationBaseGain.toMb() + boost.toMb() - loudnessMb
-                            )
-                            loudnessEnhancer?.enabled = true
-                        }
+                    withContext(Dispatchers.Main) {
+                        loudnessEnhancer?.setTargetGain(
+                            PlayerPreferences.volumeNormalizationBaseGain.toMb() - loudnessMb
+                        )
+                        loudnessEnhancer?.enabled = true
                     }
                 }
             }
@@ -777,51 +715,8 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
         }
     }
 
-    private fun maybeBassBoost() {
-        if (!PlayerPreferences.bassBoost) {
-            runCatching {
-                bassBoost?.enabled = false
-                bassBoost?.release()
-            }
-            bassBoost = null
-            maybeNormalizeVolume()
-            return
-        }
-
-        runCatching {
-            if (bassBoost == null) bassBoost = BassBoost(0, player.audioSessionId)
-            bassBoost?.setStrength(PlayerPreferences.bassBoostLevel.toShort())
-            bassBoost?.enabled = true
-        }.onFailure {
-            toast(getString(R.string.error_bassboost_init))
-        }
-    }
-
-    private fun maybeReverb() {
-        if (PlayerPreferences.reverb == PlayerPreferences.Reverb.None) {
-            runCatching {
-                reverb?.enabled = false
-                player.clearAuxEffectInfo()
-                reverb?.release()
-            }
-            reverb = null
-            return
-        }
-
-        runCatching {
-            if (reverb == null) reverb = PresetReverb(1, player.audioSessionId)
-            reverb?.preset = PlayerPreferences.reverb.preset
-            reverb?.enabled = true
-            reverb?.id?.let { player.setAuxEffectInfo(AuxEffectInfo(it, 1f)) }
-        }
-    }
-
     private fun maybeShowSongCoverInLockScreen() = handler.post {
-        val bitmap = if (isAtLeastAndroid13 || AppearancePreferences.isShowingThumbnailInLockscreen) {
-            bitmapProvider.bitmap
-        } else {
-            null
-        }
+        val bitmap = bitmapProvider.bitmap
         val uri = player.mediaMetadata.artworkUri?.toString()?.thumbnail(512)
 
         metadataBuilder.putBitmap(MediaMetadata.METADATA_KEY_ART, bitmap)
@@ -951,7 +846,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
 
         if (notification == null) {
             isNotificationStarted = false
-            makeInvincible(false)
             stopForeground(false)
             closeEqualizer()
             ServiceNotifications.default.cancel(this)
@@ -962,13 +856,11 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             isNotificationStarted = true
             startForegroundService(this@PlayerService, intent<PlayerService>())
             startForeground()
-            makeInvincible(false)
             openEqualizer()
         } else {
             if (!player.shouldBePlaying) {
                 isNotificationStarted = false
                 stopForeground(false)
-                makeInvincible(true)
                 closeEqualizer()
             }
             updateNotification()
@@ -1054,7 +946,10 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
         }
     }
 
-    override fun startForeground() {
+    /**
+     * Should strictly be called on the main thread!
+     */
+    private fun startForeground() {
         notification()
             ?.let { ServiceNotifications.default.startForeground(this, it) }
     }
@@ -1084,33 +979,12 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             enableFloatOutput: Boolean,
             enableAudioTrackPlaybackParams: Boolean
         ): AudioSink {
-            val minimumSilenceDuration =
-                PlayerPreferences.minimumSilence.coerceIn(1000L..2_000_000L)
-
             @Suppress("DEPRECATION")
             return DefaultAudioSink.Builder(applicationContext)
                 .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                 .setAudioOffloadSupportProvider(
                     DefaultAudioOffloadSupportProvider(applicationContext)
-                )
-                .setAudioProcessorChain(
-                    DefaultAudioProcessorChain(
-                        arrayOf(),
-                        SilenceSkippingAudioProcessor(
-                            /* minimumSilenceDurationUs = */
-                            minimumSilenceDuration,
-                            /* silenceRetentionRatio = */
-                            0.01f,
-                            /* maxSilenceToKeepDurationUs = */
-                            minimumSilenceDuration,
-                            /* minVolumeToKeepPercentageWhenMuting = */
-                            0,
-                            /* silenceThresholdLevel = */
-                            256
-                        ),
-                        SonicAudioProcessor()
-                    )
                 )
                 .build()
                 .apply {
@@ -1138,17 +1012,10 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
         var isLoadingRadio by mutableStateOf(false)
             private set
 
-        var invincible
-            get() = isInvincibilityEnabled
-            set(value) {
-                isInvincibilityEnabled = value
-            }
-
         val poiTimestamp get() = this@PlayerService.poiTimestamp
 
         fun setBitmapListener(listener: ((Bitmap?) -> Unit)?) = bitmapProvider.setListener(listener)
 
-        @kotlin.OptIn(FlowPreview::class)
         fun startSleepTimer(delayMillis: Long) {
             timerJob?.cancel()
 
@@ -1166,19 +1033,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                 handler.post {
                     player.pause()
                     player.stop()
-
-                    glyphInterface.glyph {
-                        turnOff()
-                    }
                 }
-            }.also { job ->
-                glyphInterface.progress(
-                    job
-                        .millisLeft
-                        .takeWhile { it != null }
-                        .debounce(500.milliseconds)
-                        .map { ((it ?: 0L) / delayMillis.toFloat() * 100).toInt() }
-                )
             }
         }
 
@@ -1225,15 +1080,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             isLoadingRadio = false
             radioJob?.cancel()
             radio = null
-        }
-
-        /**
-         * This method should ONLY be called when the application (sc. activity) is in the foreground!
-         */
-        fun restartForegroundOrStop() {
-            player.pause()
-            isInvincibilityEnabled = false
-            stopSelf()
         }
 
         fun isCached(song: SongWithContentLength) =
@@ -1362,7 +1208,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             uriCache: UriCache<String, Long?> = UriCache()
         ): DataSource.Factory = ResolvingDataSource.Factory(
             ConditionalCacheDataSourceFactory(
-                cacheDataSourceFactory = cache.readOnlyWhen { PlayerPreferences.pauseCache }.asDataSource,
+                cacheDataSourceFactory = cache.asDataSource,
                 upstreamDataSourceFactory = context.defaultDataSource,
                 shouldCache = { !it.isLocal }
             )

@@ -15,14 +15,12 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import app.melogold.android.R
 import app.melogold.android.models.Song
-import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.isLocal
 import app.melogold.core.ui.utils.SongBundleAccessor
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.bodies.ContinuationBody
 import app.melogold.providers.innertube.requests.playlistPage
-import app.melogold.providers.piped.models.Playlist
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
@@ -81,36 +79,6 @@ val Innertube.VideoItem.asMediaItem: MediaItem
         )
         .build()
 
-val Playlist.Video.asMediaItem: MediaItem?
-    get() {
-        val key = id ?: return null
-
-        return MediaItem.Builder()
-            .setMediaId(key)
-            .setUri(key)
-            .setCustomCacheKey(key)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setArtist(uploaderName)
-                    .also {
-                        runCatching { thumbnailUrl.toString().toUri() }.getOrNull()
-                            ?.let { uri -> it.setArtworkUri(uri) }
-                    }
-                    .setExtras(
-                        SongBundleAccessor.bundle {
-                            durationText = duration.toComponents { minutes, seconds, _ ->
-                                "$minutes:${seconds.toString().padStart(2, '0')}"
-                            }
-                            artistNames = listOf(uploaderName)
-                            artistIds = uploaderId?.let { listOf(it) }
-                        }
-                    )
-                    .build()
-            )
-            .build()
-    }
-
 val Song.asMediaItem: MediaItem
     get() = MediaItem.Builder()
         .setMediaMetadata(
@@ -145,15 +113,20 @@ val Duration.formatted
         }
     }
 
+/** The largest artwork size requested from the thumbnail servers, in pixels. */
+const val MAX_THUMBNAIL_SIZE = 1920
+
 fun String.thumbnail(
     size: Int,
-    maxSize: Int = AppearancePreferences.maxThumbnailSize
+    maxSize: Int = MAX_THUMBNAIL_SIZE
 ): String {
     val actualSize = size.coerceAtMost(maxSize)
     return when {
         this.startsWith("https://lh3.googleusercontent.com") ||
             this.startsWith("https://yt3.googleusercontent.com") -> "$this-w$actualSize-h$actualSize"
+
         this.startsWith("https://yt3.ggpht.com") -> "$this-w$actualSize-h$actualSize-s$actualSize"
+
         else -> this
     }
 }

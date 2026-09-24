@@ -5,9 +5,6 @@ import android.database.SQLException
 import android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE
 import android.os.Parcel
 import androidx.annotation.OptIn
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.database.getFloatOrNull
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaLibraryInfo
@@ -44,7 +41,6 @@ import app.melogold.android.DatabaseInitializer.From8To9Migration
 import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
 import app.melogold.android.models.Event
-import app.melogold.android.models.EventWithSong
 import app.melogold.android.models.Format
 import app.melogold.android.models.Info
 import app.melogold.android.models.Lyrics
@@ -69,14 +65,9 @@ import app.melogold.core.data.enums.SortOrder
 import app.melogold.core.ui.utils.songBundle
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 object DatabaseDependency {
-    private var _instance by mutableStateOf(buildDatabase())
-    private val mutex = Mutex()
-    val instance get() = _instance
+    val instance = buildDatabase()
 
     private fun buildDatabase() = Room
         .databaseBuilder(
@@ -92,13 +83,6 @@ object DatabaseDependency {
             From23To24Migration()
         )
         .build()
-
-    // Unfortunately, this HAS to block with the current architecture
-    fun reload() = runBlocking {
-        mutex.withLock {
-            _instance = buildDatabase()
-        }
-    }
 }
 
 @Dao // WHY WHY WHY WHY
@@ -373,9 +357,6 @@ interface DatabaseAccessor {
     @Query("UPDATE Song SET totalPlayTimeMs = totalPlayTimeMs + :addition WHERE id = :id")
     fun incrementTotalPlayTimeMs(id: String, addition: Long)
 
-    @Query("SELECT * FROM PipedSession")
-    fun pipedSessions(): Flow<List<PipedSession>>
-
     @Query("SELECT * FROM Playlist WHERE id = :id")
     fun playlist(id: Long): Flow<Playlist?>
 
@@ -473,7 +454,7 @@ interface DatabaseAccessor {
         """
         SELECT thumbnailUrl FROM Song
         JOIN SongPlaylistMap ON id = songId
-        WHERE playlistId = :id
+        WHERE playlistId = :id AND thumbnailUrl IS NOT NULL
         ORDER BY position
         LIMIT 4
         """
@@ -618,20 +599,11 @@ interface DatabaseAccessor {
     )
     fun move(playlistId: Long, fromPosition: Int, toPosition: Int)
 
-    @Query("DELETE FROM SongPlaylistMap WHERE playlistId = :id")
-    fun clearPlaylist(id: Long)
-
     @Query("DELETE FROM SongAlbumMap WHERE albumId = :id")
     fun clearAlbum(id: String)
 
     @Query("SELECT loudnessDb FROM Format WHERE songId = :songId")
     fun loudnessDb(songId: String): Flow<Float?>
-
-    @Query("SELECT Song.loudnessBoost FROM Song WHERE id = :songId")
-    fun loudnessBoost(songId: String): Flow<Float?>
-
-    @Query("UPDATE Song SET loudnessBoost = :loudnessBoost WHERE id = :songId")
-    fun setLoudnessBoost(songId: String, loudnessBoost: Float?)
 
     @Query("SELECT * FROM Song WHERE title LIKE :query OR artistsText LIKE :query")
     fun search(query: String): Flow<List<Song>>
@@ -655,35 +627,6 @@ interface DatabaseAccessor {
     )
     @RewriteQueriesToDropUnusedColumns
     fun trending(limit: Int = 3): Flow<List<Song>>
-
-    @Transaction
-    @Query(
-        """
-        SELECT Song.* FROM Event
-        JOIN Song ON Song.id = songId
-        WHERE (:now - Event.timestamp) <= :period AND
-        Song.id NOT LIKE '$LOCAL_KEY_PREFIX%'
-        GROUP BY songId
-        ORDER BY SUM(playTime) DESC
-        LIMIT :limit
-        """
-    )
-    @RewriteQueriesToDropUnusedColumns
-    fun trending(
-        limit: Int = 3,
-        now: Long = System.currentTimeMillis(),
-        period: Long
-    ): Flow<List<Song>>
-
-    @Transaction
-    @Query("SELECT * FROM Event ORDER BY timestamp DESC")
-    fun events(): Flow<List<EventWithSong>>
-
-    @Query("SELECT COUNT (*) FROM Event")
-    fun eventsCount(): Flow<Int>
-
-    @Query("DELETE FROM Event")
-    fun clearEvents()
 
     @Query("DELETE FROM Event WHERE songId = :songId")
     fun clearEventsFor(songId: String)
@@ -721,9 +664,6 @@ interface DatabaseAccessor {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(artists: List<Artist>, songArtistMaps: List<SongArtistMap>)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(pipedSession: PipedSession)
 
     @Transaction
     fun insert(mediaItem: MediaItem, block: (Song) -> Song = { it }) {
@@ -795,9 +735,6 @@ interface DatabaseAccessor {
 
     @Delete
     fun delete(songPlaylistMap: SongPlaylistMap)
-
-    @Delete
-    fun delete(pipedSession: PipedSession)
 
     @RawQuery
     fun raw(supportSQLiteQuery: SupportSQLiteQuery): Int

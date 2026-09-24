@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    With targetSdk 37 the platform blocks cleartext HTTP, but a home Melogold server may only be
+    reachable over http on the local network. So cleartext is allowed here and the code enforces
+    the policy (REWRITE §3.5.12, DESIGN §3.17, item 10): https to any host, http only to a private
+    address (CD/server/ServerAddressPolicy.kt).
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

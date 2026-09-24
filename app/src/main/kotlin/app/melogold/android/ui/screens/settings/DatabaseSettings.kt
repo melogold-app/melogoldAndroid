@@ -16,6 +16,7 @@ import app.melogold.android.Database
 import app.melogold.android.R
 import app.melogold.android.internal
 import app.melogold.android.preferences.DataPreferences
+import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.query
 import app.melogold.android.service.PlayerService
 import app.melogold.android.transaction
@@ -35,9 +36,6 @@ import kotlin.system.exitProcess
 @Composable
 fun DatabaseSettings() = with(DataPreferences) {
     val context = LocalContext.current
-
-    val eventsCount by remember { Database.eventsCount().distinctUntilChanged() }
-        .collectAsState(initial = 0)
 
     val blacklistLength by remember { Database.blacklistLength().distinctUntilChanged() }
         .collectAsState(initial = 0)
@@ -96,25 +94,11 @@ fun DatabaseSettings() = with(DataPreferences) {
                 )
             }
 
-            AnimatedVisibility(visible = !(pauseHistory && eventsCount == 0)) {
-                SettingsEntry(
-                    title = stringResource(R.string.reset_quick_picks),
-                    text = if (eventsCount > 0) pluralStringResource(
-                        R.plurals.format_reset_quick_picks_amount,
-                        eventsCount,
-                        eventsCount
-                    )
-                    else stringResource(R.string.quick_picks_empty),
-                    onClick = { query(Database::clearEvents) },
-                    isEnabled = eventsCount > 0
-                )
-            }
-
             SwitchSettingsEntry(
                 title = stringResource(R.string.pause_playback_time),
                 text = stringResource(
                     R.string.format_pause_playback_time_description,
-                    topListLength
+                    TOP_LIST_LENGTH
                 ),
                 isChecked = pausePlaytime,
                 onCheckedChange = { pausePlaytime = !pausePlaytime }

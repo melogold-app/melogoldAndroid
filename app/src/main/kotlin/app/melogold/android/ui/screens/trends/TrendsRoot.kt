@@ -16,9 +16,7 @@ import app.melogold.android.ui.screens.moodRoute
 import app.melogold.android.ui.screens.moreAlbumsRoute
 import app.melogold.android.ui.screens.moreMoodsRoute
 import app.melogold.android.ui.screens.playlistRoute
-import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
-import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.compose.routing.RouteHandlerScope
 
 /**
@@ -28,7 +26,6 @@ import app.melogold.compose.routing.RouteHandlerScope
 @Route
 @Composable
 fun RouteHandlerScope.TrendsRoot() {
-    val nav = LocalMainNav.current
     // The old page owns its scroll state: "to the top" recreates it
     var generation by rememberSaveable { mutableIntStateOf(0) }
 
@@ -40,7 +37,6 @@ fun RouteHandlerScope.TrendsRoot() {
             HomeDiscovery(
                 onMoodClick = { mood -> moodRoute(mood.toUiMood()) },
                 onNewReleaseAlbumClick = { albumRoute(it) },
-                onSearchClick = { nav.select(TopLevelDestination.Search) },
                 onMoreMoodsClick = { moreMoodsRoute() },
                 onMoreAlbumsClick = { moreAlbumsRoute() },
                 onPlaylistClick = { playlistRoute(it, null, null, true) }

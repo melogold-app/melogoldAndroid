@@ -20,7 +20,6 @@ import androidx.media3.common.util.UnstableApi
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.preferences.DataPreferences
-import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.ui.components.themed.LinearProgressIndicator
 import app.melogold.android.ui.components.themed.SecondaryTextButton
 import app.melogold.android.ui.screens.Route
@@ -115,12 +114,6 @@ fun CacheSettings() = with(DataPreferences) {
                     title = stringResource(R.string.max_size),
                     selectedValue = exoPlayerDiskCacheMaxSize,
                     onValueSelect = { exoPlayerDiskCacheMaxSize = it }
-                )
-                SwitchSettingsEntry(
-                    title = stringResource(R.string.pause_song_cache),
-                    text = stringResource(R.string.pause_song_cache_description),
-                    isChecked = PlayerPreferences.pauseCache,
-                    onCheckedChange = { PlayerPreferences.pauseCache = it }
                 )
             }
         }

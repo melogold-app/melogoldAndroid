@@ -2,7 +2,6 @@ package app.melogold.android.ui.screens.player.modern
 
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import android.media.MediaRouter2
 import android.os.Build
 import android.provider.Settings
@@ -31,9 +30,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -70,21 +67,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.getSystemService
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import app.melogold.android.R
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.screens.player.AnimatedPlayPauseButton
-import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
+import app.melogold.android.utils.formatAsDuration
 import app.melogold.android.utils.positionAndDurationState
 import app.melogold.android.utils.toast
 import app.melogold.core.ui.LocalAppearance
-import app.melogold.core.ui.utils.streamVolumeFlow
-import kotlinx.coroutines.flow.collectLatest
 
 private const val SEEK_STEP_MS = 10_000L
 private val TrackInset = 32.dp
@@ -445,103 +439,17 @@ fun TransportRow(
     }
 }
 
-/** The system music volume, kept in sync with the hardware keys. Hidden when volume is fixed. */
-@Composable
-fun VolumeRow(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val audioManager = remember(context) { context.getSystemService<AudioManager>() } ?: return
-    if (audioManager.isVolumeFixed) return
-
-    val max = remember(audioManager) {
-        audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-    }
-    var volume by remember(audioManager) {
-        mutableIntStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
-    }
-    var scrubFraction by remember { mutableStateOf<Float?>(null) }
-    var pressed by remember { mutableStateOf(false) }
-    val pressFraction = animateFloatAsState(
-        targetValue = if (pressed) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 700f),
-        label = ""
-    )
-
-    LaunchedEffect(context, audioManager) {
-        with(context) {
-            streamVolumeFlow(AudioManager.STREAM_MUSIC).collectLatest { volume = it }
-        }
-    }
-
-    val description = stringResource(R.string.volume)
-    val fraction = scrubFraction ?: (volume.toFloat() / max)
-
-    fun setVolume(newFraction: Float) {
-        val newVolume = (newFraction * max).toInt().coerceIn(0, max)
-        runCatching { audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0) }
-        volume = newVolume
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = TrackInset)
-            .semantics {
-                contentDescription = description
-                progressBarRangeInfo = ProgressBarRangeInfo(
-                    current = volume.toFloat(),
-                    range = 0f..max.toFloat(),
-                    steps = (max - 1).coerceAtLeast(0)
-                )
-                setProgress { target ->
-                    setVolume(target / max)
-                    true
-                }
-            }
-            .testTag("player_volume")
-    ) {
-        Image(
-            painter = painterResource(R.drawable.volume_down),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(OnArt.secondary),
-            modifier = Modifier.size(14.dp)
-        )
-
-        Box(modifier = Modifier.weight(1f)) {
-            AppleSlider(
-                fraction = fraction,
-                pressFraction = { pressFraction.value },
-                onPressedChange = { pressed = it },
-                onScrub = { newFraction ->
-                    scrubFraction = newFraction
-                    if (newFraction != null) setVolume(newFraction)
-                },
-                onCommit = { setVolume(it) },
-                inset = 10.dp,
-                pressedInset = 4.dp
-            )
-        }
-
-        Image(
-            painter = painterResource(R.drawable.volume_up),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(OnArt.secondary),
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
 @Composable
 private fun ToolbarButton(
     @DrawableRes icon: Int,
     contentDescription: String,
     testTag: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     isToggle: Boolean = false,
     stateDescription: String? = null,
-    alpha: Float = 1f,
-    onClick: () -> Unit
+    alpha: Float = 1f
 ) {
     val selectedFraction = animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
@@ -678,7 +586,7 @@ fun PlayerToolbar(
 }
 
 /**
- * The whole bottom block: scrubber, labels, transport, volume and toolbar.
+ * The whole bottom block: scrubber, labels, transport and toolbar.
  *
  * @param compact use smaller gaps (short screens, landscape)
  */
@@ -698,9 +606,7 @@ fun PlayerControlsBlock(
     PlayerScrubber(binder = binder, onScrubbing = onScrubbing)
     Spacer(modifier = Modifier.height(if (compact) 8.dp else 34.dp))
     TransportRow(binder = binder, shouldBePlaying = shouldBePlaying)
-    Spacer(modifier = Modifier.height(if (compact) 4.dp else 22.dp))
-    VolumeRow()
-    Spacer(modifier = Modifier.height(if (compact) 4.dp else 6.dp))
+    Spacer(modifier = Modifier.height(if (compact) 8.dp else 28.dp))
     toolbar()
     Spacer(modifier = Modifier.height(if (compact) 4.dp else 10.dp))
 }

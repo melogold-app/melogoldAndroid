@@ -4,9 +4,12 @@ import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import app.melogold.providers.piped.models.authenticatedWith
 import io.ktor.http.Url
 
+/**
+ * A Piped login of the pre-rewrite app. Piped is gone; the table stays in the schema until the
+ * frozen v31 database (REWRITE §5.1, S4) drops it.
+ */
 @Immutable
 @Entity(
     indices = [
@@ -22,6 +25,4 @@ data class PipedSession(
     val token: String,
     // the username should never change on piped
     val username: String
-) {
-    fun toApiSession() = apiBaseUrl authenticatedWith token
-}
+)

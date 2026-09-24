@@ -40,7 +40,6 @@ private enum class SettingsTab(@param:StringRes val title: Int) {
     Player(R.string.player),
     Cache(R.string.cache),
     Database(R.string.database),
-    Sync(R.string.sync),
     Other(R.string.other),
     About(R.string.about)
 }
@@ -87,7 +86,6 @@ fun RouteHandlerScope.SettingsRoot() {
                             SettingsTab.Player -> PlayerSettings()
                             SettingsTab.Cache -> CacheSettings()
                             SettingsTab.Database -> DatabaseSettings()
-                            SettingsTab.Sync -> SyncSettings()
                             SettingsTab.Other -> OtherSettings()
                             SettingsTab.About -> About()
                         }

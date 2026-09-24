@@ -85,21 +85,16 @@ import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.components.themed.MenuEntry
 import app.melogold.android.ui.components.themed.TextFieldDialog
-import app.melogold.android.ui.modifiers.PinchDirection
 import app.melogold.android.ui.modifiers.onSwipe
-import app.melogold.android.ui.modifiers.pinchToToggle
-import app.melogold.android.ui.screens.player.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.LyricsMenu
 import app.melogold.android.ui.screens.player.PlaybackError
 import app.melogold.android.ui.screens.player.Queue
 import app.melogold.android.ui.screens.player.StatsForNerds
+import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.searchLyricsOnline
-import app.melogold.android.utils.FullScreenState
-import app.melogold.android.utils.Pip
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
-import app.melogold.android.utils.rememberPipHandler
 import app.melogold.android.utils.rememberReduceMotion
 import app.melogold.android.utils.rememberTouchExplorationEnabled
 import app.melogold.android.utils.toast
@@ -156,7 +151,6 @@ fun ModernPlayer(
     val view = LocalView.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
-    val pipHandler = rememberPipHandler()
     val reduceMotion = rememberReduceMotion()
     val touchExploration = rememberTouchExplorationEnabled()
     val landscape = isLandscape
@@ -259,8 +253,6 @@ fun ModernPlayer(
     DisposableEffect(activity) {
         onDispose { activity?.setSystemBarAppearance(isDark = currentAppIsDark) }
     }
-
-    FullScreenState(shown = modeState.controlsVisible || PlayerPreferences.lyricsShowSystemBars)
 
     val keepScreenOn = PlayerPreferences.lyricsKeepScreenAwake &&
         mode == PlayerMode.Lyrics &&
@@ -382,11 +374,7 @@ fun ModernPlayer(
     // Building blocks shared by the portrait and landscape layouts
 
     val artwork: @Composable (Dp, SharedScopes?) -> Unit = { size, scopes ->
-        Pip(
-            numerator = 1,
-            denominator = 1,
-            modifier = Modifier.modeSharedElement(scopes, "art")
-        ) {
+        Box(modifier = Modifier.modeSharedElement(scopes, "art")) {
             PlayerArtwork(
                 mediaItem = mediaItem,
                 size = size,
@@ -399,11 +387,6 @@ fun ModernPlayer(
                         animateOffset = true,
                         onSwipeLeft = { binder.player.forceSeekToNext() },
                         onSwipeRight = { binder.player.forceSeekToPrevious(seekToStart = false) }
-                    )
-                    .pinchToToggle(
-                        direction = PinchDirection.In,
-                        threshold = .95f,
-                        onPinch = { pipHandler.enterPictureInPictureMode() }
                     )
             ) {
                 StatsForNerds(
@@ -444,11 +427,7 @@ fun ModernPlayer(
             sharedScopes = scopes,
             modifier = headerModifier
         ) {
-            Pip(
-                numerator = 1,
-                denominator = 1,
-                modifier = Modifier.modeSharedElement(scopes, "art")
-            ) {
+            Box(modifier = Modifier.modeSharedElement(scopes, "art")) {
                 HeaderArtwork(mediaItem = mediaItem)
             }
         }
@@ -559,8 +538,7 @@ fun ModernPlayer(
             ) {
                 PlayerBackground(
                     artworkUri = mediaItem.mediaMetadata.artworkUri,
-                    accent = appearance.colorPalette.accent,
-                    animate = shouldBePlaying && !queueOpen && !reduceMotion
+                    accent = appearance.colorPalette.accent
                 )
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")

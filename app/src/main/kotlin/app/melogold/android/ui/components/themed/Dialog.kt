@@ -38,7 +38,6 @@ import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -124,31 +123,6 @@ fun TextFieldDialog(
         )
     }
 }
-
-@Composable
-fun <T> NumberFieldDialog(
-    onDismiss: () -> Unit,
-    onAccept: (T) -> Unit,
-    initialValue: T,
-    defaultValue: T,
-    convert: (String) -> T?,
-    range: ClosedRange<T>,
-    modifier: Modifier = Modifier,
-    cancelText: String = stringResource(R.string.cancel),
-    doneText: String = stringResource(R.string.done),
-    onCancel: () -> Unit = onDismiss
-) where T : Number, T : Comparable<T> = TextFieldDialog(
-    hintText = "",
-    onDismiss = onDismiss,
-    onAccept = { onAccept((convert(it) ?: defaultValue).coerceIn(range)) },
-    modifier = modifier,
-    cancelText = cancelText,
-    doneText = doneText,
-    initialTextInput = initialValue.toString(),
-    onCancel = onCancel,
-    isTextInputValid = { true },
-    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-)
 
 @Composable
 fun ConfirmationDialog(

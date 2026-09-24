@@ -8,7 +8,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven("https://jitpack.io")
     }
 }
 
@@ -30,7 +29,7 @@ rootProject.name = "melogold"
 
 include(":app")
 include(":core:data")
-include(":core:material-compat")
+include(":core:domain")
 include(":core:ui")
 include(":compose:persist")
 include(":compose:preferences")
@@ -42,6 +41,4 @@ include(":providers:github")
 include(":providers:innertube")
 include(":providers:kugou")
 include(":providers:lrclib")
-include(":providers:piped")
 include(":providers:sponsorblock")
-include(":providers:translate")

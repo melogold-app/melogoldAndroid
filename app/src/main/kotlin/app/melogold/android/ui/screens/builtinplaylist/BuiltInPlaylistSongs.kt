@@ -26,14 +26,13 @@ import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.Song
-import app.melogold.android.preferences.DataPreferences
+import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.themed.FloatingActionsContainerWithScrollToTop
 import app.melogold.android.ui.components.themed.Header
 import app.melogold.android.ui.components.themed.InHistoryMediaItemMenu
 import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
 import app.melogold.android.ui.components.themed.SecondaryTextButton
-import app.melogold.android.ui.components.themed.ValueSelectorDialog
 import app.melogold.android.ui.items.SongItem
 import app.melogold.android.ui.screens.home.HeaderSongSortBy
 import app.melogold.android.utils.PlaylistDownloadIcon
@@ -50,19 +49,15 @@ import app.melogold.core.ui.Dimensions
 import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.utils.enumSaver
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @Composable
 fun BuiltInPlaylistSongs(
     builtInPlaylist: BuiltInPlaylist,
     modifier: Modifier = Modifier
-) = with(DataPreferences) {
+) {
     val (colorPalette) = LocalAppearance.current
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
@@ -89,22 +84,10 @@ fun BuiltInPlaylistSongs(
                         songs.filter { binder?.isCached(it) ?: false }.map { it.song }
                     }
 
-            BuiltInPlaylist.Top -> combine(
-                flow = topListPeriodProperty.stateFlow,
-                flow2 = topListLengthProperty.stateFlow
-            ) { period, length -> period to length }.flatMapLatest { [period, length] ->
-                if (period.duration == null) Database
-                    .songsByPlayTimeDesc(limit = length)
-                    .distinctUntilChanged()
-                    .cancellable()
-                else Database
-                    .trending(
-                        limit = length,
-                        period = period.duration.inWholeMilliseconds
-                    )
-                    .distinctUntilChanged()
-                    .cancellable()
-            }
+            BuiltInPlaylist.Top -> Database
+                .songsByPlayTimeDesc(limit = TOP_LIST_LENGTH)
+                .distinctUntilChanged()
+                .cancellable()
 
             BuiltInPlaylist.History -> Database.history()
         }.collect { songs = it.toImmutableList() }
@@ -136,7 +119,7 @@ fun BuiltInPlaylistSongs(
 
                         BuiltInPlaylist.Top -> stringResource(
                             R.string.format_my_top_playlist,
-                            topListLength
+                            TOP_LIST_LENGTH
                         )
 
                         BuiltInPlaylist.History -> stringResource(R.string.history)
@@ -163,27 +146,6 @@ fun BuiltInPlaylistSongs(
                         sortOrder = sortOrder,
                         setSortOrder = { sortOrder = it }
                     )
-
-                    if (builtInPlaylist == BuiltInPlaylist.Top) {
-                        var dialogShowing by rememberSaveable { mutableStateOf(false) }
-
-                        SecondaryTextButton(
-                            text = topListPeriod.displayName(),
-                            onClick = { dialogShowing = true }
-                        )
-
-                        if (dialogShowing) ValueSelectorDialog(
-                            onDismiss = { dialogShowing = false },
-                            title = stringResource(
-                                R.string.format_view_top_of_header,
-                                topListLength
-                            ),
-                            selectedValue = topListPeriod,
-                            values = DataPreferences.TopListPeriod.entries.toImmutableList(),
-                            onValueSelect = { topListPeriod = it },
-                            valueText = { it.displayName() }
-                        )
-                    }
                 }
             }
 

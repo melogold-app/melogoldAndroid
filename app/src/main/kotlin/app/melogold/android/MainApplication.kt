@@ -1,6 +1,5 @@
 package app.melogold.android
 
-import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
@@ -42,15 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
-import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -61,7 +57,6 @@ import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.service.PlayerService
 import app.melogold.android.service.ServiceNotifications
 import app.melogold.android.ui.components.rememberBottomSheetState
-import app.melogold.android.ui.screens.player.Thumbnail
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.shell.AppShell
 import app.melogold.android.ui.shell.KeyboardShortcuts
@@ -75,29 +70,17 @@ import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.ui.shell.rememberAppSnackbar
 import app.melogold.android.ui.shell.rememberMainNavState
 import app.melogold.android.ui.shell.rememberShellLayout
-import app.melogold.android.ui.theme.rememberArtworkColorScheme
-import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
-import app.melogold.android.ui.theme.withDarkness
 import app.melogold.android.utils.DisposableListener
-import app.melogold.android.utils.KeyedCrossfade
-import app.melogold.android.utils.LocalMonetCompat
-import app.melogold.android.utils.collectProvidedBitmapAsState
 import app.melogold.android.utils.intent
-import app.melogold.android.utils.invokeOnReady
-import app.melogold.android.utils.isInPip
-import app.melogold.android.utils.maybeEnterPip
-import app.melogold.android.utils.maybeExitPip
 import app.melogold.android.utils.rememberEffectiveMotionLevel
-import app.melogold.android.utils.setDefaultPalette
-import app.melogold.android.utils.shouldBePlaying
 import app.melogold.compose.persist.LocalPersistMap
 import app.melogold.compose.persist.PersistMap
 import app.melogold.compose.preferences.PreferencesHolder
-import app.melogold.core.ui.ArtworkColorScope
 import app.melogold.core.ui.ColorMode
 import app.melogold.core.ui.ColorSource
 import app.melogold.core.ui.Dimensions
+import app.melogold.core.ui.MotionLevel
 import app.melogold.core.ui.SystemBarAppearance
 import app.melogold.core.ui.isDark
 import app.melogold.core.ui.shimmerTheme
@@ -105,7 +88,6 @@ import app.melogold.core.ui.theme.MelogoldTheme
 import app.melogold.core.ui.utils.activityIntentBundle
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid17
-import app.melogold.core.ui.utils.songBundle
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -118,19 +100,13 @@ import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
-import com.kieronquinn.monetcompat.core.MonetActivityAccessException
-import com.kieronquinn.monetcompat.core.MonetCompat
-import com.kieronquinn.monetcompat.interfaces.MonetColorsChangedListener
 import com.valentinilk.shimmer.LocalShimmerTheme
-import dev.kdrag0n.monet.theme.ColorScheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
-
-private const val WHOLE_APP_ARTWORK_DELAY_MS = 500L
 
 // Viewmodel in order to avoid recreating the entire Player state (WORKAROUND)
 class MainViewModel : ViewModel() {
@@ -141,7 +117,7 @@ class MainViewModel : ViewModel() {
 }
 
 @Suppress("TooManyFunctions") // lifecycle callbacks
-class MainActivity : ComponentActivity(), MonetColorsChangedListener {
+class MainActivity : ComponentActivity() {
     private val vm: MainViewModel by viewModels()
 
     private val serviceConnection = object : ServiceConnection {
@@ -156,9 +132,6 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             bindService(intent<PlayerService>(), this, BIND_AUTO_CREATE)
         }
     }
-
-    private var _monet: MonetCompat? by mutableStateOf(null)
-    val monet get() = _monet ?: throw MonetActivityAccessException()
 
     /**
      * The shell's navigation and link handler, once the content is composed: intents that arrive
@@ -182,17 +155,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        MonetCompat.setup(this)
-        _monet = MonetCompat.getInstance()
-        monet.setDefaultPalette()
-        monet.addMonetColorsChangedListener(
-            listener = this,
-            notifySelf = false
-        )
-        monet.updateMonetColors()
-        monet.invokeOnReady {
-            setContent()
-        }
+        setContent()
 
         // A recreated activity restores its sections instead of acting on the old intent again
         if (savedInstanceState == null) intent?.let { handleIntent(it) }
@@ -217,40 +180,16 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         val isDark = colorMode == ColorMode.Dark ||
             (colorMode == ColorMode.System && isSystemInDarkTheme)
 
-        val baseScheme = rememberMelogoldColorScheme(
+        val scheme = rememberMelogoldColorScheme(
             source = colorSource,
             isDark = isDark,
-            darkness = darkness,
-            contrast = contrast,
-            monet = _monet
+            darkness = darkness
         )
-
-        // "Artwork colors in the whole app" (REDESIGN-M3E §4.4): off on low-RAM devices
-        val isLowRamDevice = remember { getSystemService<ActivityManager>()?.isLowRamDevice == true }
-        val artworkScheme = if (artworkColorScope == ArtworkColorScope.WholeApp && !isLowRamDevice) {
-            val bitmap = vm.binder.collectProvidedBitmapAsState()
-            val mediaId = remember(bitmap) { vm.binder?.player?.currentMediaItem?.mediaId }
-
-            val artwork = rememberArtworkColorScheme(
-                key = mediaId,
-                bitmap = bitmap,
-                isDark = isDark,
-                contrastLevel = rememberContrastLevel(contrast),
-                delayMillis = WHOLE_APP_ARTWORK_DELAY_MS
-            )
-            remember(artwork, isDark, darkness) {
-                artwork?.withDarkness(isDark = isDark, darkness = darkness)
-            }
-        } else null
-
-        val scheme = artworkScheme ?: baseScheme
 
         MelogoldTheme(
             scheme = scheme,
-            motionLevel = rememberEffectiveMotionLevel(motionLevel),
-            thumbnailRoundness = thumbnailRoundness.dp,
-            applyFontPadding = applyFontPadding,
-            isBrandScheme = artworkScheme == null && colorSource != ColorSource.System
+            motionLevel = rememberEffectiveMotionLevel(MotionLevel.Expressive),
+            isBrandScheme = colorSource != ColorSource.System
         ) {
             SystemBarAppearance(isDark = scheme.isDark)
 
@@ -259,11 +198,9 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             ) {
                 CompositionLocalProvider(
                     LocalPlayerServiceBinder provides vm.binder,
-                    LocalCredentialManager provides Dependencies.credentialManager,
                     LocalShimmerTheme provides shimmerTheme(),
                     LocalLayoutDirection provides LayoutDirection.Ltr,
-                    LocalPersistMap provides Dependencies.application.persistMap,
-                    LocalMonetCompat provides monet
+                    LocalPersistMap provides Dependencies.application.persistMap
                 ) {
                     content()
                 }
@@ -331,9 +268,11 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                 initialTab = { AppearancePreferences.lastTab },
                 onTabSelect = { AppearancePreferences.lastTab = it }
             )
+            // region R2.9
             val linkHandler = remember(mainNav) {
                 LinkHandler(context = this@MainActivity, nav = mainNav, binder = vm::awaitBinder)
             }
+            // endregion R2.9
             val snackbar = rememberAppSnackbar()
 
             DisposableEffect(mainNav, linkHandler) {
@@ -341,44 +280,22 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                 onDispose { shell.value = null }
             }
 
-            val pip = isInPip(
-                onChange = {
-                    // The sections leave composition during picture-in-picture: keep their data
-                    mainNav.parkCurrent(parked = it)
-                    if (!it || vm.binder?.player?.shouldBePlaying != true) return@isInPip
-                    playerBottomSheetState.expandSoft()
-                }
-            )
-
-            KeyedCrossfade(state = pip) { currentPip ->
-                if (currentPip) Thumbnail(
-                    isShowingLyrics = true,
-                    onShowLyrics = { },
-                    isShowingStatsForNerds = false,
-                    onShowStatsForNerds = { },
-                    onOpenDialog = { },
-                    likedAt = null,
-                    setLikedAt = { },
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillBounds,
-                    shouldShowSynchronizedLyrics = true,
-                    setShouldShowSynchronizedLyrics = { },
-                    showLyricsControls = false
-                ) else CompositionLocalProvider(
-                    LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
-                    LocalMainNav provides mainNav,
-                    LocalLinkHandler provides linkHandler,
-                    LocalAppSnackbar provides snackbar
-                ) {
-                    AppShell(
-                        nav = mainNav,
-                        layout = shellLayout,
-                        playerSheetState = playerBottomSheetState,
-                        snackbar = snackbar,
-                        bottomBarHeight = bottomBarHeight,
-                        onBottomBarHeightChange = { navigationBarHeight = it }
-                    )
-                }
+            CompositionLocalProvider(
+                LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
+                LocalMainNav provides mainNav,
+                LocalLinkHandler provides linkHandler,
+                LocalAppSnackbar provides snackbar
+            ) {
+                // region R2.1
+                AppShell(
+                    nav = mainNav,
+                    layout = shellLayout,
+                    playerSheetState = playerBottomSheetState,
+                    snackbar = snackbar,
+                    bottomBarHeight = bottomBarHeight,
+                    onBottomBarHeightChange = { navigationBarHeight = it }
+                )
+                // endregion R2.1
             }
 
             vm.binder?.player.DisposableListener {
@@ -387,19 +304,8 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                         mediaItem: MediaItem?,
                         reason: Int
                     ) = when {
-                        mediaItem == null -> {
-                            maybeExitPip()
-                            playerBottomSheetState.dismissSoft()
-                        }
-
-                        reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED &&
-                            mediaItem.mediaMetadata.extras?.songBundle?.isFromPersistentQueue != true -> {
-                            if (AppearancePreferences.openPlayer) playerBottomSheetState.expandSoft()
-                            else Unit
-                        }
-
+                        mediaItem == null -> playerBottomSheetState.dismissSoft()
                         playerBottomSheetState.dismissed -> playerBottomSheetState.collapseSoft()
-
                         else -> Unit
                     }
                 }
@@ -407,6 +313,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         }
     }
 
+    // region R2.9
     @Suppress("CyclomaticComplexMethod")
     private fun handleIntent(intent: Intent) = lifecycleScope.launch(Dispatchers.IO) {
         val extras = intent.extras?.activityIntentBundle
@@ -462,34 +369,16 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             }
         }
     }
+    // endregion R2.9
 
     override fun onDestroy() {
         super.onDestroy()
-        monet.removeMonetColorsChangedListener(this)
-        _monet = null
-
         removeOnNewIntentListener(::handleIntent)
     }
 
     override fun onStop() {
         unbindService(serviceConnection)
         super.onStop()
-    }
-
-    override fun onMonetColorsChanged(
-        monet: MonetCompat,
-        monetColors: ColorScheme,
-        isInitialChange: Boolean
-    ) {
-        // API 31+ uses the platform dynamic colors, which recreate the activity by themselves
-        if (!isInitialChange && !isAtLeastAndroid12 && AppearancePreferences.colorSource == ColorSource.System)
-            recreate()
-    }
-
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-
-        if (AppearancePreferences.autoPip && vm.binder?.player?.shouldBePlaying == true) maybeEnterPip()
     }
 }
 
@@ -501,7 +390,6 @@ private class ShellHandles(
 val LocalPlayerServiceBinder = staticCompositionLocalOf<PlayerService.Binder?> { null }
 val LocalPlayerAwareWindowInsets =
     compositionLocalOf<WindowInsets> { error("No player insets provided") }
-val LocalCredentialManager = staticCompositionLocalOf { Dependencies.credentialManager }
 
 class MainApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
     override fun onCreate() {
@@ -516,15 +404,13 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
                     else it
                 }
                 .penaltyLog()
-                .penaltyDeath()
+                // A violation only kills debug builds (REWRITE §5.3.1)
+                .let { if (BuildConfig.DEBUG) it.penaltyDeath() else it }
                 .build()
         )
         Dependencies.init(this)
-
-        MonetCompat.debugLog = BuildConfig.DEBUG
         super.onCreate()
 
-        MonetCompat.enablePaletteCompat()
         ServiceNotifications.createAll()
     }
 
@@ -546,6 +432,9 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
         .build()
 
     val persistMap = PersistMap()
+
+    // region R2.1
+    // endregion R2.1
 
     override val workManagerConfiguration = Configuration.Builder()
         .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.INFO)
@@ -571,16 +460,6 @@ object Dependencies {
     fun runDownload(id: String): String = module
         .callAttr("download", quickjsPath.absolutePath, id)
         .toString()
-
-    fun upgradeYoutubeDl(packageName: String = "yt-dlp"): Boolean {
-        val success = runCatching { module.callAttr("upgrade", packageName) }
-            .also { it.exceptionOrNull()?.printStackTrace() }
-            .isSuccess
-        if (!success) Log.e("Python", "Upgrading $packageName resulted in non-zero exit code!")
-        return success
-    }
-
-    val credentialManager by lazy { CredentialManager.create(application) }
 
     internal fun init(application: MainApplication) {
         this.application = application

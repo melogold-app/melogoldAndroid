@@ -1,11 +1,9 @@
 package app.melogold.core.ui
 
-import android.graphics.Bitmap
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.palette.graphics.Palette
 
 /**
  * The legacy palette read by screens that are not migrated to Material 3 yet (via
@@ -57,22 +55,8 @@ data class ColorPalette(
  */
 val ColorScheme.isDark get() = surface.luminance() < 0.5f
 
-// Static fallbacks with the neutral tones of the Melogold brand scheme (seed #FE6B08). Only code
-// that has not been migrated yet (the "Now playing" screen, MonetCompat defaults) reads them.
-val defaultLightPalette = ColorPalette(
-    background0 = Color(0xfffff8f6),
-    background1 = Color(0xffffeae1),
-    background2 = Color(0xfffde3d8),
-    text = Color(0xff261812),
-    textSecondary = Color(0xff5a4136),
-    textDisabled = Color(0x61261812),
-    accent = Color(0xffa14000),
-    onAccent = Color.White,
-    red = Color(0xffba1a1a),
-    isDefault = true,
-    isDark = false
-)
-
+// A static fallback with the dark neutral tones of the Melogold brand scheme (seed #FE6B08). Only
+// code that has not been migrated yet (the "Now playing" screen) reads it.
 val defaultDarkPalette = ColorPalette(
     background0 = Color(0xff1d100a),
     background1 = Color(0xff2a1c16),
@@ -87,41 +71,6 @@ val defaultDarkPalette = ColorPalette(
     isDark = true
 )
 
-/**
- * The dominant color of [bitmap]. Still used by the player background; the app-wide artwork color
- * scheme uses `material-color-utilities` instead (`A/ui/theme/ArtworkColorScheme.kt`).
- */
-fun dynamicAccentColorOf(
-    bitmap: Bitmap,
-    isDark: Boolean
-): Hsl? {
-    val palette = Palette
-        .from(bitmap)
-        .maximumColorCount(8)
-        .addFilter(if (isDark) ({ _, hsl -> hsl[0] !in 36f..100f }) else null)
-        .generate()
-
-    val hsl = if (isDark) {
-        palette.dominantSwatch ?: Palette
-            .from(bitmap)
-            .maximumColorCount(8)
-            .generate()
-            .dominantSwatch
-    } else {
-        palette.dominantSwatch
-    }?.hsl ?: return null
-
-    val arr = if (hsl[1] < 0.08)
-        palette.swatches
-            .map(Palette.Swatch::getHsl)
-            .sortedByDescending(FloatArray::component2)
-            .find { it[1] != 0f }
-            ?: hsl
-    else hsl
-
-    return arr.hsl
-}
-
 inline val ColorPalette.isPureBlack get() = background0 == Color.Black
 inline val ColorPalette.collapsedPlayerProgressBar
     get() = if (isPureBlack) defaultDarkPalette.background0 else background2
@@ -134,6 +83,3 @@ inline val ColorPalette.overlay get() = Color.Black.copy(alpha = 0.75f)
 
 @Suppress("UnusedReceiverParameter")
 inline val ColorPalette.onOverlay get() = defaultDarkPalette.text
-
-@Suppress("UnusedReceiverParameter")
-inline val ColorPalette.onOverlayShimmer get() = defaultDarkPalette.shimmer
