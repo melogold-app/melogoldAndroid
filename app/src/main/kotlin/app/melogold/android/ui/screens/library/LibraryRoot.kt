@@ -27,7 +27,6 @@ import app.melogold.android.ui.screens.home.HomeArtistList
 import app.melogold.android.ui.screens.home.HomePlaylists
 import app.melogold.android.ui.screens.home.HomeSongs
 import app.melogold.android.ui.screens.localPlaylistRoute
-import app.melogold.android.ui.screens.pipedPlaylistRoute
 import app.melogold.android.ui.shell.TabRootScaffold
 import app.melogold.compose.routing.RouteHandlerScope
 
@@ -75,14 +74,7 @@ fun RouteHandlerScope.LibraryRoot() {
                         when (LibraryTab.entries[tabIndex]) {
                             LibraryTab.Playlists -> HomePlaylists(
                                 onBuiltInPlaylist = { builtInPlaylistRoute(it) },
-                                onPlaylistClick = { localPlaylistRoute(it.id) },
-                                onPipedPlaylistClick = { session, playlist ->
-                                    pipedPlaylistRoute(
-                                        p0 = session.apiBaseUrl.toString(),
-                                        p1 = session.token,
-                                        p2 = playlist.id.toString()
-                                    )
-                                }
+                                onPlaylistClick = { localPlaylistRoute(it.id) }
                             )
 
                             LibraryTab.Songs -> HomeSongs()

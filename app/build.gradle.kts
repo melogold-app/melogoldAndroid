@@ -213,9 +213,6 @@ dependencies {
     implementation(libs.workmanager)
     implementation(libs.workmanager.ktx)
 
-    implementation(libs.credentials)
-    implementation(libs.credentials.play)
-
     // QR sign-in / device linking (task T2.5); the versions are owned by Phase 1
     implementation(libs.zxing.core)
     implementation(libs.camera.camera2)
@@ -237,7 +234,6 @@ dependencies {
     implementation(projects.providers.innertube)
     implementation(projects.providers.kugou)
     implementation(projects.providers.lrclib)
-    implementation(projects.providers.piped)
     implementation(projects.providers.sponsorblock)
     implementation(projects.core.data)
     implementation(projects.core.ui)

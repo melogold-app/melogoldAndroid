@@ -358,9 +358,6 @@ interface DatabaseAccessor {
     @Query("UPDATE Song SET totalPlayTimeMs = totalPlayTimeMs + :addition WHERE id = :id")
     fun incrementTotalPlayTimeMs(id: String, addition: Long)
 
-    @Query("SELECT * FROM PipedSession")
-    fun pipedSessions(): Flow<List<PipedSession>>
-
     @Query("SELECT * FROM Playlist WHERE id = :id")
     fun playlist(id: Long): Flow<Playlist?>
 
@@ -695,9 +692,6 @@ interface DatabaseAccessor {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(artists: List<Artist>, songArtistMaps: List<SongArtistMap>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(pipedSession: PipedSession)
-
     @Transaction
     fun insert(mediaItem: MediaItem, block: (Song) -> Song = { it }) {
         val extras = mediaItem.mediaMetadata.extras?.songBundle
@@ -768,9 +762,6 @@ interface DatabaseAccessor {
 
     @Delete
     fun delete(songPlaylistMap: SongPlaylistMap)
-
-    @Delete
-    fun delete(pipedSession: PipedSession)
 
     @RawQuery
     fun raw(supportSQLiteQuery: SupportSQLiteQuery): Int

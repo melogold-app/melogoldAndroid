@@ -11,7 +11,6 @@ media3 = "1.11.1"
 ktor = "3.6.0"
 detekt = "2.0.0-alpha.6"
 workmanager = "2.11.2"
-credentials = "1.6.0"
 coil = "3.6.3"
 camerax = "1.6.2"
 
@@ -62,10 +61,6 @@ media = { module = "androidx.media:media", version = "1.8.0" }
 workmanager = { module = "androidx.work:work-runtime", version.ref = "workmanager" }
 workmanager_ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
 
-#noinspection LoginCredentials
-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
-#noinspection LoginCredentials
-credentials_play = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 
 ktor_http = { module = "io.ktor:ktor-http", version.ref = "ktor" }
 
