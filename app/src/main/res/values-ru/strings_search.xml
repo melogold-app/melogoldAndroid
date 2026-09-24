@@ -4,7 +4,7 @@
     <string name="search_paste_link">Вставить ссылку</string>
     <string name="search_clipboard_empty">Буфер обмена пуст</string>
     <string name="search_clear_field">Очистить</string>
-    <string name="search_tip">Ищем в двух местах: каталог YouTube Music и обычный YouTube — перезаливы, каверы, концерты. ⧉ откроет ссылку на видео.</string>
+    <string name="search_tip">Ищем в двух местах: каталог YouTube Music и обычный YouTube — перезаливы, каверы, концерты. Кнопка справа в поле вставит ссылку на видео.</string>
     <string name="search_tip_ok">Понятно</string>
     <string name="search_recent_queries">Недавние запросы</string>
     <string name="search_clear_history">Очистить</string>

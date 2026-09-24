@@ -5,7 +5,7 @@
     <string name="search_paste_link">Paste link</string>
     <string name="search_clipboard_empty">The clipboard is empty</string>
     <string name="search_clear_field">Clear</string>
-    <string name="search_tip">We search in two places: the YouTube Music catalog and regular YouTube — re-uploads, covers, concerts. ⧉ opens a video link.</string>
+    <string name="search_tip">We search in two places: the YouTube Music catalog and regular YouTube — re-uploads, covers, concerts. The button on the right of the field pastes a video link.</string>
     <string name="search_tip_ok">Got it</string>
     <string name="search_recent_queries">Recent searches</string>
     <string name="search_clear_history">Clear</string>

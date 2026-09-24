@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -39,7 +40,8 @@ private val RowShape = RoundedCornerShape(16.dp)
 
 /**
  * A track in a list (REWRITE §3.11.1): cover (or a chart [number] in front of it), title,
- * "Artist · Album", marks, duration and ⋮. Tap plays, long tap and ⋮ open the menu.
+ * "Artist · Album", marks, duration and ⋮. Tap plays, long tap and ⋮ open the menu; without
+ * [onMenu] (e.g. inside focused search, a dialog of its own) there is no menu.
  */
 @Composable
 fun TrackRow(
@@ -47,7 +49,7 @@ fun TrackRow(
     subtitle: String?,
     artworkUrl: String?,
     onClick: () -> Unit,
-    onMenu: () -> Unit,
+    onMenu: (() -> Unit)?,
     modifier: Modifier = Modifier,
     number: Int? = null,
     showArtwork: Boolean = true,
@@ -65,9 +67,9 @@ fun TrackRow(
             .background(if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
             .combinedClickable(onClick = onClick, onLongClick = onMenu)
             .semantics(mergeDescendants = true) {
-                customActions = listOf(
+                customActions = listOfNotNull(
                     CustomAccessibilityAction(playLabel) { onClick(); true },
-                    CustomAccessibilityAction(menuLabel) { onMenu(); true }
+                    onMenu?.let { CustomAccessibilityAction(menuLabel) { it(); true } }
                 )
             }
             .padding(start = if (number != null) 4.dp else 12.dp, end = 4.dp),
@@ -148,12 +150,12 @@ fun TrackRow(
             maxLines = 1
         )
 
-        IconButton(onClick = onMenu) {
+        if (onMenu != null) IconButton(onClick = onMenu) {
             Icon(
                 painter = painterResource(R.drawable.ms_more_vert),
                 contentDescription = menuLabel,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
+        } else Spacer(modifier = Modifier.width(12.dp))
     }
 }
