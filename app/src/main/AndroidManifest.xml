@@ -66,6 +66,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- region R2.9 -->
+            <!-- Entry points and links: LinkHandler (REWRITE §2.3, §4.9) -->
             <intent-filter>
                 <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -159,8 +161,15 @@
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+            <!-- endregion R2.9 -->
         </activity>
 
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@drawable/app_icon" />
+
+        <!-- region R2.5 -->
+        <!-- The old services: R2.5 moves them into region R3.10 (REWRITE §6.0.3) -->
         <service
             android:name=".service.PlayerService"
             android:exported="false"
@@ -214,9 +223,17 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
 
-        <meta-data
-            android:name="com.google.android.gms.car.notification.SmallIcon"
-            android:resource="@drawable/app_icon" />
+        <service
+            android:name=".service.PrecacheService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
+
+            <intent-filter>
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+        <!-- endregion R2.5 -->
 
         <provider
             android:name="androidx.startup.InitializationProvider"
@@ -230,15 +247,8 @@
                 tools:node="remove" />
         </provider>
 
-        <service
-            android:name=".service.PrecacheService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync">
-
-            <intent-filter>
-                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </service>
+        <!-- region R2.7 -->
+        <!-- DownloadsService (REWRITE §4.7.2) -->
+        <!-- endregion R2.7 -->
     </application>
 </manifest>

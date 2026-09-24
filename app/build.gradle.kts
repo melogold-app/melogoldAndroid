@@ -185,6 +185,7 @@ composeCompiler {
     }
 }
 
+// region R2.4
 chaquopy {
     defaultConfig {
         version = "3.14"
@@ -194,6 +195,7 @@ chaquopy {
         }
     }
 }
+// endregion R2.4
 
 dependencies {
     coreLibraryDesugaring(libs.desugaring)

@@ -268,9 +268,11 @@ class MainActivity : ComponentActivity() {
                 initialTab = { AppearancePreferences.lastTab },
                 onTabSelect = { AppearancePreferences.lastTab = it }
             )
+            // region R2.9
             val linkHandler = remember(mainNav) {
                 LinkHandler(context = this@MainActivity, nav = mainNav, binder = vm::awaitBinder)
             }
+            // endregion R2.9
             val snackbar = rememberAppSnackbar()
 
             DisposableEffect(mainNav, linkHandler) {
@@ -284,6 +286,7 @@ class MainActivity : ComponentActivity() {
                 LocalLinkHandler provides linkHandler,
                 LocalAppSnackbar provides snackbar
             ) {
+                // region R2.1
                 AppShell(
                     nav = mainNav,
                     layout = shellLayout,
@@ -292,6 +295,7 @@ class MainActivity : ComponentActivity() {
                     bottomBarHeight = bottomBarHeight,
                     onBottomBarHeightChange = { navigationBarHeight = it }
                 )
+                // endregion R2.1
             }
 
             vm.binder?.player.DisposableListener {
@@ -309,6 +313,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // region R2.9
     @Suppress("CyclomaticComplexMethod")
     private fun handleIntent(intent: Intent) = lifecycleScope.launch(Dispatchers.IO) {
         val extras = intent.extras?.activityIntentBundle
@@ -364,6 +369,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    // endregion R2.9
 
     override fun onDestroy() {
         super.onDestroy()
@@ -426,6 +432,9 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
         .build()
 
     val persistMap = PersistMap()
+
+    // region R2.1
+    // endregion R2.1
 
     override val workManagerConfiguration = Configuration.Builder()
         .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.INFO)
