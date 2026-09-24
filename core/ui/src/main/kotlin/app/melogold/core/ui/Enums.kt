@@ -5,7 +5,7 @@ package app.melogold.core.ui
  */
 enum class ColorSource {
     /**
-     * Wallpaper colors: the platform dynamic color scheme on API 31+, MonetCompat palettes below.
+     * Wallpaper colors: the platform dynamic color scheme (API 31+ only).
      */
     System,
 

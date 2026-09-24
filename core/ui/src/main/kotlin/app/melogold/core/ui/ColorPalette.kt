@@ -57,22 +57,8 @@ data class ColorPalette(
  */
 val ColorScheme.isDark get() = surface.luminance() < 0.5f
 
-// Static fallbacks with the neutral tones of the Melogold brand scheme (seed #FE6B08). Only code
-// that has not been migrated yet (the "Now playing" screen, MonetCompat defaults) reads them.
-val defaultLightPalette = ColorPalette(
-    background0 = Color(0xfffff8f6),
-    background1 = Color(0xffffeae1),
-    background2 = Color(0xfffde3d8),
-    text = Color(0xff261812),
-    textSecondary = Color(0xff5a4136),
-    textDisabled = Color(0x61261812),
-    accent = Color(0xffa14000),
-    onAccent = Color.White,
-    red = Color(0xffba1a1a),
-    isDefault = true,
-    isDark = false
-)
-
+// A static fallback with the dark neutral tones of the Melogold brand scheme (seed #FE6B08). Only
+// code that has not been migrated yet (the "Now playing" screen) reads it.
 val defaultDarkPalette = ColorPalette(
     background0 = Color(0xff1d100a),
     background1 = Color(0xff2a1c16),

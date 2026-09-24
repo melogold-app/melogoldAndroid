@@ -38,7 +38,11 @@ object AppearancePreferences : GlobalPreferencesHolder() {
  */
 private val defaultColorSource get() = if (isAtLeastAndroid12) ColorSource.System else ColorSource.Brand
 
-private fun colorSourceOf(stored: String?): ColorSource = when (stored) {
+/** Below API 31 there are no wallpaper colors: the brand scheme applies whatever is stored. */
+private fun colorSourceOf(stored: String?): ColorSource =
+    storedColorSourceOf(stored).takeIf { isAtLeastAndroid12 || it != ColorSource.System } ?: ColorSource.Brand
+
+private fun storedColorSourceOf(stored: String?): ColorSource = when (stored) {
     null -> defaultColorSource
 
     "Default" -> ColorSource.Brand

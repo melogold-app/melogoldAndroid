@@ -22,8 +22,6 @@ import app.melogold.core.ui.ColorSource
 import app.melogold.core.ui.Darkness
 import app.melogold.core.ui.theme.MelogoldBrand
 import app.melogold.core.ui.utils.isAtLeastAndroid12
-import com.kieronquinn.monetcompat.core.MonetCompat
-import com.kieronquinn.monetcompat.extensions.toArgb
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.hct.Hct
 import com.materialkolor.palettes.TonalPalette
@@ -31,7 +29,6 @@ import com.materialkolor.scheme.DynamicScheme
 import com.materialkolor.scheme.SchemeFidelity
 import com.materialkolor.scheme.Variant
 import java.util.concurrent.Executor
-import dev.kdrag0n.monet.colors.Color as MonetColor
 
 /**
  * The spec version of every scheme Melogold builds. `material-color-utilities` falls back to
@@ -42,8 +39,8 @@ internal val MelogoldSpecVersion = ColorSpec.SpecVersion.SPEC_2025
 /**
  * Builds the app-wide color scheme (REDESIGN-M3E §4.4). The contrast always follows the system.
  *
- * - [ColorSource.System]: `dynamic*ColorScheme` on API 31+; below that the wallpaper palettes that
- *   MonetCompat (kdrag0n monet) extracts.
+ * - [ColorSource.System]: `dynamic*ColorScheme` on API 31+. Below there are no wallpaper colors
+ *   and the brand scheme is used.
  * - [ColorSource.Brand] (and [ColorSource.Custom] until it exists): Fidelity scheme from the seed
  *   `#FE6B08` with the emerald `#12B866` as tertiary palette.
  *
@@ -53,21 +50,19 @@ internal val MelogoldSpecVersion = ColorSpec.SpecVersion.SPEC_2025
 fun rememberMelogoldColorScheme(
     source: ColorSource,
     isDark: Boolean,
-    darkness: Darkness,
-    monet: MonetCompat?
+    darkness: Darkness
 ): ColorScheme {
     val context = LocalContext.current
     // Dynamic colors follow the configuration (uiMode changes are handled by the activity itself)
     val configuration = LocalConfiguration.current
     val contrastLevel = rememberContrastLevel()
 
-    return remember(source, isDark, darkness, contrastLevel, monet, configuration) {
+    return remember(source, isDark, darkness, contrastLevel, configuration) {
         melogoldColorScheme(
             context = context,
             source = source,
             isDark = isDark,
-            contrastLevel = contrastLevel,
-            monet = monet
+            contrastLevel = contrastLevel
         ).withDarkness(isDark = isDark, darkness = darkness)
     }
 }
@@ -76,15 +71,9 @@ fun melogoldColorScheme(
     context: Context,
     source: ColorSource,
     isDark: Boolean,
-    contrastLevel: Double,
-    monet: MonetCompat?
+    contrastLevel: Double
 ): ColorScheme = when (source) {
-    ColorSource.System -> systemColorScheme(
-        context = context,
-        isDark = isDark,
-        contrastLevel = contrastLevel,
-        monet = monet
-    )
+    ColorSource.System -> systemColorScheme(context = context, isDark = isDark)
 
     ColorSource.Brand, ColorSource.Custom -> null
 } ?: brandColorScheme(isDark = isDark, contrastLevel = contrastLevel)
@@ -120,63 +109,11 @@ fun brandColorScheme(isDark: Boolean, contrastLevel: Double = 0.0): ColorScheme 
     ) else scheme
 }
 
-private fun systemColorScheme(
-    context: Context,
-    isDark: Boolean,
-    contrastLevel: Double,
-    monet: MonetCompat?
-): ColorScheme? {
-    if (isAtLeastAndroid12)
-        return if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-
-    return monet?.let(::monetPalettes)
-        ?.toDynamicScheme(isDark = isDark, contrastLevel = contrastLevel)
-        ?.toColorScheme()
+private fun systemColorScheme(context: Context, isDark: Boolean): ColorScheme? = when {
+    !isAtLeastAndroid12 -> null
+    isDark -> dynamicDarkColorScheme(context)
+    else -> dynamicLightColorScheme(context)
 }
-
-/**
- * Key colors of the five tonal palettes of a wallpaper-based scheme.
- */
-private data class KeyColors(
-    val primary: Int,
-    val secondary: Int,
-    val tertiary: Int,
-    val neutral: Int,
-    val neutralVariant: Int
-) {
-    fun toDynamicScheme(isDark: Boolean, contrastLevel: Double) = DynamicScheme(
-        sourceColorHct = Hct.fromInt(primary),
-        variant = Variant.TONAL_SPOT,
-        isDark = isDark,
-        contrastLevel = contrastLevel,
-        primaryPalette = TonalPalette.fromInt(primary),
-        secondaryPalette = TonalPalette.fromInt(secondary),
-        tertiaryPalette = TonalPalette.fromInt(tertiary),
-        neutralPalette = TonalPalette.fromInt(neutral),
-        neutralVariantPalette = TonalPalette.fromInt(neutralVariant),
-        specVersion = MelogoldSpecVersion
-    )
-}
-
-/**
- * The wallpaper palettes MonetCompat extracted (API 24–30), or `null` if it has none yet.
- */
-private fun monetPalettes(monet: MonetCompat): KeyColors? = runCatching {
-    val colors = monet.getMonetColors()
-
-    fun Map<Int, MonetColor>.key() = (this[KEY_SHADE] ?: values.elementAt(size / 2)).toArgb()
-
-    KeyColors(
-        primary = colors.accent1.key(),
-        secondary = colors.accent2.key(),
-        tertiary = colors.accent3.key(),
-        neutral = colors.neutral1.key(),
-        neutralVariant = colors.neutral2.key()
-    )
-}.getOrNull()
-
-/** The mid shade of a system/monet palette (0 is white, 1000 is black). */
-private const val KEY_SHADE = 500
 
 /**
  * Pure black backgrounds for OLED screens. [Darkness.AMOLED] blackens the base surfaces and dims

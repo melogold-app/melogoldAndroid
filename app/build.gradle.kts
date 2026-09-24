@@ -205,8 +205,6 @@ dependencies {
 
     implementation(libs.palette)
     implementation(libs.material.color.utilities)
-    implementation(libs.monet)
-    runtimeOnly(projects.core.materialCompat)
 
     implementation(libs.exoplayer)
     implementation(libs.exoplayer.workmanager)

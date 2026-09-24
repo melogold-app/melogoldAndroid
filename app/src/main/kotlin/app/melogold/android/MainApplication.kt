@@ -76,14 +76,11 @@ import app.melogold.android.ui.shell.rememberShellLayout
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.KeyedCrossfade
-import app.melogold.android.utils.LocalMonetCompat
 import app.melogold.android.utils.intent
-import app.melogold.android.utils.invokeOnReady
 import app.melogold.android.utils.isInPip
 import app.melogold.android.utils.maybeEnterPip
 import app.melogold.android.utils.maybeExitPip
 import app.melogold.android.utils.rememberEffectiveMotionLevel
-import app.melogold.android.utils.setDefaultPalette
 import app.melogold.android.utils.shouldBePlaying
 import app.melogold.compose.persist.LocalPersistMap
 import app.melogold.compose.persist.PersistMap
@@ -111,11 +108,7 @@ import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
-import com.kieronquinn.monetcompat.core.MonetActivityAccessException
-import com.kieronquinn.monetcompat.core.MonetCompat
-import com.kieronquinn.monetcompat.interfaces.MonetColorsChangedListener
 import com.valentinilk.shimmer.LocalShimmerTheme
-import dev.kdrag0n.monet.theme.ColorScheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -132,7 +125,7 @@ class MainViewModel : ViewModel() {
 }
 
 @Suppress("TooManyFunctions") // lifecycle callbacks
-class MainActivity : ComponentActivity(), MonetColorsChangedListener {
+class MainActivity : ComponentActivity() {
     private val vm: MainViewModel by viewModels()
 
     private val serviceConnection = object : ServiceConnection {
@@ -147,9 +140,6 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
             bindService(intent<PlayerService>(), this, BIND_AUTO_CREATE)
         }
     }
-
-    private var _monet: MonetCompat? by mutableStateOf(null)
-    val monet get() = _monet ?: throw MonetActivityAccessException()
 
     /**
      * The shell's navigation and link handler, once the content is composed: intents that arrive
@@ -173,17 +163,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        MonetCompat.setup(this)
-        _monet = MonetCompat.getInstance()
-        monet.setDefaultPalette()
-        monet.addMonetColorsChangedListener(
-            listener = this,
-            notifySelf = false
-        )
-        monet.updateMonetColors()
-        monet.invokeOnReady {
-            setContent()
-        }
+        setContent()
 
         // A recreated activity restores its sections instead of acting on the old intent again
         if (savedInstanceState == null) intent?.let { handleIntent(it) }
@@ -211,8 +191,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         val scheme = rememberMelogoldColorScheme(
             source = colorSource,
             isDark = isDark,
-            darkness = darkness,
-            monet = _monet
+            darkness = darkness
         )
 
         MelogoldTheme(
@@ -230,8 +209,7 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                     LocalCredentialManager provides Dependencies.credentialManager,
                     LocalShimmerTheme provides shimmerTheme(),
                     LocalLayoutDirection provides LayoutDirection.Ltr,
-                    LocalPersistMap provides Dependencies.application.persistMap,
-                    LocalMonetCompat provides monet
+                    LocalPersistMap provides Dependencies.application.persistMap
                 ) {
                     content()
                 }
@@ -427,25 +405,12 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        monet.removeMonetColorsChangedListener(this)
-        _monet = null
-
         removeOnNewIntentListener(::handleIntent)
     }
 
     override fun onStop() {
         unbindService(serviceConnection)
         super.onStop()
-    }
-
-    override fun onMonetColorsChanged(
-        monet: MonetCompat,
-        monetColors: ColorScheme,
-        isInitialChange: Boolean
-    ) {
-        // API 31+ uses the platform dynamic colors, which recreate the activity by themselves
-        if (!isInitialChange && !isAtLeastAndroid12 && AppearancePreferences.colorSource == ColorSource.System)
-            recreate()
     }
 
     override fun onUserLeaveHint() {
@@ -482,11 +447,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
                 .build()
         )
         Dependencies.init(this)
-
-        MonetCompat.debugLog = BuildConfig.DEBUG
         super.onCreate()
 
-        MonetCompat.enablePaletteCompat()
         ServiceNotifications.createAll()
     }
 

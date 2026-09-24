@@ -15,6 +15,7 @@ import app.melogold.android.utils.startLanguagePicker
 import app.melogold.core.ui.ColorMode
 import app.melogold.core.ui.ColorSource
 import app.melogold.core.ui.Darkness
+import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid13
 import kotlinx.collections.immutable.persistentListOf
 
@@ -26,7 +27,8 @@ fun AppearanceSettings() = with(AppearancePreferences) {
 
     SettingsCategoryScreen(title = stringResource(R.string.appearance)) {
         SettingsGroup(title = stringResource(R.string.colors)) {
-            ValueSelectorSettingsEntry(
+            // Wallpaper colors exist on API 31+ only, below the brand scheme applies
+            if (isAtLeastAndroid12) ValueSelectorSettingsEntry(
                 title = stringResource(R.string.color_source),
                 selectedValue = colorSource,
                 // "Custom color" is backlog P2

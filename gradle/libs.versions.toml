@@ -85,7 +85,6 @@ logback = { module = "com.github.tony19:logback-android", version = "3.0.0" }
 brotli = { module = "org.brotli:dec", version = "0.1.2" }
 palette = { module = "androidx.palette:palette", version = "1.0.0" }
 material_color_utilities = { module = "com.materialkolor:material-color-utilities", version = "5.0.1" }
-monet = { module = "com.github.KieronQuinn:MonetCompat", version = "0.4.1" }
 
 zxing_core = { module = "com.google.zxing:core", version = "3.5.3" }
 camera_camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
