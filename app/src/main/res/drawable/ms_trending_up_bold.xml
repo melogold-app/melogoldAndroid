@@ -1,0 +1,13 @@
+<!-- Material Symbols Rounded "trending_up", weight 600, 24dp: the selected state when the symbol has no filled form. Apache License 2.0, https://github.com/google/material-design-icons -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960"
+    android:autoMirrored="true">
+  <group android:translateY="960">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M98.39-243.13q-15.96-15.39-15.74-37.26.22-21.87 15.18-37.39L303.74-525q30.91-30.91 75.09-30.91 44.17 0 75.08 30.91l84.92 85.35 179.73-178.87h-44.78q-22.08 0-37.54-15.46-15.46-15.45-15.46-37.54t15.46-37.55q15.46-15.45 37.54-15.45h172.44q22.08 0 37.54 15.45 15.46 15.46 15.46 37.55v171.87q0 22.09-15.46 37.54-15.46 15.46-37.54 15.46-22.09 0-37.55-15.46-15.45-15.45-15.45-37.54v-44.78l-179.31 179.3q-30.91 30.91-75.08 30.91-44.18 0-75.09-30.91l-84.91-84.35-206.35 206.35q-14.96 14.96-37.05 14.96-22.08 0-37.04-14.96Z"/>
+  </group>
+</vector>

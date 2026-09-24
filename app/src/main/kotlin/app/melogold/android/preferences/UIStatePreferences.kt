@@ -19,6 +19,9 @@ object UIStatePreferences : GlobalPreferencesHolder() {
 
     var playlistsAsGrid by boolean(true)
 
+    /** The two-sources tip of Search was dismissed (`search.tipDismissed`, REWRITE §3.1.1). */
+    var searchTipDismissed by boolean(false)
+
     private var visibleTabs by json(mapOf<String, List<String>>())
 
     @Composable

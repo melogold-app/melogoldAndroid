@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_hint">Поиск музыки и видео</string>
+    <string name="search_paste_link">Вставить ссылку</string>
+    <string name="search_clipboard_empty">Буфер обмена пуст</string>
+    <string name="search_clear_field">Очистить</string>
+    <string name="search_tip">Ищем в двух местах: каталог YouTube Music и обычный YouTube — перезаливы, каверы, концерты. ⧉ откроет ссылку на видео.</string>
+    <string name="search_tip_ok">Понятно</string>
+    <string name="search_recent_queries">Недавние запросы</string>
+    <string name="search_clear_history">Очистить</string>
+    <string name="search_clear_history_title">Очистить историю поиска?</string>
+    <plurals name="search_clear_history_text">
+        <item quantity="one">%d запрос будет удалён.</item>
+        <item quantity="few">%d запроса будут удалены.</item>
+        <item quantity="many">%d запросов будут удалены.</item>
+        <item quantity="other">%d запроса будут удалены.</item>
+    </plurals>
+    <string name="search_history_paused">История поиска не сохраняется</string>
+    <string name="search_query_removed">Запрос удалён</string>
+    <string name="search_fill">Подставить в поле</string>
+    <string name="search_remove">Удалить</string>
+    <string name="search_recently_played">Недавно игравшие</string>
+    <string name="search_offline">Нет сети — ищем только в библиотеке</string>
+    <string name="search_open_link">Открыть ссылку: %1$s</string>
+    <string name="search_link_video">видео YouTube</string>
+    <string name="search_link_playlist">плейлист</string>
+    <string name="search_link_album">альбом</string>
+    <string name="search_link_channel">канал</string>
+    <string name="search_import_apple">Импорт из Apple Music появится позже</string>
+    <string name="search_import_yandex">Импорт из Яндекс Музыки появится позже</string>
+    <string name="search_import_spotify">Импорт из Spotify появится позже</string>
+    <string name="search_in_library">В библиотеке</string>
+    <string name="search_suggestions">Подсказки</string>
+    <string name="link_channel_later">Ссылки на @каналы заработают в следующей версии</string>
+    <string name="link_import_later">Импорт из других сервисов появится позже</string>
+    <string name="link_unsupported">Эту ссылку не открыть</string>
+    <string name="kit_cancel">Отмена</string>
+</resources>

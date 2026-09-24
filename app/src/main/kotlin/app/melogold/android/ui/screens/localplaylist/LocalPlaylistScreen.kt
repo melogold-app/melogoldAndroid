@@ -61,6 +61,7 @@ fun LocalPlaylistScreen(playlistId: Long) {
             }
 
             Scaffold(
+                title = playlist?.name,
                 key = "localplaylist",
                 topIconButtonId = R.drawable.chevron_back,
                 onTopIconButtonClick = pop,

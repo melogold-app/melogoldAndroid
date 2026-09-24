@@ -5,6 +5,9 @@ import app.melogold.android.models.Mood
 import app.melogold.android.ui.screens.album.AlbumScreen
 import app.melogold.android.ui.screens.artist.ArtistScreen
 import app.melogold.android.ui.screens.builtinplaylist.BuiltInPlaylistScreen
+import app.melogold.android.ui.screens.library.LibraryAlbumsScreen
+import app.melogold.android.ui.screens.library.LibraryArtistsScreen
+import app.melogold.android.ui.screens.library.LibraryPlaylistsScreen
 import app.melogold.android.ui.screens.localplaylist.LocalPlaylistScreen
 import app.melogold.android.ui.screens.mood.MoodScreen
 import app.melogold.android.ui.screens.mood.MoreAlbumsScreen
@@ -36,6 +39,9 @@ val playlistRoute = Route4<String, String?, Int?, Boolean>("playlistRoute")
 val moodRoute = Route1<Mood>("moodRoute")
 val moreMoodsRoute = Route0("moreMoodsRoute")
 val moreAlbumsRoute = Route0("moreAlbumsRoute")
+val libraryPlaylistsRoute = Route0("libraryPlaylistsRoute")
+val libraryAlbumsRoute = Route0("libraryAlbumsRoute")
+val libraryArtistsRoute = Route0("libraryArtistsRoute")
 val searchResultRoute = Route1<String>("searchResultRoute")
 val searchRoute = Route1<String>("searchRoute")
 
@@ -55,6 +61,18 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     builtInPlaylistRoute { builtInPlaylist ->
         BuiltInPlaylistScreen(builtInPlaylist = builtInPlaylist)
+    }
+
+    libraryPlaylistsRoute {
+        LibraryPlaylistsScreen()
+    }
+
+    libraryAlbumsRoute {
+        LibraryAlbumsScreen()
+    }
+
+    libraryArtistsRoute {
+        LibraryArtistsScreen()
     }
 
     localPlaylistRoute { playlistId ->

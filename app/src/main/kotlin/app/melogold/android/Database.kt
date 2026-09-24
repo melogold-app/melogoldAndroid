@@ -641,6 +641,50 @@ interface DatabaseAccessor {
     @Query("SELECT * FROM Song WHERE title LIKE :query OR artistsText LIKE :query")
     fun search(query: String): Flow<List<Song>>
 
+    // region R3.2: counts of the Library hub (REWRITE §3.2.1)
+    @Query("SELECT COUNT(*) FROM Song WHERE likedAt IS NOT NULL")
+    fun favoritesCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM Playlist")
+    fun playlistsCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM Album WHERE bookmarkedAt IS NOT NULL")
+    fun savedAlbumsCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM Artist WHERE bookmarkedAt IS NOT NULL")
+    fun savedArtistsCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM Event")
+    fun eventsCount(): Flow<Int>
+    // endregion R3.2
+
+    // region R3.1: "In your library" while typing (REWRITE §3.1.2). SQLite folds only ASCII case, so
+    // the patterns come as typed, lowercase and capitalized: "кино" also finds "Кино"
+    @Query(
+        """
+        SELECT * FROM Song
+        WHERE blacklisted = 0 AND (
+            title LIKE :asTyped ESCAPE '\' OR artistsText LIKE :asTyped ESCAPE '\' OR
+            title LIKE :lower ESCAPE '\' OR artistsText LIKE :lower ESCAPE '\' OR
+            title LIKE :capitalized ESCAPE '\' OR artistsText LIKE :capitalized ESCAPE '\'
+        )
+        ORDER BY likedAt IS NULL, totalPlayTimeMs DESC
+        LIMIT :limit
+        """
+    )
+    fun searchSongs(asTyped: String, lower: String, capitalized: String, limit: Int): Flow<List<Song>>
+
+    @Query(
+        """
+        SELECT * FROM Playlist
+        WHERE name LIKE :asTyped ESCAPE '\' OR name LIKE :lower ESCAPE '\' OR name LIKE :capitalized ESCAPE '\'
+        ORDER BY name COLLATE NOCASE
+        LIMIT :limit
+        """
+    )
+    fun searchPlaylists(asTyped: String, lower: String, capitalized: String, limit: Int): Flow<List<Playlist>>
+    // endregion R3.1
+
     @Query("SELECT albumId AS id, NULL AS name FROM SongAlbumMap WHERE songId = :songId")
     suspend fun songAlbumInfo(songId: String): Info?
 

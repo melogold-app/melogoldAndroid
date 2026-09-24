@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Library hub and its lists (REWRITE §3.2) -->
+<resources>
+    <string name="library_in_favorites">%1$d in Favorites</string>
+    <plurals name="library_playlists_count">
+        <item quantity="one">%d playlist</item>
+        <item quantity="other">%d playlists</item>
+    </plurals>
+    <plurals name="library_tracks_count">
+        <item quantity="one">%d track</item>
+        <item quantity="other">%d tracks</item>
+    </plurals>
+    <string name="library_favorites">Favorites</string>
+    <string name="library_downloads">Downloads</string>
+    <string name="library_history">History</string>
+    <string name="library_playlists">Playlists</string>
+    <string name="library_all_count">All (%1$d)</string>
+    <string name="library_new_playlist">New playlist</string>
+    <string name="library_albums">Albums</string>
+    <string name="library_artists">Artists &amp; channels</string>
+    <string name="library_empty_title">Your music will live here</string>
+    <string name="library_empty_text">Like tracks and save albums. Everything stays on this device, no account needed.</string>
+    <string name="library_find_music">Find music</string>
+    <string name="library_no_albums">Saved albums will appear here</string>
+    <string name="library_no_artists">Artists and channels you follow will appear here</string>
+    <string name="library_no_playlists">Your playlists will appear here</string>
+    <string name="playlist_new_title">New playlist</string>
+    <string name="playlist_name">Name</string>
+    <string name="playlist_create">Create</string>
+</resources>

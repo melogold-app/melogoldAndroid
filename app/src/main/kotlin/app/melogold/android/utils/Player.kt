@@ -5,7 +5,10 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import app.melogold.android.preferences.AppearancePreferences
+import app.melogold.android.service.LOCAL_KEY_PREFIX
+import app.melogold.android.service.PlayerService
 import app.melogold.core.ui.utils.songBundle
+import app.melogold.providers.innertube.models.NavigationEndpoint
 import kotlin.time.Duration
 
 val Player.currentWindow: Timeline.Window?
@@ -121,3 +124,14 @@ operator fun Timeline.get(
     window: Timeline.Window = Timeline.Window(),
     positionProjection: Duration = Duration.ZERO
 ): Timeline.Window = getWindow(index, window, positionProjection.inWholeMicroseconds)
+
+/**
+ * Plays [mediaItem] alone, followed by its radio (REWRITE §2.3: search results, links, "Recently
+ * played"). Local files get no radio.
+ */
+fun PlayerService.Binder.playWithRadio(mediaItem: MediaItem) {
+    stopRadio()
+    player.forcePlay(mediaItem)
+    if (!mediaItem.mediaId.startsWith(LOCAL_KEY_PREFIX))
+        setupRadio(NavigationEndpoint.Endpoint.Watch(videoId = mediaItem.mediaId))
+}

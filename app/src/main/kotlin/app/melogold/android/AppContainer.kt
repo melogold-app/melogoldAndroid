@@ -2,6 +2,7 @@ package app.melogold.android
 
 import android.app.Application
 import androidx.compose.runtime.staticCompositionLocalOf
+import app.melogold.android.data.NetworkMonitor
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +16,8 @@ import kotlinx.serialization.json.Json
  */
 class AppContainer(private val application: Application) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    val network by lazy { NetworkMonitor(application) }
 
     val json = Json {
         ignoreUnknownKeys = true
