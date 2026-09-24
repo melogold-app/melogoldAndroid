@@ -46,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
@@ -70,6 +71,7 @@ import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.seamlessPlay
 import app.melogold.android.utils.shouldBePlaying
+import app.melogold.android.utils.windowState
 import app.melogold.compose.persist.PersistMapCleanup
 import app.melogold.compose.routing.OnGlobalRoute
 import app.melogold.core.ui.utils.songBundle
@@ -107,7 +109,7 @@ fun Player(
             policy = neverEqualPolicy()
         )
     }
-    var shouldBePlaying by remember(binder) { mutableStateOf(binder?.player?.shouldBePlaying == true) }
+    var shouldBePlaying by remember(binder) { mutableStateOf(binder?.player?.playingInUi == true) }
 
     var likedAt by remember(mediaItem) {
         mutableStateOf(
@@ -141,11 +143,15 @@ fun Player(
             }
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                shouldBePlaying = player.shouldBePlaying
+                shouldBePlaying = player.playingInUi
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                shouldBePlaying = player.shouldBePlaying
+                shouldBePlaying = player.playingInUi
+            }
+
+            override fun onPlayerErrorChanged(error: PlaybackException?) {
+                shouldBePlaying = player.playingInUi
             }
         }
     }
@@ -187,6 +193,7 @@ fun Player(
         },
         backHandlerEnabled = !menuState.isDisplayed,
         collapsedContent = { _ ->
+            val error = windowState(binder).second
             MiniPlayer(
                 binder = binder,
                 metadata = metadata,
@@ -194,6 +201,7 @@ fun Player(
                 shouldBePlaying = shouldBePlaying,
                 onExpand = layoutState::expandSoft,
                 onMenu = { openPlayerMenu(onStreamInfo = null) },
+                error = mediaItem?.takeIf { error != null }?.let { playbackErrorMessage(it, error) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontalBottomPaddingValues)
@@ -442,6 +450,12 @@ private fun SpeedDialog(onDismiss: () -> Unit) {
         }
     )
 }
+
+/**
+ * Whether the play buttons show "pause": a track that failed is not playing, even though the
+ * player still wants to (play then prepares it again).
+ */
+private val Player.playingInUi get() = shouldBePlaying && playerError == null
 
 /**
  * Swiping the mini player down stops playback and clears the queue; "Undo" brings the queue, the

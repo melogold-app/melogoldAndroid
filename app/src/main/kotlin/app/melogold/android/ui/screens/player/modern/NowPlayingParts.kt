@@ -223,8 +223,8 @@ fun RowScope.PlaybackIndicators(
 }
 
 /**
- * The big Now Playing artwork (28 dp corners). Shrinks a little while paused; tap, long press and
- * horizontal swipe are handled by [modifier] and the callbacks.
+ * The big Now Playing artwork (28 dp corners). Shrinks a little while paused; the tap and the
+ * horizontal swipe are handled by [onTap] and [modifier] (the stream info moved to the player menu).
  */
 @Composable
 fun PlayerArtwork(
@@ -233,7 +233,6 @@ fun PlayerArtwork(
     playing: Boolean,
     reduceMotion: Boolean,
     onTap: () -> Unit,
-    onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
     overlay: @Composable () -> Unit = {}
 ) {
@@ -267,11 +266,8 @@ fun PlayerArtwork(
                 clip = true
             }
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .pointerInput(onTap, onLongPress) {
-                detectTapGestures(
-                    onTap = { onTap() },
-                    onLongPress = { onLongPress() }
-                )
+            .pointerInput(onTap) {
+                detectTapGestures(onTap = { onTap() })
             }
             .testTag("player_artwork")
     ) {

@@ -216,6 +216,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     private var timerJob: TimerJob? by mutableStateOf(null)
     private var radio: YouTubeRadio? = null
 
+    /** Tracks skipped in a row because they failed; back to 0 once one plays (REWRITE §3.10.9). */
+    private var failedInARow = 0
+
     private lateinit var bitmapProvider: BitmapProvider
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
@@ -484,7 +487,14 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             return
         }
 
-        if (!player.hasNextMediaItem()) return
+        // Skipping stops where it would go round in circles: a queue of one track (with repeat,
+        // "next" is the same track) or a run of failures, e.g. without network (REWRITE §3.10.9).
+        // The player then stays on the error card
+        if (!player.hasNextMediaItem() || player.mediaItemCount < 2 || failedInARow >= MAX_FAILED_IN_A_ROW) {
+            failedInARow = 0
+            return
+        }
+        failedInARow++
 
         val prev = player.currentMediaItem ?: return
         player.seekToNextMediaItem()
@@ -807,6 +817,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     // legacy behavior may cause inconsistencies, but not available on sdk 24 or lower
     @Suppress("DEPRECATION")
     override fun onEvents(player: Player, events: Player.Events) {
+        if (player.playbackState == Player.STATE_READY) failedInARow = 0
+
         if (player.duration != C.TIME_UNSET) {
             mediaSession.setMetadata(
                 metadataBuilder
@@ -1179,6 +1191,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     companion object {
         private const val DEFAULT_CACHE_DIRECTORY = "exoplayer"
+        private const val MAX_FAILED_IN_A_ROW = 3
         private const val DEFAULT_CHUNK_LENGTH = 512 * 1024L
 
         fun createDatabaseProvider(context: Context) = StandaloneDatabaseProvider(context)

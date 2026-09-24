@@ -2,6 +2,7 @@ package app.melogold.android.ui.screens.player.modern
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import app.melogold.android.service.isLocal
 import app.melogold.android.ui.screens.player.sleepTimerLeft
 import androidx.compose.foundation.layout.RowScope
 import android.content.ClipData
@@ -90,12 +91,14 @@ import app.melogold.android.ui.components.themed.MenuEntry
 import app.melogold.android.ui.components.themed.TextFieldDialog
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.screens.player.LyricsMenu
-import app.melogold.android.ui.screens.player.PlaybackError
+import app.melogold.android.ui.screens.player.PlaybackErrorCard
 import app.melogold.android.ui.screens.player.Queue
-import app.melogold.android.ui.screens.player.StatsForNerds
+import app.melogold.android.ui.screens.player.StreamInfoSheet
 import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.searchLyricsOnline
+import app.melogold.android.ui.shell.LocalMainNav
+import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.ui.theme.rememberArtworkColorScheme
 import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.utils.DisposableListener
@@ -153,6 +156,7 @@ fun ModernPlayer(
 ) {
     val appearance = LocalAppearance.current
     val menuState = LocalMenuState.current
+    val nav = LocalMainNav.current
     val context = LocalContext.current
     val view = LocalView.current
     val density = LocalDensity.current
@@ -282,8 +286,9 @@ fun ModernPlayer(
     // Dialogs and menus (hosted outside of the palette override below, so they keep the app theme)
     var editingSynced by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var picking by rememberSaveable { mutableStateOf(false) }
-    var showingStats by rememberSaveable(mediaId) { mutableStateOf(false) }
-    val showPlayerMenu: () -> Unit = { openPlayerMenu { showingStats = true } }
+    val showPlayerMenu: () -> Unit = {
+        openPlayerMenu { menuState.display { StreamInfoSheet(mediaId = mediaId, binder = binder) } }
+    }
     val sleepTimerMillisLeft = binder.sleepTimerLeft()
     val indicators: @Composable RowScope.() -> Unit = {
         PlaybackIndicators(
@@ -415,7 +420,6 @@ fun ModernPlayer(
                 playing = shouldBePlaying,
                 reduceMotion = reduceMotion,
                 onTap = { modeState.openLyrics(mediaId) },
-                onLongPress = { showingStats = true },
                 modifier = Modifier
                     .onSwipe(
                         animateOffset = true,
@@ -423,17 +427,19 @@ fun ModernPlayer(
                         onSwipeRight = { binder.player.forceSeekToPrevious(seekToStart = false) }
                     )
             ) {
-                StatsForNerds(
-                    mediaId = mediaId,
-                    isDisplayed = showingStats && error == null,
-                    onDismiss = { showingStats = false },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                PlaybackError(
+                PlaybackErrorCard(
                     isDisplayed = error != null,
-                    messageProvider = { playbackErrorMessage(mediaItem, error) },
-                    onDismiss = { binder.player.prepare() },
+                    message = playbackErrorMessage(mediaItem, error),
+                    onRetry = { binder.player.prepare() },
+                    onSkip = { binder.player.forceSeekToNext() },
+                    onOtherVersions = if (mediaItem.isLocal) null else ({
+                        layoutState.collapseSoft()
+                        val metadata = mediaItem.mediaMetadata
+                        nav.openSearch(
+                            query = listOfNotNull(metadata.artist, metadata.title).joinToString(" ").trim(),
+                            source = SearchSource.YouTube
+                        )
+                    }),
                     modifier = Modifier.fillMaxSize()
                 )
             }

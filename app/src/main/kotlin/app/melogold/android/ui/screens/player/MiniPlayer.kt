@@ -66,7 +66,8 @@ fun MiniPlayer(
     shouldBePlaying: Boolean,
     onExpand: () -> Unit,
     onMenu: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    error: String? = null
 ) {
     val player = binder?.player
     val (position, duration) = player.positionAndDurationState()
@@ -137,8 +138,9 @@ fun MiniPlayer(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    // An error of the track replaces the artist (REWRITE §3.10.9)
                     AnimatedContent(
-                        targetState = metadata?.artist?.toString().orEmpty(),
+                        targetState = error ?: metadata?.artist?.toString().orEmpty(),
                         transitionSpec = { fadeIn() togetherWith fadeOut() },
                         label = ""
                     ) { artist ->
@@ -146,7 +148,7 @@ fun MiniPlayer(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            if (explicit) Icon(
+                            if (explicit && error == null) Icon(
                                 painter = painterResource(R.drawable.explicit),
                                 contentDescription = stringResource(R.string.kit_explicit),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -155,7 +157,8 @@ fun MiniPlayer(
                             Text(
                                 text = artist,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (error != null) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )

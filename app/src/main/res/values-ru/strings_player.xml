@@ -2,4 +2,15 @@
 <resources>
     <string name="player_output_short">Устройство</string>
     <string name="player_stopped">Воспроизведение остановлено</string>
+
+    <string name="player_error_network">Нет соединения. Проверьте сеть или VPN</string>
+    <string name="player_error_geo">Недоступно в вашем регионе</string>
+    <string name="player_error_unavailable">Видео удалено или закрыто</string>
+    <string name="player_error_age">Нужна проверка возраста — пока не поддерживается</string>
+    <string name="player_error_timeout">YouTube долго не отвечает</string>
+    <string name="player_error_extractor">Не удалось получить поток. Возможно, нужно обновить компонент извлечения</string>
+    <string name="player_skip">Пропустить</string>
+
+    <string name="stream_info_format">Формат</string>
+    <string name="stream_info_copy">Копировать</string>
 </resources>
