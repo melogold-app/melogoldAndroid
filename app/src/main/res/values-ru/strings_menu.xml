@@ -7,6 +7,8 @@
     <string name="menu_add_to_playlist">Добавить в плейлист…</string>
     <string name="menu_download">Скачать</string>
     <string name="menu_start_radio">Включить радио</string>
+    <string name="menu_start_track_radio">Включить радио по треку</string>
+    <string name="menu_track_hidden">Трек скрыт</string>
     <string name="menu_go_to_album">Открыть альбом</string>
     <string name="menu_go_to_artist">Открыть исполнителя</string>
     <string name="menu_go_to_channel">Открыть канал</string>
@@ -21,15 +23,13 @@
     <string name="menu_section_track">Трек</string>
     <string name="menu_section_playback">Воспроизведение</string>
     <string name="menu_sleep_timer">Таймер сна</string>
-    <string name="menu_sleep_timer_off">Выкл.</string>
     <string name="menu_sleep_timer_minutes">%1$d мин</string>
-    <string name="menu_sleep_timer_hour">1 ч</string>
     <string name="menu_sleep_timer_end_of_track">До конца трека</string>
-    <string name="menu_sleep_timer_left">Осталось %1$s</string>
+    <string name="menu_sleep_timer_left">Осталось %1$d мин</string>
+    <string name="menu_sleep_timer_stop">Выключить таймер</string>
     <string name="menu_speed">Скорость</string>
     <string name="menu_speed_value">%1$s×</string>
     <string name="menu_speed_custom">Точнее…</string>
-    <string name="menu_equalizer">Эквалайзер</string>
     <string name="menu_stream_info">Сведения о потоке</string>
 
     <string name="add_to_playlist_title">Добавить в плейлист</string>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The queue sheet of the player (REWRITE §3.10.4, GLOSSARY "Очередь и плеер") -->
+<resources>
+    <string name="queue_up_next">Up next</string>
+    <plurals name="queue_tracks">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <string name="queue_duration_hours">%1$d h %2$d min</string>
+    <string name="queue_duration_minutes">%1$d min</string>
+    <string name="queue_shuffle">Shuffle</string>
+    <string name="queue_save_as_playlist">Save as playlist</string>
+    <string name="queue_clear">Clear</string>
+    <string name="queue_collapse">Hide the queue</string>
+    <string name="queue_now_playing">Now playing</string>
+    <string name="queue_reorder">Drag to reorder</string>
+    <string name="queue_move_up">Move up</string>
+    <string name="queue_move_down">Move down</string>
+    <string name="queue_removed">Removed from queue</string>
+    <string name="queue_cleared">Queue cleared</string>
+    <string name="queue_saved">Saved as “%1$s”</string>
+    <string name="queue_similar">Similar tracks</string>
+</resources>

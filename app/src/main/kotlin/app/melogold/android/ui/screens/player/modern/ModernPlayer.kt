@@ -1,5 +1,9 @@
 package app.melogold.android.ui.screens.player.modern
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import app.melogold.android.ui.screens.player.sleepTimerLeft
+import androidx.compose.foundation.layout.RowScope
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.animation.AnimatedContent
@@ -13,7 +17,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -34,11 +37,9 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,13 +47,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -285,6 +284,14 @@ fun ModernPlayer(
     var picking by rememberSaveable { mutableStateOf(false) }
     var showingStats by rememberSaveable(mediaId) { mutableStateOf(false) }
     val showPlayerMenu: () -> Unit = { openPlayerMenu { showingStats = true } }
+    val sleepTimerMillisLeft = binder.sleepTimerLeft()
+    val indicators: @Composable RowScope.() -> Unit = {
+        PlaybackIndicators(
+            sleepTimerMillisLeft = sleepTimerMillisLeft,
+            speed = PlayerPreferences.speed,
+            onClick = showPlayerMenu
+        )
+    }
 
     val copiedMessage = stringResource(R.string.copied)
     val importedMessage = stringResource(R.string.lyrics_imported)
@@ -563,6 +570,7 @@ fun ModernPlayer(
                     reduceMotion = reduceMotion,
                     onCollapse = { layoutState.collapseSoft() },
                     onMore = onMore,
+                    indicators = indicators,
                     artwork = artwork,
                     titleBlock = titleBlock,
                     compactHeader = compactHeader,
@@ -577,6 +585,7 @@ fun ModernPlayer(
                     backProgress = { backProgress.floatValue },
                     onCollapse = { layoutState.collapseSoft() },
                     onMore = onMore,
+                    indicators = indicators,
                     onControlsHeightChange = { controlsHeightPx.intValue = it },
                     artwork = artwork,
                     titleBlock = titleBlock,
@@ -654,8 +663,6 @@ fun ModernPlayer(
         Queue(
             layoutState = queueSheet,
             binder = binder,
-            beforeContent = { },
-            afterContent = { },
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
@@ -672,6 +679,7 @@ private fun PortraitLayout(
     backProgress: () -> Float,
     onCollapse: () -> Unit,
     onMore: () -> Unit,
+    indicators: @Composable RowScope.() -> Unit,
     onControlsHeightChange: (Int) -> Unit,
     artwork: @Composable (Dp, SharedScopes?) -> Unit,
     titleBlock: @Composable (Modifier, SharedScopes?) -> Unit,
@@ -685,7 +693,7 @@ private fun PortraitLayout(
             WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
         )
 ) {
-    PlayerTopBar(onCollapse = onCollapse, onMore = onMore)
+    PlayerTopBar(onCollapse = onCollapse, onMore = onMore, indicators = indicators)
 
     Box(
         modifier = Modifier
@@ -798,6 +806,7 @@ private fun LandscapeLayout(
     reduceMotion: Boolean,
     onCollapse: () -> Unit,
     onMore: () -> Unit,
+    indicators: @Composable RowScope.() -> Unit,
     artwork: @Composable (Dp, SharedScopes?) -> Unit,
     titleBlock: @Composable (Modifier, SharedScopes?) -> Unit,
     compactHeader: @Composable (Modifier, SharedScopes?) -> Unit,
@@ -849,7 +858,7 @@ private fun LandscapeLayout(
                 .weight(0.5f)
                 .fillMaxHeight()
         ) {
-            PlayerTopBar(onCollapse = onCollapse, onMore = onMore)
+            PlayerTopBar(onCollapse = onCollapse, onMore = onMore, indicators = indicators)
             Spacer(modifier = Modifier.weight(1f))
 
             transition.AnimatedContent(

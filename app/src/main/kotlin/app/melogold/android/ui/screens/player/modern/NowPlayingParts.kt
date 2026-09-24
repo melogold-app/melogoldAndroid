@@ -3,6 +3,12 @@
 
 package app.melogold.android.ui.screens.player.modern
 
+import kotlin.math.abs
+import app.melogold.android.ui.screens.player.minutesLeft
+import app.melogold.android.ui.screens.player.formatSpeed
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.AssistChip
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.BoundsTransform
@@ -122,14 +128,15 @@ internal fun Modifier.modeSharedBounds(scopes: SharedScopes?, key: String): Modi
 }
 
 /**
- * The top of the expanded player (REWRITE §3.10.2): the drag handle, "collapse" and the player
- * menu.
+ * The top of the expanded player (REWRITE §3.10.2): the drag handle, "collapse", [indicators]
+ * (the sleep timer, a speed other than 1×) and the player menu.
  */
 @Composable
 fun PlayerTopBar(
     onCollapse: () -> Unit,
     onMore: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    indicators: @Composable RowScope.() -> Unit = { }
 ) = Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     modifier = modifier
@@ -174,8 +181,45 @@ fun PlayerTopBar(
             )
         }
         Spacer(modifier = Modifier.weight(1f))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = indicators
+        )
         MoreButton(onClick = onMore)
     }
+}
+
+/**
+ * The sleep timer ("⏾ 23 min") and a speed other than 1× next to ⋮ (REWRITE §3.10.7, §3.10.8); a
+ * tap opens the player menu, where both are set.
+ */
+@Composable
+fun RowScope.PlaybackIndicators(
+    sleepTimerMillisLeft: Long?,
+    speed: Float,
+    onClick: () -> Unit
+) {
+    sleepTimerMillisLeft?.let { millis ->
+        AssistChip(
+            onClick = onClick,
+            label = { Text(text = stringResource(R.string.menu_sleep_timer_minutes, millis.minutesLeft())) },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ms_bedtime),
+                    contentDescription = null,
+                    modifier = Modifier.size(AssistChipDefaults.IconSize)
+                )
+            },
+            modifier = Modifier.testTag("player_sleep_timer")
+        )
+    }
+
+    if (abs(speed - 1f) >= 0.01f) AssistChip(
+        onClick = onClick,
+        label = { Text(text = stringResource(R.string.menu_speed_value, formatSpeed(speed))) },
+        modifier = Modifier.testTag("player_speed")
+    )
 }
 
 /**

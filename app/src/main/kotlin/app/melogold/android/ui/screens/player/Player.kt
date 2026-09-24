@@ -3,7 +3,6 @@
 package app.melogold.android.ui.screens.player
 
 import androidx.annotation.DrawableRes
-import androidx.annotation.OptIn
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,11 +30,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SnapshotMutationPolicy
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.neverEqualPolicy
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -48,7 +47,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
@@ -69,8 +67,7 @@ import app.melogold.android.ui.screens.player.modern.ModernPlayer
 import app.melogold.android.ui.shell.AppSnackbar
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.utils.DisposableListener
-import app.melogold.android.utils.formatAsDuration
-import app.melogold.android.utils.rememberEqualizerLauncher
+import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.seamlessPlay
 import app.melogold.android.utils.shouldBePlaying
 import app.melogold.compose.persist.PersistMapCleanup
@@ -80,7 +77,6 @@ import app.melogold.providers.innertube.models.NavigationEndpoint
 import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private val sleepTimerMinutes = listOf(15, 30, 45, 60)
@@ -222,11 +218,11 @@ fun Player(
 }
 
 /**
- * The ⋮ menu of the player (FEATURES "Меню ⋮ плеера"): the track entries, then "Playback" with
- * the sleep timer and the speed as chips, the equalizer and the stream info.
+ * The ⋮ menu of the player (REWRITE §3.10.5): "Track" without ♡ (it is on screen), then
+ * "Playback" with the sleep timer and the speed as chips and the stream info. The equalizer lives
+ * in Settings.
  */
 @Composable
-@OptIn(UnstableApi::class)
 private fun PlayerMenu(
     binder: PlayerService.Binder,
     mediaItem: MediaItem,
@@ -235,8 +231,6 @@ private fun PlayerMenu(
     onCustomSpeed: () -> Unit,
     onStreamInfo: (() -> Unit)?
 ) {
-    val launchEqualizer by rememberEqualizerLauncher(audioSessionId = { binder.player.audioSessionId })
-
     Menu(modifier = Modifier.testTag("player_menu")) {
         MediaItemMenuHeader(mediaItem = mediaItem)
 
@@ -249,7 +243,11 @@ private fun PlayerMenu(
                 binder.player.seamlessPlay(mediaItem)
                 binder.setupRadio(NavigationEndpoint.Endpoint.Watch(videoId = mediaItem.mediaId))
             },
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
+            // A hidden track is skipped (REWRITE §3.10.5)
+            onHidden = { binder.player.forceSeekToNext() },
+            showFavorite = false,
+            trackRadio = true
         )
 
         MenuDivider()
@@ -259,14 +257,6 @@ private fun PlayerMenu(
             onCustom = {
                 onDismiss()
                 onCustomSpeed()
-            }
-        )
-        MenuEntry(
-            icon = R.drawable.ms_equalizer,
-            text = stringResource(R.string.menu_equalizer),
-            onClick = {
-                onDismiss()
-                launchEqualizer()
             }
         )
         onStreamInfo?.let {
@@ -288,10 +278,12 @@ private fun ChipsRow(
     @DrawableRes icon: Int,
     title: String,
     value: String?,
+    trailing: (@Composable () -> Unit)? = null,
     chips: @Composable () -> Unit
 ) = Column(modifier = Modifier.fillMaxWidth()) {
     ListItem(
         supportingContent = value?.let { { Text(text = it) } },
+        trailingContent = trailing,
         leadingContent = {
             Icon(
                 painter = painterResource(icon),
@@ -314,11 +306,13 @@ private fun ChipsRow(
     }
 }
 
-/** The sleep timer as chips: off, 15/30/45 min, 1 h and "End of track"; the time left when on. */
+/**
+ * The sleep timer (REWRITE §3.10.7): chips 15 · 30 · 45 · 60 min and "End of track"; while it runs,
+ * "23 min left" and "Turn off timer".
+ */
 @Composable
 private fun SleepTimerRow(binder: PlayerService.Binder) {
-    val millisLeft by remember(binder) { binder.sleepTimerMillisLeft ?: MutableStateFlow<Long?>(null) }
-        .collectAsState()
+    val millisLeft = binder.sleepTimerLeft()
     // Which chip started the running timer; unknown after the menu is opened again
     var chosen by rememberSaveable { mutableStateOf<Int?>(null) }
     val running = millisLeft != null
@@ -326,16 +320,18 @@ private fun SleepTimerRow(binder: PlayerService.Binder) {
     ChipsRow(
         icon = R.drawable.ms_bedtime,
         title = stringResource(R.string.menu_sleep_timer),
-        value = millisLeft?.let { stringResource(R.string.menu_sleep_timer_left, formatAsDuration(it)) }
+        value = millisLeft?.let { stringResource(R.string.menu_sleep_timer_left, it.minutesLeft()) },
+        trailing = if (running) {
+            {
+                TextButton(
+                    onClick = {
+                        chosen = null
+                        binder.cancelSleepTimer()
+                    }
+                ) { Text(text = stringResource(R.string.menu_sleep_timer_stop)) }
+            }
+        } else null
     ) {
-        FilterChip(
-            selected = !running,
-            onClick = {
-                chosen = null
-                binder.cancelSleepTimer()
-            },
-            label = { Text(text = stringResource(R.string.menu_sleep_timer_off)) }
-        )
         sleepTimerMinutes.forEach { minutes ->
             FilterChip(
                 selected = running && chosen == minutes,
@@ -343,12 +339,7 @@ private fun SleepTimerRow(binder: PlayerService.Binder) {
                     chosen = minutes
                     binder.startSleepTimer(minutes * 60_000L)
                 },
-                label = {
-                    Text(
-                        text = if (minutes == 60) stringResource(R.string.menu_sleep_timer_hour)
-                        else stringResource(R.string.menu_sleep_timer_minutes, minutes)
-                    )
-                }
+                label = { Text(text = stringResource(R.string.menu_sleep_timer_minutes, minutes)) }
             )
         }
         FilterChip(
@@ -363,6 +354,22 @@ private fun SleepTimerRow(binder: PlayerService.Binder) {
         )
     }
 }
+
+/**
+ * The time left on the sleep timer, or null while none runs. Every timer has its own flow, and the
+ * binder's getter reads snapshot state, so a new timer is picked up.
+ */
+@Composable
+internal fun PlayerService.Binder.sleepTimerLeft(): Long? {
+    val flow = sleepTimerMillisLeft
+
+    return produceState(initialValue = flow?.value, flow) {
+        if (flow == null) value = null else flow.collect { value = it }
+    }.value
+}
+
+/** Whole minutes left, rounded up: a timer with 30 s left still shows "1 min". */
+internal fun Long.minutesLeft() = ((this + 59_999) / 60_000).toInt()
 
 /** The playback speed as chips, with "Custom…" for anything in between. */
 @Composable
@@ -389,7 +396,7 @@ private fun SpeedRow(onCustom: () -> Unit) {
     }
 }
 
-private fun formatSpeed(speed: Float): String = NumberFormat.getInstance().apply {
+internal fun formatSpeed(speed: Float): String = NumberFormat.getInstance().apply {
     minimumFractionDigits = 0
     maximumFractionDigits = 2
 }.format(speed)

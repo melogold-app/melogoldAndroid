@@ -28,6 +28,7 @@ import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.screens.albumRoute
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.home.HideSongDialog
+import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.utils.addNext
@@ -128,23 +129,6 @@ fun NonQueuedMediaItemMenu(
 }
 
 @Composable
-fun QueuedMediaItemMenu(
-    onDismiss: () -> Unit,
-    mediaItem: MediaItem,
-    indexInQueue: Int?,
-    modifier: Modifier = Modifier
-) {
-    val binder = LocalPlayerServiceBinder.current
-
-    BaseMediaItemMenu(
-        mediaItem = mediaItem,
-        onDismiss = onDismiss,
-        onRemoveFromQueue = indexInQueue?.let { index -> { binder?.player?.removeMediaItem(index) } },
-        modifier = modifier
-    )
-}
-
-@Composable
 fun BaseMediaItemMenu(
     onDismiss: () -> Unit,
     mediaItem: MediaItem,
@@ -196,7 +180,11 @@ fun MediaItemMenuHeader(
  * actions on the track, then, after a divider, the ones that hide or remove it.
  *
  * Every entry hides the menu. [onNavigate] runs before an entry leaves for another screen (the
- * player collapses itself there).
+ * player collapses itself there); [onHidden] runs after "Don't show this track" hid it (the player
+ * skips it), and a snackbar offers "Undo".
+ *
+ * @param showFavorite false where ♡ is already on screen (the player)
+ * @param trackRadio "Start track radio" instead of "Start radio" (the player menu)
  */
 @Composable
 fun TrackMenuEntries(
@@ -209,11 +197,16 @@ fun TrackMenuEntries(
     onRemoveFromPlaylist: (() -> Unit)? = null,
     onHideFromDatabase: (() -> Unit)? = null,
     onRemoveFromQuickPicks: (() -> Unit)? = null,
-    onNavigate: () -> Unit = {}
+    onNavigate: () -> Unit = {},
+    onHidden: () -> Unit = {},
+    showFavorite: Boolean = true,
+    trackRadio: Boolean = false
 ) {
     val context = LocalContext.current
     val menuState = LocalMenuState.current
     val nav = LocalMainNav.current
+    val snackbar = LocalAppSnackbar.current
+    val hiddenMessage = stringResource(R.string.menu_track_hidden)
     val songId = mediaItem.mediaId
     val isLocal = mediaItem.isLocal
     val extras = remember(mediaItem) { mediaItem.mediaMetadata.extras?.songBundle }
@@ -245,7 +238,7 @@ fun TrackMenuEntries(
     }
 
     val liked = likedAt != null
-    MenuEntry(
+    if (showFavorite) MenuEntry(
         icon = if (liked) R.drawable.ms_favorite_fill else R.drawable.ms_favorite,
         text = stringResource(if (liked) R.string.menu_favorite_remove else R.string.menu_favorite_add),
         onClick = entry {
@@ -311,7 +304,7 @@ fun TrackMenuEntries(
         onStartRadio?.let {
             MenuEntry(
                 icon = R.drawable.ms_sensors,
-                text = stringResource(R.string.menu_start_radio),
+                text = stringResource(if (trackRadio) R.string.menu_start_track_radio else R.string.menu_start_radio),
                 onClick = entry(it)
             )
         }
@@ -358,6 +351,10 @@ fun TrackMenuEntries(
             transaction {
                 Database.insert(mediaItem)
                 Database.toggleBlacklist(songId)
+            }
+            if (!blacklisted) {
+                onHidden()
+                snackbar.showUndo(hiddenMessage) { transaction { Database.toggleBlacklist(songId) } }
             }
         }
     )
