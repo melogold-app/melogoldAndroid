@@ -16,6 +16,7 @@ import app.melogold.android.Database
 import app.melogold.android.R
 import app.melogold.android.internal
 import app.melogold.android.preferences.DataPreferences
+import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.query
 import app.melogold.android.service.PlayerService
 import app.melogold.android.transaction
@@ -114,7 +115,7 @@ fun DatabaseSettings() = with(DataPreferences) {
                 title = stringResource(R.string.pause_playback_time),
                 text = stringResource(
                     R.string.format_pause_playback_time_description,
-                    topListLength
+                    TOP_LIST_LENGTH
                 ),
                 isChecked = pausePlaytime,
                 onCheckedChange = { pausePlaytime = !pausePlaytime }

@@ -15,7 +15,6 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.UnstableApi
 import app.melogold.android.R
 import app.melogold.android.models.Song
-import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.isLocal
 import app.melogold.core.ui.utils.SongBundleAccessor
@@ -145,9 +144,12 @@ val Duration.formatted
         }
     }
 
+/** The largest artwork size requested from the thumbnail servers, in pixels. */
+const val MAX_THUMBNAIL_SIZE = 1920
+
 fun String.thumbnail(
     size: Int,
-    maxSize: Int = AppearancePreferences.maxThumbnailSize
+    maxSize: Int = MAX_THUMBNAIL_SIZE
 ): String {
     val actualSize = size.coerceAtMost(maxSize)
     return when {

@@ -18,8 +18,8 @@ import app.melogold.android.models.Album
 import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongWithContentLength
-import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.OrderPreferences
+import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.forcePlayAtIndex
 import app.melogold.android.utils.forceSeekToNext
@@ -197,7 +197,7 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
                 .setTitle(
                     getString(
                         R.string.format_my_top_playlist,
-                        DataPreferences.topListLength.toString()
+                        TOP_LIST_LENGTH.toString()
                     )
                 )
                 .setIconUri(uriFor(R.drawable.trending))
@@ -297,20 +297,12 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
                             .map(SongWithContentLength::song)
                             .shuffled()
 
-                    MediaId.TOP -> {
-                        val duration = DataPreferences.topListPeriod.duration
-                        val length = DataPreferences.topListLength
-
-                        val flow = if (duration != null) Database.trending(
-                            limit = length,
-                            period = duration.inWholeMilliseconds
-                        ) else Database
-                            .songsByPlayTimeDesc(limit = length)
+                    MediaId.TOP ->
+                        Database
+                            .songsByPlayTimeDesc(limit = TOP_LIST_LENGTH)
                             .distinctUntilChanged()
                             .cancellable()
-
-                        flow.first()
-                    }
+                            .first()
 
                     MediaId.LOCAL ->
                         Database

@@ -15,7 +15,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -76,7 +75,7 @@ fun SeekBar(
     isActive: Boolean = binder.player.isPlaying,
     alwaysShowDuration: Boolean = false,
     scrubberRadius: Dp = 6.dp,
-    style: PlayerPreferences.SeekBarStyle = PlayerPreferences.seekBarStyle,
+    style: PlayerPreferences.SeekBarStyle = PlayerPreferences.SeekBarStyle.Wavy,
     range: ClosedRange<Long> = 0L..media.duration
 ) {
     var scrubbingPosition by remember(media) { mutableStateOf<Long?>(null) }
@@ -447,14 +446,10 @@ private fun Duration(
             modifier = Modifier.fillMaxWidth()
         ) {
             BasicText(
-                text = if (PlayerPreferences.showRemaining) "-${formatAsDuration(duration - position)}"
-                else formatAsDuration(position),
+                text = formatAsDuration(position),
                 style = typography.xxs.semiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable {
-                    PlayerPreferences.showRemaining = !PlayerPreferences.showRemaining
-                }
+                overflow = TextOverflow.Ellipsis
             )
 
             if (duration != C.TIME_UNSET) BasicText(
@@ -470,7 +465,7 @@ private fun Duration(
 private fun Density.wavePath(
     size: Size,
     progress: Float,
-    quality: Float = PlayerPreferences.wavySeekBarQuality.quality
+    quality: Float = PlayerPreferences.WavySeekBarQuality.Great.quality
 ) = Path().apply {
     val [width, height] = size
     val progressTau = progress * 2 * PI.toFloat()

@@ -244,16 +244,6 @@ private fun ModernControls(
         )
     }
 
-    val likeButtonContent: @Composable RowScope.() -> Unit = {
-        BigIconButton(
-            iconId = if (likedAt == null) R.drawable.heart_outline else R.drawable.heart,
-            onClick = {
-                setLikedAt(if (likedAt == null) System.currentTimeMillis() else null)
-            },
-            modifier = Modifier.weight(1f)
-        )
-    }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -267,15 +257,14 @@ private fun ModernControls(
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (PlayerPreferences.showLike) 4.dp else 8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (PlayerPreferences.showLike) previousButtonContent()
             PlayButton(
                 radius = playButtonRadius,
                 shouldBePlaying = shouldBePlaying,
                 modifier = Modifier
                     .height(controlHeight)
-                    .weight(if (PlayerPreferences.showLike) 3f else 4f)
+                    .weight(4f)
             )
             SkipButton(
                 iconId = R.drawable.play_skip_forward,
@@ -289,7 +278,7 @@ private fun ModernControls(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (PlayerPreferences.showLike) likeButtonContent() else previousButtonContent()
+            previousButtonContent()
 
             Column(modifier = Modifier.weight(4f)) {
                 SeekBar(

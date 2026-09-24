@@ -154,56 +154,6 @@ fun OtherSettings() {
                 onCheckedChange = { DataPreferences.autoSyncPlaylists = it }
             )
         }
-        SettingsGroup(title = stringResource(R.string.built_in_playlists)) {
-            IntSettingsEntry(
-                title = stringResource(R.string.top_list_length),
-                text = stringResource(R.string.top_list_length_description),
-                currentValue = DataPreferences.topListLength,
-                setValue = { DataPreferences.topListLength = it },
-                defaultValue = 10,
-                range = 1..500
-            )
-        }
-        SettingsGroup(title = stringResource(R.string.quick_picks)) {
-            EnumValueSelectorSettingsEntry(
-                title = stringResource(R.string.quick_picks_source),
-                selectedValue = DataPreferences.quickPicksSource,
-                onValueSelect = { DataPreferences.quickPicksSource = it },
-                valueText = { it.displayName() }
-            )
-
-            SwitchSettingsEntry(
-                title = stringResource(R.string.quick_picks_cache),
-                text = stringResource(R.string.quick_picks_cache_description),
-                isChecked = DataPreferences.shouldCacheQuickPicks,
-                onCheckedChange = { DataPreferences.shouldCacheQuickPicks = it }
-            )
-        }
-        SettingsGroup(title = stringResource(R.string.dynamic_thumbnails)) {
-            var selectingThumbnailSize by remember { mutableStateOf(false) }
-            SettingsEntry(
-                title = stringResource(R.string.max_dynamic_thumbnail_size),
-                text = stringResource(R.string.max_dynamic_thumbnail_size_description),
-                onClick = { selectingThumbnailSize = true }
-            )
-            if (selectingThumbnailSize) SliderDialog(
-                onDismiss = { selectingThumbnailSize = false },
-                title = stringResource(R.string.max_dynamic_thumbnail_size)
-            ) {
-                SliderDialogBody(
-                    provideState = {
-                        remember(AppearancePreferences.maxThumbnailSize) {
-                            mutableFloatStateOf(AppearancePreferences.maxThumbnailSize.toFloat())
-                        }
-                    },
-                    onSlideComplete = { AppearancePreferences.maxThumbnailSize = it.roundToInt() },
-                    min = 32f,
-                    max = 1920f,
-                    toDisplay = { stringResource(R.string.format_px, it.roundToInt()) },
-                    steps = 58
-                )
-            }
-        }
         SettingsGroup(title = stringResource(R.string.service_lifetime)) {
             AnimatedVisibility(visible = !isIgnoringBatteryOptimizations) {
                 SettingsDescription(
@@ -240,15 +190,6 @@ fun OtherSettings() {
                 },
                 isEnabled = !isIgnoringBatteryOptimizations
             )
-
-            AnimatedVisibility(!isAtLeastAndroid12 || isIgnoringBatteryOptimizations) {
-                SwitchSettingsEntry(
-                    title = stringResource(R.string.invincible_service),
-                    text = stringResource(R.string.invincible_service_description),
-                    isChecked = PlayerPreferences.isInvincibilityEnabled,
-                    onCheckedChange = { PlayerPreferences.isInvincibilityEnabled = it }
-                )
-            }
 
             SettingsEntry(
                 title = stringResource(R.string.need_help),
@@ -329,7 +270,6 @@ fun OtherSettings() {
                     text = stringResource(R.string.kill_app),
                     onClick = {
                         binder?.stopRadio()
-                        binder?.invincible = false
                         context.findActivity().finishAndRemoveTask()
                         binder?.restartForegroundOrStop()
                         troubleshootScope.launch {

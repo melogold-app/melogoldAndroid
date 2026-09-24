@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.core.view.WindowCompat
+import app.melogold.core.ui.theme.MelogoldShapeTokens
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 import app.melogold.core.ui.utils.isAtLeastAndroid8
 import app.melogold.core.ui.utils.roundedShape
@@ -33,19 +34,14 @@ data class Appearance(
     companion object {
         fun from(
             scheme: ColorScheme,
-            thumbnailRoundness: Dp,
-            applyFontPadding: Boolean,
             isBrandScheme: Boolean = false
         ): Appearance {
             val colorPalette = ColorPalette.from(scheme = scheme, isDefault = isBrandScheme)
 
             return Appearance(
                 colorPalette = colorPalette,
-                typography = typographyOf(
-                    color = colorPalette.text,
-                    applyFontPadding = applyFontPadding
-                ),
-                thumbnailShapeCorners = thumbnailRoundness
+                typography = typographyOf(color = colorPalette.text),
+                thumbnailShapeCorners = MelogoldShapeTokens.Thumbnail
             )
         }
     }

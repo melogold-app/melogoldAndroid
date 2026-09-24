@@ -25,13 +25,6 @@ fun PlayerSettings() = with(PlayerPreferences) {
 
     SettingsCategoryScreen(title = stringResource(R.string.player)) {
         SettingsGroup(title = stringResource(R.string.player)) {
-            SwitchSettingsEntry(
-                title = stringResource(R.string.persistent_queue),
-                text = stringResource(R.string.persistent_queue_description),
-                isChecked = persistentQueue,
-                onCheckedChange = { persistentQueue = it }
-            )
-
             if (isAtLeastAndroid6) SwitchSettingsEntry(
                 title = stringResource(R.string.resume_playback),
                 text = stringResource(R.string.resume_playback_description),
@@ -46,13 +39,6 @@ fun PlayerSettings() = with(PlayerPreferences) {
                 text = stringResource(R.string.stop_when_closed_description),
                 isChecked = stopWhenClosed,
                 onCheckedChange = { stopWhenClosed = it }
-            )
-
-            SwitchSettingsEntry(
-                title = stringResource(R.string.skip_on_error),
-                text = stringResource(R.string.skip_on_error_description),
-                isChecked = skipOnError,
-                onCheckedChange = { skipOnError = it }
             )
         }
         SettingsGroup(title = stringResource(R.string.audio)) {

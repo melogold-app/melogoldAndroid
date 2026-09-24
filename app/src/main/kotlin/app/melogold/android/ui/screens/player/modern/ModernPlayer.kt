@@ -95,7 +95,6 @@ import app.melogold.android.ui.screens.player.Queue
 import app.melogold.android.ui.screens.player.StatsForNerds
 import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.searchLyricsOnline
-import app.melogold.android.utils.FullScreenState
 import app.melogold.android.utils.Pip
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
@@ -259,8 +258,6 @@ fun ModernPlayer(
     DisposableEffect(activity) {
         onDispose { activity?.setSystemBarAppearance(isDark = currentAppIsDark) }
     }
-
-    FullScreenState(shown = modeState.controlsVisible || PlayerPreferences.lyricsShowSystemBars)
 
     val keepScreenOn = PlayerPreferences.lyricsKeepScreenAwake &&
         mode == PlayerMode.Lyrics &&

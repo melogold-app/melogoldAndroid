@@ -3,13 +3,9 @@ package app.melogold.android.preferences
 import app.melogold.android.GlobalPreferencesHolder
 import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.compose.preferences.SharedPreferencesProperty
-import app.melogold.core.ui.ArtworkColorScope
 import app.melogold.core.ui.ColorMode
 import app.melogold.core.ui.ColorSource
-import app.melogold.core.ui.Contrast
 import app.melogold.core.ui.Darkness
-import app.melogold.core.ui.MotionLevel
-import app.melogold.core.ui.ThumbnailRoundness
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 
 object AppearancePreferences : GlobalPreferencesHolder() {
@@ -24,12 +20,8 @@ object AppearancePreferences : GlobalPreferencesHolder() {
         set = { key, value -> putString(key, value.name) },
         default = defaultColorSource
     )
-    var artworkColorScope by enum(ArtworkColorScope.PlayerOnly)
     var colorMode by enum(ColorMode.System)
     var darkness by enum(Darkness.Normal)
-    var contrast by enum(Contrast.System)
-    var motionLevel by enum(MotionLevel.Expressive)
-    var hapticsEnabled by boolean(true)
 
     /**
      * The section the user was in, reopened on the next launch (REDESIGN-M3E §8.1). There is no
@@ -37,16 +29,10 @@ object AppearancePreferences : GlobalPreferencesHolder() {
      */
     var lastTab by enum(TopLevelDestination.FirstLaunch)
 
-    var thumbnailRoundness by enum(ThumbnailRoundness.Heavy)
-    var applyFontPadding by boolean(false)
-    val isShowingThumbnailInLockscreenProperty = boolean(true)
-    var isShowingThumbnailInLockscreen by isShowingThumbnailInLockscreenProperty
     var swipeToHideSong by boolean(false)
     var swipeToHideSongConfirm by boolean(true)
-    var maxThumbnailSize by int(1920)
     var hideExplicit by boolean(false)
     var autoPip by boolean(false)
-    var openPlayer by boolean(true)
 }
 
 /**

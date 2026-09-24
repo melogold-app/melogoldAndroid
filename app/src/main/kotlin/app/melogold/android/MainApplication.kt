@@ -1,6 +1,5 @@
 package app.melogold.android
 
-import android.app.ActivityManager
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
@@ -47,7 +46,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.credentials.CredentialManager
@@ -75,14 +73,10 @@ import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.ui.shell.rememberAppSnackbar
 import app.melogold.android.ui.shell.rememberMainNavState
 import app.melogold.android.ui.shell.rememberShellLayout
-import app.melogold.android.ui.theme.rememberArtworkColorScheme
-import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
-import app.melogold.android.ui.theme.withDarkness
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.KeyedCrossfade
 import app.melogold.android.utils.LocalMonetCompat
-import app.melogold.android.utils.collectProvidedBitmapAsState
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.invokeOnReady
 import app.melogold.android.utils.isInPip
@@ -94,10 +88,10 @@ import app.melogold.android.utils.shouldBePlaying
 import app.melogold.compose.persist.LocalPersistMap
 import app.melogold.compose.persist.PersistMap
 import app.melogold.compose.preferences.PreferencesHolder
-import app.melogold.core.ui.ArtworkColorScope
 import app.melogold.core.ui.ColorMode
 import app.melogold.core.ui.ColorSource
 import app.melogold.core.ui.Dimensions
+import app.melogold.core.ui.MotionLevel
 import app.melogold.core.ui.SystemBarAppearance
 import app.melogold.core.ui.isDark
 import app.melogold.core.ui.shimmerTheme
@@ -105,7 +99,6 @@ import app.melogold.core.ui.theme.MelogoldTheme
 import app.melogold.core.ui.utils.activityIntentBundle
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid17
-import app.melogold.core.ui.utils.songBundle
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -129,8 +122,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
-
-private const val WHOLE_APP_ARTWORK_DELAY_MS = 500L
 
 // Viewmodel in order to avoid recreating the entire Player state (WORKAROUND)
 class MainViewModel : ViewModel() {
@@ -217,40 +208,17 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
         val isDark = colorMode == ColorMode.Dark ||
             (colorMode == ColorMode.System && isSystemInDarkTheme)
 
-        val baseScheme = rememberMelogoldColorScheme(
+        val scheme = rememberMelogoldColorScheme(
             source = colorSource,
             isDark = isDark,
             darkness = darkness,
-            contrast = contrast,
             monet = _monet
         )
 
-        // "Artwork colors in the whole app" (REDESIGN-M3E §4.4): off on low-RAM devices
-        val isLowRamDevice = remember { getSystemService<ActivityManager>()?.isLowRamDevice == true }
-        val artworkScheme = if (artworkColorScope == ArtworkColorScope.WholeApp && !isLowRamDevice) {
-            val bitmap = vm.binder.collectProvidedBitmapAsState()
-            val mediaId = remember(bitmap) { vm.binder?.player?.currentMediaItem?.mediaId }
-
-            val artwork = rememberArtworkColorScheme(
-                key = mediaId,
-                bitmap = bitmap,
-                isDark = isDark,
-                contrastLevel = rememberContrastLevel(contrast),
-                delayMillis = WHOLE_APP_ARTWORK_DELAY_MS
-            )
-            remember(artwork, isDark, darkness) {
-                artwork?.withDarkness(isDark = isDark, darkness = darkness)
-            }
-        } else null
-
-        val scheme = artworkScheme ?: baseScheme
-
         MelogoldTheme(
             scheme = scheme,
-            motionLevel = rememberEffectiveMotionLevel(motionLevel),
-            thumbnailRoundness = thumbnailRoundness.dp,
-            applyFontPadding = applyFontPadding,
-            isBrandScheme = artworkScheme == null && colorSource != ColorSource.System
+            motionLevel = rememberEffectiveMotionLevel(MotionLevel.Expressive),
+            isBrandScheme = colorSource != ColorSource.System
         ) {
             SystemBarAppearance(isDark = scheme.isDark)
 
@@ -390,12 +358,6 @@ class MainActivity : ComponentActivity(), MonetColorsChangedListener {
                         mediaItem == null -> {
                             maybeExitPip()
                             playerBottomSheetState.dismissSoft()
-                        }
-
-                        reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED &&
-                            mediaItem.mediaMetadata.extras?.songBundle?.isFromPersistentQueue != true -> {
-                            if (AppearancePreferences.openPlayer) playerBottomSheetState.expandSoft()
-                            else Unit
                         }
 
                         playerBottomSheetState.dismissed -> playerBottomSheetState.collapseSoft()

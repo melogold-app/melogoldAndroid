@@ -23,11 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
-import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.ui.modifiers.PinchDirection
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.modifiers.pinchToToggle
-import app.melogold.android.utils.FullScreenState
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
 import app.melogold.android.utils.thumbnail
@@ -42,8 +40,6 @@ fun LyricsDialog(
     modifier: Modifier = Modifier
 ) = Dialog(onDismissRequest = onDismiss) {
     val currentOnDismiss by rememberUpdatedState(onDismiss)
-
-    FullScreenState(shown = PlayerPreferences.lyricsShowSystemBars)
 
     val [colorPalette, _, _, thumbnailShape] = LocalAppearance.current
 

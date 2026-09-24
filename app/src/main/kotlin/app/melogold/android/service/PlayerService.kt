@@ -1,6 +1,7 @@
 package app.melogold.android.service
 
 import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -16,6 +17,8 @@ import android.media.audiofx.LoudnessEnhancer
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
@@ -72,7 +75,7 @@ import app.melogold.android.query
 import app.melogold.android.transaction
 import app.melogold.android.utils.ActionReceiver
 import app.melogold.android.utils.ConditionalCacheDataSourceFactory
-import app.melogold.android.utils.InvincibleService
+import app.melogold.android.utils.MAX_THUMBNAIL_SIZE
 import app.melogold.android.utils.TimerJob
 import app.melogold.android.utils.YouTubeDLResponse
 import app.melogold.android.utils.YouTubeRadio
@@ -163,7 +166,9 @@ private const val LOOP_ACTION = "app.melogold.android.LOOP"
 @kotlin.OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LargeClass", "TooManyFunctions") // intended in this class: it is a service
 @OptIn(UnstableApi::class)
-class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListener.Callback {
+class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback {
+    private val handler = Handler(Looper.getMainLooper())
+
     private lateinit var mediaSession: MediaSession
     private lateinit var cache: Cache
     private lateinit var player: ExoPlayer
@@ -218,8 +223,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     private var volumeNormalizationJob: Job? = null
     private var sponsorBlockJob: Job? = null
 
-    override var isInvincibilityEnabled by mutableStateOf(false)
-
     private var audioManager: AudioManager? = null
     private var audioDeviceCallback: AudioDeviceCallback? = null
 
@@ -228,7 +231,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     private val binder = Binder()
 
     private var isNotificationStarted = false
-    override val notificationId get() = ServiceNotifications.default.notificationId!!
     private val notificationActionReceiver = NotificationActionReceiver()
 
     private val mediaItemState = MutableStateFlow<MediaItem?>(null)
@@ -253,10 +255,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
 
     private var poiTimestamp: Long? by mutableStateOf(null)
 
-    override fun onBind(intent: Intent?): AndroidBinder {
-        super.onBind(intent)
-        return binder
-    }
+    override fun onBind(intent: Intent?): AndroidBinder = binder
 
     @Suppress("CyclomaticComplexMethod")
     override fun onCreate() {
@@ -268,7 +267,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             getBitmapSize = {
                 (512 * resources.displayMetrics.density)
                     .roundToInt()
-                    .coerceAtMost(AppearancePreferences.maxThumbnailSize)
+                    .coerceAtMost(MAX_THUMBNAIL_SIZE)
             },
             getColor = { isSystemInDarkMode ->
                 if (isSystemInDarkMode) Color.BLACK else Color.WHITE
@@ -338,13 +337,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                 callback: (T) -> Unit
             ) = launch { prop.stateFlow.collectLatest { handler.post { callback(it) } } }
 
-            subscribe(AppearancePreferences.isShowingThumbnailInLockscreenProperty) {
-                maybeShowSongCoverInLockScreen()
-            }
-
-            subscribe(PlayerPreferences.isInvincibilityEnabledProperty) {
-                this@PlayerService.isInvincibilityEnabled = it
-            }
             subscribe(PlayerPreferences.queueLoopEnabledProperty) { updateRepeatMode() }
             subscribe(PlayerPreferences.resumePlaybackWhenDeviceConnectedProperty) {
                 maybeResumePlaybackWhenDeviceConnected()
@@ -405,8 +397,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
 
         super.onDestroy()
     }
-
-    override fun shouldBeInvincible() = !player.shouldBePlaying
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         handler.post {
@@ -494,7 +484,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             return
         }
 
-        if (!PlayerPreferences.skipOnError || !player.hasNextMediaItem()) return
+        if (!player.hasNextMediaItem()) return
 
         val prev = player.currentMediaItem ?: return
         player.seekToNextMediaItem()
@@ -544,8 +534,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     }
 
     private fun maybeSavePlayerQueue() {
-        if (!PlayerPreferences.persistentQueue) return
-
         val mediaItems = player.currentTimeline.mediaItems
         val mediaItemIndex = player.currentMediaItemIndex
         val mediaItemPosition = player.currentPosition
@@ -566,8 +554,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     }
 
     private fun maybeRestorePlayerQueue() {
-        if (!PlayerPreferences.persistentQueue) return
-
         transaction {
             val queue = Database.queue()
             if (queue.isEmpty()) return@transaction
@@ -586,11 +572,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                                 .setUri(item.mediaItem.mediaId)
                                 .setCustomCacheKey(item.mediaItem.mediaId)
                                 .build()
-                                .apply {
-                                    mediaMetadata.extras?.songBundle?.apply {
-                                        isFromPersistentQueue = true
-                                    }
-                                }
                         },
                         /* startIndex = */
                         index,
@@ -735,11 +716,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     }
 
     private fun maybeShowSongCoverInLockScreen() = handler.post {
-        val bitmap = if (isAtLeastAndroid13 || AppearancePreferences.isShowingThumbnailInLockscreen) {
-            bitmapProvider.bitmap
-        } else {
-            null
-        }
+        val bitmap = bitmapProvider.bitmap
         val uri = player.mediaMetadata.artworkUri?.toString()?.thumbnail(512)
 
         metadataBuilder.putBitmap(MediaMetadata.METADATA_KEY_ART, bitmap)
@@ -869,7 +846,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
 
         if (notification == null) {
             isNotificationStarted = false
-            makeInvincible(false)
             stopForeground(false)
             closeEqualizer()
             ServiceNotifications.default.cancel(this)
@@ -880,13 +856,11 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             isNotificationStarted = true
             startForegroundService(this@PlayerService, intent<PlayerService>())
             startForeground()
-            makeInvincible(false)
             openEqualizer()
         } else {
             if (!player.shouldBePlaying) {
                 isNotificationStarted = false
                 stopForeground(false)
-                makeInvincible(true)
                 closeEqualizer()
             }
             updateNotification()
@@ -972,7 +946,10 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
         }
     }
 
-    override fun startForeground() {
+    /**
+     * Should strictly be called on the main thread!
+     */
+    private fun startForeground() {
         notification()
             ?.let { ServiceNotifications.default.startForeground(this, it) }
     }
@@ -1034,12 +1011,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
 
         var isLoadingRadio by mutableStateOf(false)
             private set
-
-        var invincible
-            get() = isInvincibilityEnabled
-            set(value) {
-                isInvincibilityEnabled = value
-            }
 
         val poiTimestamp get() = this@PlayerService.poiTimestamp
 
@@ -1116,7 +1087,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
          */
         fun restartForegroundOrStop() {
             player.pause()
-            isInvincibilityEnabled = false
             stopSelf()
         }
 

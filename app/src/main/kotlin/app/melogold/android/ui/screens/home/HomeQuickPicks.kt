@@ -92,15 +92,13 @@ fun QuickPicks(
 
     var relatedPageResult by persist<Result<Innertube.RelatedPage?>?>(tag = "home/relatedPageResult")
 
-    LaunchedEffect(relatedPageResult, DataPreferences.shouldCacheQuickPicks) {
-        if (DataPreferences.shouldCacheQuickPicks)
-            relatedPageResult?.getOrNull()?.let { DataPreferences.cachedQuickPicks = it }
-        else DataPreferences.cachedQuickPicks = Innertube.RelatedPage()
+    LaunchedEffect(relatedPageResult) {
+        relatedPageResult?.getOrNull()?.let { DataPreferences.cachedQuickPicks = it }
     }
 
-    LaunchedEffect(DataPreferences.quickPicksSource) {
+    LaunchedEffect(Unit) {
         if (
-            DataPreferences.shouldCacheQuickPicks && !DataPreferences.cachedQuickPicks.let {
+            !DataPreferences.cachedQuickPicks.let {
                 it.albums.isNullOrEmpty() &&
                     it.artists.isNullOrEmpty() &&
                     it.playlists.isNullOrEmpty() &&
@@ -116,19 +114,10 @@ fun QuickPicks(
             trending = song
         }
 
-        when (DataPreferences.quickPicksSource) {
-            DataPreferences.QuickPicksSource.Trending ->
-                Database
-                    .trending()
-                    .distinctUntilChanged()
-                    .collect { handleSong(it.firstOrNull()) }
-
-            DataPreferences.QuickPicksSource.LastInteraction ->
-                Database
-                    .events()
-                    .distinctUntilChanged()
-                    .collect { handleSong(it.firstOrNull()?.song) }
-        }
+        Database
+            .trending()
+            .distinctUntilChanged()
+            .collect { handleSong(it.firstOrNull()) }
     }
 
     val scrollState = rememberScrollState()

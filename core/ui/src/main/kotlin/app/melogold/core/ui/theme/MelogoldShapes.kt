@@ -22,7 +22,7 @@ val MelogoldShapes = Shapes(
  * never clipped to them.
  */
 object MelogoldShapeTokens {
-    /** List thumbnails. The user's `thumbnailRoundness` setting overrides it. */
+    /** List thumbnails. */
     val Thumbnail = 12.dp
 
     /** Cards, collection tiles and grouped lists (outer corners). */

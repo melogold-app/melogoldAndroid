@@ -35,8 +35,8 @@ import app.melogold.android.R
 import app.melogold.android.models.PipedSession
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.PlaylistPreview
-import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.OrderPreferences
+import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.preferences.UIStatePreferences
 import app.melogold.android.query
 import app.melogold.android.ui.components.themed.FloatingActionsContainerWithScrollToTop
@@ -213,7 +213,7 @@ fun HomePlaylists(
                     colorTint = colorPalette.red,
                     name = stringResource(
                         R.string.format_my_top_playlist,
-                        DataPreferences.topListLength
+                        TOP_LIST_LENGTH
                     ),
                     songCount = null,
                     thumbnailSize = Dimensions.thumbnails.playlist,

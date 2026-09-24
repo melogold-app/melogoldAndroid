@@ -55,7 +55,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
@@ -78,13 +77,11 @@ import app.melogold.android.ui.components.themed.SecondaryTextButton
 import app.melogold.android.ui.components.themed.SliderDialog
 import app.melogold.android.ui.components.themed.SliderDialogBody
 import app.melogold.android.ui.modifiers.PinchDirection
-import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.modifiers.pinchToToggle
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.Pip
 import app.melogold.android.utils.forceSeekToNext
-import app.melogold.android.utils.forceSeekToPrevious
 import app.melogold.android.utils.positionAndDurationState
 import app.melogold.android.utils.rememberEqualizerLauncher
 import app.melogold.android.utils.rememberPipHandler
@@ -97,7 +94,6 @@ import app.melogold.compose.persist.PersistMapCleanup
 import app.melogold.compose.routing.OnGlobalRoute
 import app.melogold.core.ui.Dimensions
 import app.melogold.core.ui.LocalAppearance
-import app.melogold.core.ui.ThumbnailRoundness
 import app.melogold.core.ui.collapsedPlayerProgressBar
 import app.melogold.core.ui.utils.isLandscape
 import app.melogold.core.ui.utils.px
@@ -204,16 +200,6 @@ fun Player(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.Top,
                 modifier = Modifier
-                    .let { modifier ->
-                        if (horizontalSwipeToClose) modifier.onSwipe(
-                            animateOffset = true,
-                            onSwipeOut = { animationJob ->
-                                binder?.let { onDismiss(it) }
-                                animationJob.join()
-                                layoutState.dismissSoft()
-                            }
-                        ) else modifier
-                    }
                     .fillMaxSize()
                     .clip(shape)
                     .background(colorPalette.background1)
@@ -244,7 +230,7 @@ fun Player(
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .clip(thumbnailCornerSize.coerceAtMost(ThumbnailRoundness.Heavy.dp).roundedShape)
+                            .clip(thumbnailCornerSize.roundedShape)
                             .background(colorPalette.background0)
                             .size(48.dp)
                     )
@@ -305,17 +291,6 @@ fun Player(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.height(Dimensions.items.collapsedPlayerHeight)
                 ) {
-                    AnimatedVisibility(visible = isShowingPrevButtonCollapsed) {
-                        IconButton(
-                            icon = R.drawable.play_skip_back,
-                            color = colorPalette.text,
-                            onClick = { binder?.player?.forceSeekToPrevious() },
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp, vertical = 8.dp)
-                                .size(20.dp)
-                        )
-                    }
-
                     Box(
                         modifier = Modifier
                             .clickable(

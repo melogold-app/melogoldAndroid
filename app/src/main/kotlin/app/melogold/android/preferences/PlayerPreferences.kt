@@ -6,8 +6,6 @@ import app.melogold.android.GlobalPreferencesHolder
 import app.melogold.android.R
 
 object PlayerPreferences : GlobalPreferencesHolder() {
-    val isInvincibilityEnabledProperty = boolean(false)
-    var isInvincibilityEnabled by isInvincibilityEnabledProperty
     val trackLoopEnabledProperty = boolean(false)
     var trackLoopEnabled by trackLoopEnabledProperty
     val queueLoopEnabledProperty = boolean(true)
@@ -20,26 +18,15 @@ object PlayerPreferences : GlobalPreferencesHolder() {
     var resumePlaybackWhenDeviceConnected by resumePlaybackWhenDeviceConnectedProperty
     val speedProperty = float(1f)
     var speed by speedProperty
-    var persistentQueue by boolean(true)
     var stopWhenClosed by boolean(false)
 
     var isShowingLyrics by boolean(false)
     var isShowingSynchronizedLyrics by boolean(false)
     var preferSyncedLyrics by boolean(true)
 
-    var isShowingPrevButtonCollapsed by boolean(false)
-    var horizontalSwipeToClose by boolean(false)
-    var horizontalSwipeToRemoveItem by boolean(false)
-
     var playerLayout by enum(PlayerLayout.New)
-    var seekBarStyle by enum(SeekBarStyle.Wavy)
-    var wavySeekBarQuality by enum(WavySeekBarQuality.Great)
-    var showLike by boolean(false)
-    var showRemaining by boolean(false)
     var lyricsKeepScreenAwake by boolean(false)
-    var lyricsShowSystemBars by boolean(true)
 
-    var skipOnError by boolean(false)
     val handleAudioFocusProperty = boolean(true)
     var handleAudioFocus by handleAudioFocusProperty
 

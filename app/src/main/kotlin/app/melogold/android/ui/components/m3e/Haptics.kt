@@ -6,17 +6,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import app.melogold.android.preferences.AppearancePreferences
 
 /**
- * Haptic feedback that respects the "Vibration" setting (`AppearancePreferences.hapticsEnabled`),
- * with the feedback types REDESIGN-M3E §4.7 assigns to Melogold interactions.
+ * Haptic feedback with the types REDESIGN-M3E §4.7 assigns to Melogold interactions. There is no
+ * "Vibration" setting: the system setting for touch feedback applies.
  */
 @Stable
-class Haptics internal constructor(
-    private val feedback: HapticFeedback,
-    private val enabled: Boolean
-) {
+class Haptics internal constructor(private val feedback: HapticFeedback) {
     /** Like / unlike, switches. */
     fun toggle(on: Boolean) = perform(if (on) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
 
@@ -26,15 +22,12 @@ class Haptics internal constructor(
     /** A completed action, e.g. a track added to a playlist. */
     fun confirm() = perform(HapticFeedbackType.Confirm)
 
-    fun perform(type: HapticFeedbackType) {
-        if (enabled) feedback.performHapticFeedback(type)
-    }
+    fun perform(type: HapticFeedbackType) = feedback.performHapticFeedback(type)
 }
 
 @Composable
 fun rememberHaptics(): Haptics {
     val feedback = LocalHapticFeedback.current
-    val enabled = AppearancePreferences.hapticsEnabled
 
-    return remember(feedback, enabled) { Haptics(feedback = feedback, enabled = enabled) }
+    return remember(feedback) { Haptics(feedback = feedback) }
 }
