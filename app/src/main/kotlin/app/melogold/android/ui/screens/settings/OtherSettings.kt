@@ -30,7 +30,6 @@ import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.logsRoute
 import app.melogold.android.utils.isIgnoringBatteryOptimizations
 import app.melogold.android.utils.toast
-import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -120,10 +119,6 @@ fun OtherSettings() {
                     important = true
                 )
             }
-
-            if (isAtLeastAndroid12) SettingsDescription(
-                text = stringResource(R.string.service_lifetime_warning_android_12)
-            )
 
             val errorMsg = stringResource(R.string.no_battery_optimization_settings_found)
             SettingsEntry(
