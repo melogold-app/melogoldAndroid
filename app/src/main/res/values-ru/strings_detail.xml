@@ -87,4 +87,8 @@
     </plurals>
     <string name="local_playlist_synced_now">только что</string>
     <string name="new_releases_title">Новые альбомы и синглы</string>
+    <string name="settings_cache_unlimited">Без ограничений</string>
+    <string name="logs">Журнал</string>
+    <string name="size_mb">%1$s МБ</string>
+    <string name="size_gb">%1$s ГБ</string>
 </resources>

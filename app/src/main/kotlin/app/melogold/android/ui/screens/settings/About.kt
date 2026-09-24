@@ -1,9 +1,12 @@
 package app.melogold.android.ui.screens.settings
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,16 +21,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.melogold.android.BuildConfig
 import app.melogold.android.R
-import app.melogold.android.ui.components.themed.CircularProgressIndicator
-import app.melogold.android.ui.components.themed.DefaultDialog
-import app.melogold.android.ui.components.themed.SecondaryTextButton
 import app.melogold.android.ui.screens.Route
-import app.melogold.android.utils.bold
-import app.melogold.android.utils.center
-import app.melogold.android.utils.semiBold
 import app.melogold.core.data.utils.Version
 import app.melogold.core.data.utils.version
-import app.melogold.core.ui.LocalAppearance
 import app.melogold.providers.github.GitHub
 import app.melogold.providers.github.models.Release
 import app.melogold.providers.github.requests.releases
@@ -67,7 +63,6 @@ fun About() = SettingsCategoryScreen(
         VERSION_NAME
     )
 ) {
-    val [_, typography] = LocalAppearance.current
     val uriHandler = LocalUriHandler.current
 
     SettingsGroup(title = stringResource(R.string.social)) {
@@ -114,53 +109,53 @@ fun About() = SettingsCategoryScreen(
         )
     }
 
-    if (newVersionDialogOpened) {
-        DefaultDialog(
-            onDismiss = { newVersionDialogOpened = false }
-        ) {
-            var newerVersion: Result<Release?>? by remember { mutableStateOf(null) }
+    if (newVersionDialogOpened) NewVersionDialog(onDismiss = { newVersionDialogOpened = false })
+}
 
-            LaunchedEffect(Unit) {
-                withContext(Dispatchers.IO) {
-                    newerVersion = VERSION_NAME.version
-                        .getNewerVersion()
-                        ?.onFailure(Throwable::printStackTrace)
-                }
-            }
+/** "Check for updates": looking, then the newer release with "More information", or up to date. */
+@Composable
+private fun NewVersionDialog(onDismiss: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    var newerVersion: Result<Release?>? by remember { mutableStateOf(null) }
 
-            newerVersion?.getOrNull()?.let {
-                BasicText(
-                    text = stringResource(R.string.new_version_available),
-                    style = typography.xs.semiBold.center
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                BasicText(
-                    text = it.name ?: it.tag,
-                    style = typography.m.bold.center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                SecondaryTextButton(
-                    text = stringResource(R.string.more_information),
-                    onClick = { uriHandler.openUri(it.frontendUrl.toString()) }
-                )
-            } ?: newerVersion?.exceptionOrNull()?.let {
-                BasicText(
-                    text = stringResource(R.string.error_github),
-                    style = typography.xs.semiBold.center,
-                    modifier = Modifier.padding(all = 24.dp)
-                )
-            } ?: if (newerVersion?.isSuccess == true) {
-                BasicText(
-                    text = stringResource(R.string.up_to_date),
-                    style = typography.xs.semiBold.center
-                )
-            } else {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            }
-        }
+    LaunchedEffect(Unit) {
+        newerVersion = withContext(Dispatchers.IO) {
+            VERSION_NAME.version
+                .getNewerVersion()
+                ?.onFailure(Throwable::printStackTrace)
+        } ?: Result.failure(IllegalStateException("No answer from GitHub"))
     }
+
+    val release = newerVersion?.getOrNull()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = stringResource(if (release != null) R.string.new_version_available else R.string.check_new_version))
+        },
+        text = {
+            when {
+                newerVersion == null -> Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    CircularProgressIndicator()
+                }
+
+                release != null -> Text(text = release.name ?: release.tag)
+                newerVersion?.isFailure == true -> Text(text = stringResource(R.string.error_github))
+                else -> Text(text = stringResource(R.string.up_to_date))
+            }
+        },
+        confirmButton = {
+            if (release != null) TextButton(onClick = { uriHandler.openUri(release.frontendUrl.toString()) }) {
+                Text(text = stringResource(R.string.more_information))
+            } else TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.done)) }
+        },
+        dismissButton = if (release != null) {
+            { TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.cancel)) } }
+        } else null
+    )
 }
