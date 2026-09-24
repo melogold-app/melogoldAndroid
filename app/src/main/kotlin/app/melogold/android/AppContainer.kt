@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.runtime.staticCompositionLocalOf
 import app.melogold.android.data.NetworkMonitor
 import app.melogold.android.data.downloads.Downloads
+import app.melogold.android.data.downloads.FileExport
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
@@ -26,6 +27,9 @@ class AppContainer(private val application: Application) {
 
     /** Real downloads (REWRITE §4.7); first reached on the main thread (see [MainApplication]). */
     val downloads by lazy { Downloads(application, appScope) }
+
+    /** "Save as file" into Music/Melogold. */
+    val fileExport by lazy { FileExport(application, downloads) }
 
     val json = Json {
         ignoreUnknownKeys = true

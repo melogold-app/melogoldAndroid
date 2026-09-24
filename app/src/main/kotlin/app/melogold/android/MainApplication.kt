@@ -63,8 +63,8 @@ import app.melogold.android.service.ServiceNotifications
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.shell.AppShell
-import app.melogold.android.ui.shell.LocalAskNotifications
-import app.melogold.android.ui.shell.rememberNotificationPermission
+import app.melogold.android.ui.shell.LocalPermissions
+import app.melogold.android.ui.shell.rememberPermissionRequester
 import app.melogold.android.ui.shell.KeyboardShortcuts
 import app.melogold.android.ui.shell.LinkHandler
 import app.melogold.android.ui.shell.LocalAppSnackbar
@@ -206,7 +206,7 @@ class MainActivity : ComponentActivity() {
                     LocalLayoutDirection provides LayoutDirection.Ltr,
                     LocalPersistMap provides Dependencies.application.persistMap,
                     LocalAppContainer provides Dependencies.application.container,
-                    LocalAskNotifications provides rememberNotificationPermission()
+                    LocalPermissions provides rememberPermissionRequester()
                 ) {
                     content()
                 }

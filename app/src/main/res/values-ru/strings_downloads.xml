@@ -21,6 +21,13 @@
     <string name="download_completed">Скачано</string>
     <string name="download_removed">Загрузка удалена</string>
 
+    <!-- Save as file -->
+    <string name="menu_save_file">Сохранить файлом</string>
+    <string name="save_file_started">Сохраняем «%1$s» в «Музыку»…</string>
+    <string name="save_file_done">Сохранено в Music/Melogold</string>
+    <string name="save_file_failed">Не удалось сохранить «%1$s»</string>
+    <string name="save_file_open">Открыть</string>
+
     <!-- The Downloads screen -->
     <string name="downloads_active">Скачивается (%1$d)</string>
     <string name="downloads_failed">Ошибки (%1$d)</string>

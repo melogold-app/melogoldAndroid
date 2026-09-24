@@ -21,6 +21,13 @@
     <string name="download_completed">Downloaded</string>
     <string name="download_removed">Download removed</string>
 
+    <!-- Save as file -->
+    <string name="menu_save_file">Save as file</string>
+    <string name="save_file_started">Saving “%1$s” to Music…</string>
+    <string name="save_file_done">Saved to Music/Melogold</string>
+    <string name="save_file_failed">Couldn\'t save “%1$s”</string>
+    <string name="save_file_open">Open</string>
+
     <!-- The Downloads screen -->
     <string name="downloads_active">Downloading (%1$d)</string>
     <string name="downloads_failed">Failed (%1$d)</string>

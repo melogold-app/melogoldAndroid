@@ -1,5 +1,10 @@
 package app.melogold.android.ui.components.menu
 
+import android.Manifest
+import android.net.Uri
+import android.os.Build
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -24,7 +29,7 @@ import app.melogold.android.models.DownloadState
 import app.melogold.android.models.DownloadWaitReason
 import app.melogold.android.models.TrackDownload
 import app.melogold.android.ui.kit.rememberDownload
-import app.melogold.android.ui.shell.LocalAskNotifications
+import app.melogold.android.ui.shell.LocalPermissions
 import app.melogold.android.data.repo.PendingMutation
 import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
@@ -223,7 +228,10 @@ fun TrackMenuEntries(
         }
     )
 
-    if (!isLocal) DownloadEntry(mediaItem = mediaItem, onDismiss = onDismiss)
+    if (!isLocal) {
+        DownloadEntry(mediaItem = mediaItem, onDismiss = onDismiss)
+        SaveFileEntry(mediaItem = mediaItem, onDismiss = onDismiss)
+    }
 
     if (!isLocal) {
         MenuEntry(
@@ -345,7 +353,7 @@ fun TrackMenuEntries(
 private fun DownloadEntry(mediaItem: MediaItem, onDismiss: () -> Unit) {
     val downloads = LocalAppContainer.current.downloads
     val snackbar = LocalAppSnackbar.current
-    val askNotifications = LocalAskNotifications.current
+    val permissions = LocalPermissions.current
     val removedMessage = stringResource(R.string.download_removed)
     val videoId = mediaItem.mediaId
     val download = rememberDownload(videoId)
@@ -360,7 +368,10 @@ private fun DownloadEntry(mediaItem: MediaItem, onDismiss: () -> Unit) {
             icon = R.drawable.ms_download,
             text = stringResource(R.string.menu_download),
             onClick = entry {
-                askNotifications()
+                // To show the progress (REWRITE §3.2.3); downloads go on without it
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    permissions.request(Manifest.permission.POST_NOTIFICATIONS) { }
+                }
                 downloads.download(mediaItem)
             }
         )
@@ -385,6 +396,61 @@ private fun DownloadEntry(mediaItem: MediaItem, onDismiss: () -> Unit) {
             onClick = entry { downloads.remove(videoId) }
         )
     }
+}
+
+/**
+ * "Save as file": the track as an .m4a with its tags and cover in Music/Melogold. It runs in the
+ * app's scope, so closing the menu or the screen doesn't stop it; snackbars say how it went.
+ */
+@Composable
+private fun SaveFileEntry(mediaItem: MediaItem, onDismiss: () -> Unit) {
+    val container = LocalAppContainer.current
+    val snackbar = LocalAppSnackbar.current
+    val permissions = LocalPermissions.current
+    val context = LocalContext.current
+    val title = mediaItem.mediaMetadata.title?.toString().orEmpty()
+    val started = stringResource(R.string.save_file_started, title)
+    val done = stringResource(R.string.save_file_done)
+    val failed = stringResource(R.string.save_file_failed, title)
+    val open = stringResource(R.string.save_file_open)
+
+    fun save() {
+        snackbar.show(started)
+        container.appScope.launch {
+            val result = container.fileExport.save(mediaItem)
+            withContext(Dispatchers.Main) {
+                result.fold(
+                    onSuccess = { saved ->
+                        // A file:// link (Android 9 and older) can't be handed to another app
+                        snackbar.show(message = done, actionLabel = open.takeIf { saved.uri.scheme == "content" }) {
+                            context.openAudio(saved.uri)
+                        }
+                    },
+                    onFailure = { snackbar.show(failed) }
+                )
+            }
+        }
+    }
+
+    MenuEntry(
+        icon = R.drawable.ms_file_save,
+        text = stringResource(R.string.menu_save_file),
+        onClick = {
+            onDismiss()
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                permissions.request(Manifest.permission.WRITE_EXTERNAL_STORAGE) { granted -> if (granted) save() }
+            } else save()
+        }
+    )
+}
+
+/** Opens a saved file in the player the user picks. */
+private fun Context.openAudio(uri: Uri) = runCatching {
+    startActivity(
+        Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, "audio/mp4")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    )
 }
 
 /** How a download stands, in words: "Downloading · 45 %", "Waiting for Wi‑Fi", "Network error"… */

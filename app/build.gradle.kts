@@ -237,6 +237,7 @@ dependencies {
     implementation(libs.exoplayer.workmanager)
     implementation(libs.media3.session)
     implementation(libs.media3.datasource.okhttp)
+    implementation(libs.media3.transformer)
     implementation(libs.media)
 
     implementation(libs.lifecycle.process)
