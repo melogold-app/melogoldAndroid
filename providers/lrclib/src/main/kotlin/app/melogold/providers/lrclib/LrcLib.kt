@@ -76,13 +76,9 @@ object LrcLib {
         }
     }
 
-    suspend fun lyrics(
-        query: String,
-        synced: Boolean = true
-    ) = runCatchingCancellable {
-        queryLyrics(query = query).let { list ->
-            list.filter { if (synced) it.syncedLyrics != null else it.plainLyrics != null }
-        }
+    /** The tracks that match [query] and have any lyrics, synced or plain. */
+    suspend fun search(query: String) = runCatchingCancellable {
+        queryLyrics(query = query).filter { !it.syncedLyrics.isNullOrBlank() || !it.plainLyrics.isNullOrBlank() }
     }
 
     suspend fun bestLyrics(

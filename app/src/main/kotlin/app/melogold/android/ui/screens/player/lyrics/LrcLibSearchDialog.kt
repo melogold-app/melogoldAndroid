@@ -45,8 +45,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Searches LrcLib for time-synced lyrics of [query] and lets the user pick one of the tracks found:
- * the search field on top, the tracks under it as a list.
+ * Searches LRCLIB for the lyrics of [query], synced or plain, and lets the user pick one of the
+ * tracks found: the search field on top, the tracks under it as a list, each saying whether its
+ * lyrics are synced.
  */
 @Composable
 fun LrcLibSearchDialog(
@@ -64,9 +65,9 @@ fun LrcLibSearchDialog(
         // Wait for the typing to stop
         delay(1000.milliseconds)
 
-        val result = LrcLib.lyrics(query = query, synced = true)
+        val result = LrcLib.search(query = query)
         tracks.clear()
-        result?.getOrNull()?.let { found -> tracks.addAll(found.filter { !it.syncedLyrics.isNullOrBlank() }) }
+        result?.getOrNull()?.let { found -> tracks.addAll(found) }
         result?.exceptionOrNull()?.printStackTrace()
         loading = false
     }
@@ -117,7 +118,13 @@ fun LrcLibSearchDialog(
                                     onPick(track)
                                     onDismiss()
                                 },
-                                supportingContent = { Text(text = track.duration.seconds.format()) },
+                                supportingContent = {
+                                    val kind = stringResource(
+                                        if (track.syncedLyrics.isNullOrBlank()) R.string.lyrics_result_plain
+                                        else R.string.lyrics_result_synced
+                                    )
+                                    Text(text = "${track.duration.seconds.format()} · $kind")
+                                },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                 modifier = Modifier.padding(horizontal = 8.dp)
                             ) {

@@ -190,7 +190,7 @@ fun LyricsEmptyState(
     testTag = "lyrics_empty",
     modifier = modifier
 ) {
-    FilledTonalButton(onClick = onSearchLrcLib) { Text(text = stringResource(R.string.lyrics_search_lrclib)) }
+    FilledTonalButton(onClick = onSearchLrcLib) { Text(text = stringResource(R.string.lyrics_find)) }
     FilledTonalButton(onClick = onImport) { Text(text = stringResource(R.string.lyrics_import_file)) }
     TextButton(onClick = onEnterManually) { Text(text = stringResource(R.string.lyrics_enter_manually)) }
 }

@@ -16,9 +16,10 @@
     <string name="lyrics_show_plain">Show plain lyrics</string>
     <string name="lyrics_show_synced">Show synced lyrics</string>
     <string name="lyrics_edit">Edit lyrics</string>
-    <string name="lyrics_search_web">Search the web</string>
     <string name="lyrics_refetch">Fetch again</string>
-    <string name="lyrics_pick_lrclib">Pick from LRCLIB</string>
+    <string name="lyrics_find">Find lyrics</string>
+    <string name="lyrics_result_synced">Synced</string>
+    <string name="lyrics_result_plain">Plain</string>
     <string name="lyrics_set_start">Lyrics start here</string>
     <string name="lyrics_set_start_description">Shifts the timing to the current position</string>
 

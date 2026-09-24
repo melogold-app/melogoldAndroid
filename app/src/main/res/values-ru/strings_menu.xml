@@ -21,6 +21,7 @@
     <string name="menu_not_interested">Не интересно</string>
 
     <string name="menu_section_track">Трек</string>
+    <string name="menu_section_lyrics">Текст</string>
     <string name="menu_section_playback">Воспроизведение</string>
     <string name="menu_sleep_timer">Таймер сна</string>
     <string name="menu_sleep_timer_minutes">%1$d мин</string>

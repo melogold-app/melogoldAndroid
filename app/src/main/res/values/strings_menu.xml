@@ -22,6 +22,7 @@
     <string name="menu_not_interested">Not interested</string>
 
     <string name="menu_section_track">Track</string>
+    <string name="menu_section_lyrics">Lyrics</string>
     <string name="menu_section_playback">Playback</string>
     <string name="menu_sleep_timer">Sleep timer</string>
     <string name="menu_sleep_timer_minutes">%1$d min</string>

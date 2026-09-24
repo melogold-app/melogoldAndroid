@@ -6,6 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -169,8 +170,8 @@ fun Player(
 
     var speedDialogOpen by rememberSaveable { mutableStateOf(false) }
 
-    /** Opens the player menu; [onStreamInfo] is only there while the player is expanded. */
-    fun openPlayerMenu(onStreamInfo: (() -> Unit)?) {
+    /** Opens the player menu; [extras] come from the expanded player. */
+    fun openPlayerMenu(extras: PlayerMenuExtras?) {
         val item = mediaItem ?: return
         val service = binder ?: return
 
@@ -181,7 +182,7 @@ fun Player(
                 onDismiss = menuState::hide,
                 onNavigate = { if (layoutState.expanded) layoutState.collapseSoft() },
                 onCustomSpeed = { speedDialogOpen = true },
-                onStreamInfo = onStreamInfo
+                extras = extras
             )
         }
     }
@@ -202,7 +203,7 @@ fun Player(
                 explicit = extras?.explicit == true,
                 shouldBePlaying = shouldBePlaying,
                 onExpand = layoutState::expandSoft,
-                onMenu = { openPlayerMenu(onStreamInfo = null) },
+                onMenu = { openPlayerMenu(extras = null) },
                 error = mediaItem?.takeIf { error != null }?.let { playbackErrorMessage(it, error) },
                 modifier = Modifier
                     .fillMaxSize()
@@ -219,7 +220,7 @@ fun Player(
                 likedAt = likedAt,
                 setLikedAt = { likedAt = it },
                 shouldBePlaying = shouldBePlaying,
-                openPlayerMenu = { onStreamInfo -> openPlayerMenu(onStreamInfo) }
+                openPlayerMenu = { extras -> openPlayerMenu(extras) }
             )
         }
     }
@@ -227,10 +228,20 @@ fun Player(
     if (speedDialogOpen) SpeedDialog(onDismiss = { speedDialogOpen = false })
 }
 
+/** What the expanded player adds to its ⋮ menu. */
+class PlayerMenuExtras(
+    /** The "Lyrics" group, shown while [showLyrics]. */
+    val lyrics: @Composable ColumnScope.() -> Unit,
+    val showLyrics: Boolean,
+    val onStreamInfo: () -> Unit,
+    /** An action on what was long-pressed (a lyrics line), above the groups. */
+    val top: (@Composable ColumnScope.() -> Unit)? = null
+)
+
 /**
- * The ⋮ menu of the player (REWRITE §3.10.5): "Track" without ♡ (it is on screen), then
- * "Playback" with the sleep timer and the speed as chips and the stream info. The equalizer lives
- * in Settings.
+ * The ⋮ menu of the player (REWRITE §3.10.5), one list without submenus: "Track" without ♡ (it is
+ * on screen) with the album and the artists, "Lyrics" while the lyrics are shown, then "Playback"
+ * with the sleep timer and the speed as chips and the stream info. The equalizer lives in Settings.
  */
 @Composable
 private fun PlayerMenu(
@@ -239,10 +250,11 @@ private fun PlayerMenu(
     onDismiss: () -> Unit,
     onNavigate: () -> Unit,
     onCustomSpeed: () -> Unit,
-    onStreamInfo: (() -> Unit)?
+    extras: PlayerMenuExtras?
 ) {
     Menu(modifier = Modifier.testTag("player_menu")) {
         MediaItemMenuHeader(mediaItem = mediaItem)
+        extras?.top?.invoke(this)
 
         MenuSectionTitle(text = stringResource(R.string.menu_section_track))
         TrackMenuEntries(
@@ -260,6 +272,12 @@ private fun PlayerMenu(
             trackRadio = true
         )
 
+        if (extras?.showLyrics == true) {
+            MenuDivider()
+            MenuSectionTitle(text = stringResource(R.string.menu_section_lyrics))
+            extras.lyrics(this)
+        }
+
         MenuDivider()
         MenuSectionTitle(text = stringResource(R.string.menu_section_playback))
         SleepTimerRow(binder = binder)
@@ -269,13 +287,13 @@ private fun PlayerMenu(
                 onCustomSpeed()
             }
         )
-        onStreamInfo?.let {
+        extras?.let {
             MenuEntry(
                 icon = R.drawable.ms_info,
                 text = stringResource(R.string.menu_stream_info),
                 onClick = {
                     onDismiss()
-                    it()
+                    it.onStreamInfo()
                 }
             )
         }

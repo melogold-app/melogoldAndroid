@@ -113,7 +113,6 @@
     <string name="open_settings">Открыть настройки</string>
     <string name="no_items_found">Элементы не найдены</string>
     <string name="no_search_results">Результаты не найдены. Попробуйте другой запрос или категорию</string>
-    <string name="no_browser_installed">Не удалось найти приложение для просмотра интернета</string>
     <string name="no_equalizer_installed">Не удалось найти приложение для настройки эквалайзера</string>
     <string name="no_file_chooser_installed">Не удалось найти приложение для создания документов</string>
     <string name="no_battery_optimization_settings_found">Не удалось найти настройки оптимизации батареи, добавьте Melogold в белый список вручную</string>
@@ -131,9 +130,7 @@
     <string name="show_synchronized_lyrics">Показать синхронизированные тексты</string>
     <string name="provided_lyrics_by">Тексты предоставлены lrclib.net и kugou.com</string>
     <string name="edit_lyrics">Редактировать тексты</string>
-    <string name="search_lyrics_online">Искать тексты онлайн</string>
     <string name="refetch_lyrics">Повторно получить тексты</string>
-    <string name="pick_from_lrclib">Выбрать текст из lrclib.net</string>
     <string name="set_lyrics_start_offset">Установить смещение начала текста</string>
     <string name="set_lyrics_start_offset_description">Смещение синхронизированных текстов на текущую позицию воспроизведения</string>
     <string name="playback_speed">Скорость воспроизведения</string>
@@ -378,7 +375,6 @@
     <string name="lyrics_unavailable_title">Текст песни недоступен</string>
     <string name="lyrics_load_failed">Не удалось загрузить текст</string>
     <string name="retry">Повторить</string>
-    <string name="lyrics_search_lrclib">Найти на LRCLIB</string>
     <string name="lyrics_enter_manually">Ввести вручную</string>
     <string name="lyrics_jump_to_line">Перейти к строке</string>
     <string name="lyrics_copy_line">Копировать строку</string>

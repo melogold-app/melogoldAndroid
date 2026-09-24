@@ -794,7 +794,14 @@ interface DatabaseAccessor {
     fun searchPlaylists(asTyped: String, lower: String, capitalized: String, limit: Int): Flow<List<Playlist>>
     // endregion R3.1
 
-    @Query("SELECT albumId AS id, NULL AS name FROM SongAlbumMap WHERE songId = :songId")
+    @Query(
+        """
+        SELECT SongAlbumMap.albumId AS id, Album.title AS name FROM SongAlbumMap
+        LEFT JOIN Album ON Album.id = SongAlbumMap.albumId
+        WHERE songId = :songId
+        LIMIT 1
+        """
+    )
     suspend fun songAlbumInfo(songId: String): Info?
 
     @Query("SELECT id, name FROM Artist LEFT JOIN SongArtistMap ON id = artistId WHERE songId = :songId")
@@ -861,9 +868,9 @@ interface DatabaseAccessor {
             durationText = extras?.durationText,
             thumbnailUrl = mediaItem.mediaMetadata.artworkUri?.toString(),
             explicit = extras?.explicit == true
-        ).let(block).also { song ->
-            if (insert(song) == -1L) return
-        }
+        ).let(block)
+        // A row that exists stays as it is, but still gets the album and the artists the item knows
+        insert(song)
 
         extras?.albumId?.let { albumId ->
             insert(

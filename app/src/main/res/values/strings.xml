@@ -113,7 +113,6 @@
     <string name="open_settings">Open settings</string>
     <string name="no_items_found">No items found</string>
     <string name="no_search_results">No results found. Please try a different query or category</string>
-    <string name="no_browser_installed">Couldn\'t find an application to browse the internet</string>
     <string name="no_equalizer_installed">Couldn\'t find an application to equalize audio</string>
     <string name="no_file_chooser_installed">Couldn\'t find an application to create documents</string>
     <string name="no_battery_optimization_settings_found">Couldn\'t find battery optimization settings, please whitelist Melogold manually</string>
@@ -131,9 +130,7 @@
     <string name="show_synchronized_lyrics">Show synchronized lyrics</string>
     <string name="provided_lyrics_by">Provided by lrclib.net &amp; kugou.com</string>
     <string name="edit_lyrics">Edit lyrics</string>
-    <string name="search_lyrics_online">Search lyrics online</string>
     <string name="refetch_lyrics">Fetch lyrics again</string>
-    <string name="pick_from_lrclib">Pick lyrics from lrclib.net</string>
     <string name="set_lyrics_start_offset">Set start offset</string>
     <string name="set_lyrics_start_offset_description">Offsets the synchronized lyrics by the current playback time</string>
     <string name="playback_speed">Speed</string>
@@ -390,7 +387,6 @@
     <string name="lyrics_unavailable_title">Lyrics aren\'t available</string>
     <string name="lyrics_load_failed">Couldn\'t load lyrics</string>
     <string name="retry">Retry</string>
-    <string name="lyrics_search_lrclib">Find on LRCLIB</string>
     <string name="lyrics_enter_manually">Enter manually</string>
     <string name="lyrics_jump_to_line">Jump to line</string>
     <string name="lyrics_copy_line">Copy line</string>

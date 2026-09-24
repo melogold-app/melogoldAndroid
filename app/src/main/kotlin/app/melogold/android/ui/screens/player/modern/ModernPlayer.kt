@@ -94,7 +94,8 @@ import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.menu.MenuEntry
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.modifiers.onSwipe
-import app.melogold.android.ui.screens.player.LyricsMenu
+import app.melogold.android.ui.screens.player.LyricsMenuEntries
+import app.melogold.android.ui.screens.player.PlayerMenuExtras
 import app.melogold.android.ui.screens.player.PlaybackErrorCard
 import app.melogold.android.ui.screens.player.Queue
 import app.melogold.android.ui.screens.player.StreamInfoSheet
@@ -103,7 +104,6 @@ import app.melogold.android.ui.screens.player.lyricseditor.LyricsEditorDialog
 import app.melogold.android.ui.screens.player.lyricseditor.initialDraft
 import app.melogold.android.ui.screens.player.lyricseditor.saveLyricsDraft
 import app.melogold.android.ui.screens.player.playbackErrorMessage
-import app.melogold.android.ui.screens.player.searchLyricsOnline
 import app.melogold.android.ui.screens.player.sleepTimerLeft
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.SearchSource
@@ -159,7 +159,7 @@ fun ModernPlayer(
     likedAt: Long?,
     setLikedAt: (Long?) -> Unit,
     shouldBePlaying: Boolean,
-    openPlayerMenu: (onStreamInfo: (() -> Unit)?) -> Unit,
+    openPlayerMenu: (PlayerMenuExtras) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val appearance = LocalAppearance.current
@@ -294,17 +294,6 @@ fun ModernPlayer(
     // Dialogs and menus (hosted outside of the palette override below, so they keep the app theme)
     var editing by rememberSaveable { mutableStateOf(false) }
     var picking by rememberSaveable { mutableStateOf(false) }
-    val showPlayerMenu: () -> Unit = {
-        openPlayerMenu { menuState.display { StreamInfoSheet(mediaId = mediaId, binder = binder) } }
-    }
-    val sleepTimerMillisLeft = binder.sleepTimerLeft()
-    val indicators: @Composable RowScope.() -> Unit = {
-        PlaybackIndicators(
-            sleepTimerMillisLeft = sleepTimerMillisLeft,
-            speed = PlayerPreferences.speed,
-            onClick = showPlayerMenu
-        )
-    }
 
     val copiedMessage = stringResource(R.string.copied)
     val importedMessage = stringResource(R.string.lyrics_imported)
@@ -315,21 +304,16 @@ fun ModernPlayer(
         onResult = { imported -> context.toast(if (imported) importedMessage else importFailedMessage) }
     )
 
-    fun showLyricsMenu(header: @Composable ColumnScope.() -> Unit = { }) = menuState.display {
-        val errorMessage = stringResource(R.string.no_browser_installed)
+    val lyricsEntries: @Composable ColumnScope.() -> Unit = {
         val showingSynced = PlayerPreferences.preferSyncedLyrics
         val raw = lyrics.raw
 
-        LyricsMenu(
+        LyricsMenuEntries(
             showingSynced = showingSynced,
             onToggleSynced = { PlayerPreferences.preferSyncedLyrics = !showingSynced },
+            onFind = { picking = true },
             onEdit = { editing = true },
-            onSearchOnline = {
-                context.searchLyricsOnline(
-                    mediaMetadata = mediaItem.mediaMetadata,
-                    errorMessage = errorMessage
-                )
-            },
+            onImport = importLyrics,
             onRefetch = raw?.let { current ->
                 {
                     transaction {
@@ -345,30 +329,38 @@ fun ModernPlayer(
                     lyrics.retry()
                 }
             },
-            onImport = importLyrics,
-            onPickFromLrcLib = if (showingSynced) {
-                { picking = true }
-            } else null,
             onSetStartOffset = if (showingSynced && raw != null) {
                 {
                     val startTime = binder.player.currentPosition
                     query { Database.upsert(raw.copy(startTime = startTime)) }
                 }
-            } else null,
-            header = header,
-            footer = {
-                MenuEntry(
-                    icon = R.drawable.ms_more_horiz,
-                    text = stringResource(R.string.more_options),
-                    onClick = showPlayerMenu
-                )
-            }
+            } else null
+        )
+    }
+
+    // One menu without submenus: the track (album and artists included), the lyrics while they are
+    // shown, the playback; [top] is an action on what was long-pressed
+    fun showPlayerMenu(top: (@Composable ColumnScope.() -> Unit)? = null) = openPlayerMenu(
+        PlayerMenuExtras(
+            lyrics = lyricsEntries,
+            showLyrics = mode == PlayerMode.Lyrics,
+            onStreamInfo = { menuState.display { StreamInfoSheet(mediaId = mediaId, binder = binder) } },
+            top = top
+        )
+    )
+
+    val sleepTimerMillisLeft = binder.sleepTimerLeft()
+    val indicators: @Composable RowScope.() -> Unit = {
+        PlaybackIndicators(
+            sleepTimerMillisLeft = sleepTimerMillisLeft,
+            speed = PlayerPreferences.speed,
+            onClick = { showPlayerMenu() }
         )
     }
 
     val onLineLongPress: (SyncedLine) -> Unit = { line ->
-        showLyricsMenu(
-            header = {
+        showPlayerMenu(
+            top = {
                 MenuEntry(
                     icon = R.drawable.ms_content_copy,
                     text = stringResource(R.string.lyrics_copy_line),
@@ -567,11 +559,7 @@ fun ModernPlayer(
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")
 
-                // The overflow menu follows what is shown: the lyrics actions (with "More options"
-                // leading to the track menu) while the lyrics are
-                val onMore: () -> Unit = {
-                    if (mode == PlayerMode.Lyrics) showLyricsMenu() else showPlayerMenu()
-                }
+                val onMore: () -> Unit = { showPlayerMenu() }
 
                 val fold = tabletopFold()
 
@@ -649,17 +637,21 @@ fun ModernPlayer(
                 setQuery = { searchQuery = it },
                 onDismiss = { picking = false },
                 onPick = { track ->
+                    // The picked track replaces both kinds; a kind it lacks is stored as "none" (""),
+                    // so what it has is what shows
+                    val synced = track.syncedLyrics?.takeIf { it.isNotBlank() }
+                    val plain = track.plainLyrics?.takeIf { it.isNotBlank() }
                     transaction {
                         runCatching {
                             Database.insert(mediaItem)
                             Database.upsert(
                                 Lyrics(
                                     songId = mediaId,
-                                    fixed = lyrics.raw?.fixed,
-                                    synced = track.syncedLyrics,
+                                    fixed = plain.orEmpty(),
+                                    synced = synced.orEmpty(),
                                     startTime = lyrics.raw?.startTime,
-                                    fixedSource = lyrics.raw?.fixedSource,
-                                    syncedSource = LyricsSource.LrcLib
+                                    fixedSource = plain?.let { LyricsSource.LrcLib },
+                                    syncedSource = synced?.let { LyricsSource.LrcLib }
                                 )
                             )
                         }
