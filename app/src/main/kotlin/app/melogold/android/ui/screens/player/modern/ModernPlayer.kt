@@ -88,11 +88,11 @@ import app.melogold.android.ui.components.themed.TextFieldDialog
 import app.melogold.android.ui.modifiers.PinchDirection
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.modifiers.pinchToToggle
-import app.melogold.android.ui.screens.player.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.LyricsMenu
 import app.melogold.android.ui.screens.player.PlaybackError
 import app.melogold.android.ui.screens.player.Queue
 import app.melogold.android.ui.screens.player.StatsForNerds
+import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.searchLyricsOnline
 import app.melogold.android.utils.Pip

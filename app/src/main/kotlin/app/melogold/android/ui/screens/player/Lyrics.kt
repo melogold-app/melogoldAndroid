@@ -34,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -68,8 +67,8 @@ import app.melogold.android.ui.components.themed.DefaultDialog
 import app.melogold.android.ui.components.themed.TextField
 import app.melogold.android.ui.components.themed.TextFieldDialog
 import app.melogold.android.ui.components.themed.TextPlaceholder
-import app.melogold.android.ui.components.themed.ValueSelectorDialogBody
 import app.melogold.android.ui.modifiers.verticalFadingEdge
+import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
 import app.melogold.android.utils.SynchronizedLyrics
 import app.melogold.android.utils.SynchronizedLyricsState
 import app.melogold.android.utils.center
@@ -84,7 +83,6 @@ import app.melogold.core.ui.overlay
 import app.melogold.core.ui.utils.dp
 import app.melogold.providers.lrclib.LrcLib
 import app.melogold.providers.lrclib.LrcParser
-import app.melogold.providers.lrclib.models.Track
 import app.melogold.providers.lrclib.toLrcFile
 import com.valentinilk.shimmer.shimmer
 import kotlinx.collections.immutable.toImmutableList
@@ -526,90 +524,5 @@ fun Lyrics(
                     .align(Alignment.BottomEnd)
             )
         }
-    }
-}
-
-@Composable
-fun LrcLibSearchDialog(
-    query: String,
-    setQuery: (String) -> Unit,
-    onDismiss: () -> Unit,
-    onPick: (Track) -> Unit,
-    modifier: Modifier = Modifier
-) = DefaultDialog(
-    onDismiss = onDismiss,
-    horizontalPadding = 0.dp,
-    modifier = modifier
-) {
-    val [_, typography] = LocalAppearance.current
-
-    val tracks = remember { mutableStateListOf<Track>() }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf(false) }
-
-    LaunchedEffect(query) {
-        loading = true
-        error = false
-
-        delay(1000.milliseconds)
-
-        LrcLib.lyrics(
-            query = query,
-            synced = true
-        )?.onSuccess { newTracks ->
-            tracks.clear()
-            tracks.addAll(newTracks.filter { !it.syncedLyrics.isNullOrBlank() })
-            loading = false
-            error = false
-        }?.onFailure {
-            loading = false
-            error = true
-            it.printStackTrace()
-        } ?: run { loading = false }
-    }
-
-    TextField(
-        value = query,
-        onValueChange = setQuery,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        maxLines = 1,
-        singleLine = true
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-
-    when {
-        loading -> CircularProgressIndicator(
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        error || tracks.isEmpty() -> BasicText(
-            text = stringResource(R.string.no_lyrics_found),
-            style = typography.s.semiBold.center,
-            modifier = Modifier
-                .padding(all = 24.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-
-        else -> ValueSelectorDialogBody(
-            onDismiss = onDismiss,
-            title = stringResource(R.string.choose_lyric_track),
-            selectedValue = null,
-            values = tracks.toImmutableList(),
-            onValueSelect = {
-                transaction {
-                    onPick(it)
-                    onDismiss()
-                }
-            },
-            valueText = {
-                "${it.artistName} - ${it.trackName} (${
-                    it.duration.seconds.toComponents { minutes, seconds, _ ->
-                        "$minutes:${seconds.toString().padStart(2, '0')}"
-                    }
-                })"
-            }
-        )
     }
 }
