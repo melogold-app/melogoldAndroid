@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12+ (targetSdk ≥ 31). On Android 6–11 allowBackup="false" and fullBackupContent="false"
+    in the manifest switch the backup off (REWRITE §5.3.1).
+
+    No cloud backup (user decision #5). allowBackup="false" already disables it; the explicit
+    excludes are there because an empty <cloud-backup> means "back up everything".
+
+    Device-to-device transfer (cable or Wi-Fi during phone setup) carries the database and the
+    settings (REWRITE §1.8, item 6) but not:
+    - auth.xml, the account tokens (REWRITE §4.2): two devices with one `did` would get
+      refresh_token_reused (API §2.2);
+    - hwid.xml, the fallback hwid, a random UUID (API §1.6). The name is fixed here: the account
+      code keeps the fallback hwid in the SharedPreferences named "hwid";
+    - downloads and their artwork (REWRITE §4.7.1): the download reconciler rebuilds them;
+    - logs, the updated yt-dlp and the extracted Python (chaquopy/ together with chaquopy.xml,
+      otherwise Chaquopy would think its files are already extracted).
+    The system never transfers cacheDir itself.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+    </cloud-backup>
+
+    <device-transfer>
+        <exclude domain="sharedpref" path="auth.xml" />
+        <exclude domain="device_sharedpref" path="auth.xml" />
+        <exclude domain="sharedpref" path="hwid.xml" />
+        <exclude domain="device_sharedpref" path="hwid.xml" />
+
+        <exclude domain="file" path="downloads/" />
+        <exclude domain="file" path="artwork/" />
+        <exclude domain="file" path="logs/" />
+        <exclude domain="file" path="ytdlp/" />
+        <exclude domain="file" path="chaquopy/" />
+        <exclude domain="sharedpref" path="chaquopy.xml" />
+    </device-transfer>
+</data-extraction-rules>

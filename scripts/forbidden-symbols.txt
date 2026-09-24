@@ -1,0 +1,31 @@
+# Symbols of removed code (REWRITE §5.5). The Gradle task `checkRemoved` (R4.1, S8) looks for them
+# in app/src, core, compose and providers; any match fails the build.
+#
+# Format: one case-sensitive substring per line. A line prefixed with `re:` is a java.util.regex
+# pattern. Blank lines and lines starting with # are skipped.
+#
+# First version (R1.1): only what is already gone after S1–S3. The rest of §5.5 is added when its
+# code goes: lottie, shimmer, Piped, PipedSession, QueuedMediaItem, DatabaseInitializer,
+# SortedSongPlaylistMap, visibleTabs, reverb, re:(?<!Wide)NavigationRail\(
+
+# Manifest: no cloud backup, RTL on (§5.3.1)
+allowBackup="true"
+supportsRtl="false"
+
+# S1: removed without a replacement (§5.3.1)
+GlyphInterface
+ketchum
+LEANBACK
+MonetCompat
+providers.translate
+pauseCache
+setPlaybackPitch
+bassBoost
+skipSilence
+InvincibleService
+AppCompatDelegate
+
+# S2: PiP and the classic player (§5.3.2)
+supportsPictureInPicture
+PlayerLayout
+ClassicExpandedContent
