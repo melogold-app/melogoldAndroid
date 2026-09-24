@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
-package app.melogold.android.ui.components.themed
+package app.melogold.android.ui.components.menu
 
 import android.content.res.Resources
 import android.os.Handler

@@ -1,4 +1,4 @@
-package app.melogold.android.ui.components.themed
+package app.melogold.android.ui.components.menu
 
 import android.content.Context
 import android.content.Intent
@@ -27,7 +27,6 @@ import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.screens.albumRoute
 import app.melogold.android.ui.screens.artistRoute
-import app.melogold.android.ui.screens.home.HideSongDialog
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.SearchSource
@@ -40,60 +39,6 @@ import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-@Composable
-fun InHistoryMediaItemMenu(
-    onDismiss: () -> Unit,
-    song: Song,
-    modifier: Modifier = Modifier
-) {
-    var isHiding by rememberSaveable { mutableStateOf(false) }
-
-    if (isHiding) HideSongDialog(
-        song = song,
-        onDismiss = { isHiding = false },
-        onConfirm = onDismiss
-    )
-
-    InHistoryMediaItemMenu(
-        onDismiss = onDismiss,
-        song = song,
-        onHideFromDatabase = { isHiding = true },
-        modifier = modifier
-    )
-}
-
-@Composable
-fun InHistoryMediaItemMenu(
-    onDismiss: () -> Unit,
-    song: Song,
-    onHideFromDatabase: () -> Unit,
-    modifier: Modifier = Modifier
-) = NonQueuedMediaItemMenu(
-    mediaItem = song.asMediaItem,
-    onDismiss = onDismiss,
-    onHideFromDatabase = onHideFromDatabase,
-    modifier = modifier
-)
-
-@Composable
-fun InPlaylistMediaItemMenu(
-    onDismiss: () -> Unit,
-    playlistId: Long,
-    positionInPlaylist: Int,
-    song: Song,
-    modifier: Modifier = Modifier
-) = NonQueuedMediaItemMenu(
-    mediaItem = song.asMediaItem,
-    onDismiss = onDismiss,
-    onRemoveFromPlaylist = {
-        transaction {
-            Database.move(playlistId, positionInPlaylist, Int.MAX_VALUE)
-            Database.delete(SongPlaylistMap(song.id, playlistId, Int.MAX_VALUE))
-        }
-    },
-    modifier = modifier
-)
 
 @Composable
 fun NonQueuedMediaItemMenu(

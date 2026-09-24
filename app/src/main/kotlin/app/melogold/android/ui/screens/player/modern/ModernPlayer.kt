@@ -90,7 +90,7 @@ import app.melogold.android.transaction
 import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.rememberBottomSheetState
-import app.melogold.android.ui.components.themed.MenuEntry
+import app.melogold.android.ui.components.menu.MenuEntry
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.screens.player.LyricsMenu
 import app.melogold.android.ui.screens.player.PlaybackErrorCard

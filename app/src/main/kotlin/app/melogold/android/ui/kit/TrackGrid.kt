@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.forcePlayAtIndex
 import app.melogold.android.utils.playingSong

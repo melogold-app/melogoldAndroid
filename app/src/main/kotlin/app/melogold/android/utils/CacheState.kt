@@ -32,51 +32,11 @@ import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.PlayerService
 import app.melogold.android.service.PrecacheService
 import app.melogold.android.service.downloadState
-import app.melogold.android.ui.components.themed.CircularProgressIndicator
-import app.melogold.android.ui.components.themed.HeaderIconButton
-import app.melogold.core.ui.LocalAppearance
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
-
-@Composable
-fun PlaylistDownloadIcon(
-    songs: ImmutableList<MediaItem>,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val (colorPalette) = LocalAppearance.current
-
-    val isDownloading by downloadState.collectAsState()
-
-    AnimatedContent(
-        targetState = isDownloading,
-        label = "",
-        transitionSpec = { fadeIn() togetherWith fadeOut() }
-    ) { currentIsDownloading ->
-        when {
-            currentIsDownloading -> CircularProgressIndicator(modifier = Modifier.size(18.dp))
-
-            !songs.map { it.mediaId }.fastAll {
-                isCached(
-                    mediaId = it,
-                    key = isDownloading
-                )
-            } -> HeaderIconButton(
-                icon = R.drawable.download,
-                color = colorPalette.text,
-                onClick = {
-                    songs.forEach {
-                        PrecacheService.scheduleCache(context.applicationContext, it)
-                    }
-                },
-                modifier = modifier
-            )
-        }
-    }
-}
 
 @OptIn(UnstableApi::class)
 @Composable

@@ -34,11 +34,11 @@ import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.YtLinkMode
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.CollectionMenu
-import app.melogold.android.ui.components.themed.Menu
-import app.melogold.android.ui.components.themed.MenuEntry
-import app.melogold.android.ui.components.themed.MenuHeader
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.CollectionMenu
+import app.melogold.android.ui.components.menu.Menu
+import app.melogold.android.ui.components.menu.MenuEntry
+import app.melogold.android.ui.components.menu.MenuHeader
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionActions
 import app.melogold.android.ui.kit.CollectionHeader
 import app.melogold.android.ui.kit.DelayedLoadingIndicator

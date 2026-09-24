@@ -59,7 +59,7 @@ import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.Artwork
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.ErrorState

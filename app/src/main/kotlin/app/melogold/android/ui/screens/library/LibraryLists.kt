@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.R
 import app.melogold.android.ui.components.m3e.SegmentedGroupDefaults
-import app.melogold.android.ui.components.themed.Scaffold
+import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.ArtistAvatar
 import app.melogold.android.ui.kit.Artwork
 import app.melogold.android.ui.kit.CollectionCard
@@ -52,14 +52,14 @@ import app.melogold.compose.routing.RouteHandlerScope
  */
 @Route
 @Composable
-fun LibraryPlaylistsScreen() = LibraryListScreen(title = R.string.library_playlists) {
+fun LibraryPlaylistsScreen() = LibraryListScreen(title = R.string.library_playlists) { padding ->
     val model = rememberScreenModel("library/lists") { LibraryListsModel() }
     val playlists by model.playlists.collectAsState()
     val list = playlists ?: return@LibraryListScreen
 
-    if (list.isEmpty()) EmptyList(R.string.library_no_playlists)
+    if (list.isEmpty()) EmptyList(R.string.library_no_playlists, padding)
     else LazyColumn(
-        contentPadding = contentPadding(),
+        contentPadding = padding,
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         modifier = Modifier
             .fillMaxSize()
@@ -88,15 +88,15 @@ fun LibraryPlaylistsScreen() = LibraryListScreen(title = R.string.library_playli
  */
 @Route
 @Composable
-fun LibraryAlbumsScreen() = LibraryListScreen(title = R.string.library_albums) {
+fun LibraryAlbumsScreen() = LibraryListScreen(title = R.string.library_albums) { padding ->
     val model = rememberScreenModel("library/lists") { LibraryListsModel() }
     val albums by model.albums.collectAsState()
     val list = albums ?: return@LibraryListScreen
 
-    if (list.isEmpty()) EmptyList(R.string.library_no_albums)
+    if (list.isEmpty()) EmptyList(R.string.library_no_albums, padding)
     else LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 152.dp),
-        contentPadding = contentPadding(),
+        contentPadding = padding,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
@@ -120,15 +120,15 @@ fun LibraryAlbumsScreen() = LibraryListScreen(title = R.string.library_albums) {
  */
 @Route
 @Composable
-fun LibraryArtistsScreen() = LibraryListScreen(title = R.string.library_artists) {
+fun LibraryArtistsScreen() = LibraryListScreen(title = R.string.library_artists) { padding ->
     val model = rememberScreenModel("library/lists") { LibraryListsModel() }
     val artists by model.artists.collectAsState()
     val list = artists ?: return@LibraryListScreen
 
-    if (list.isEmpty()) EmptyList(R.string.library_no_artists)
+    if (list.isEmpty()) EmptyList(R.string.library_no_artists, padding)
     else LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 104.dp),
-        contentPadding = contentPadding(),
+        contentPadding = padding,
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
             .fillMaxSize()
@@ -145,39 +145,28 @@ fun LibraryArtistsScreen() = LibraryListScreen(title = R.string.library_artists)
 }
 
 /**
- * The frame of a list opened from the Library hub: the small app bar with Back and [title].
+ * The frame of a list opened from the Library hub: the medium app bar with Back and [title] that
+ * collapses as the list scrolls; the content gets the padding of the bar and of the mini player.
  */
 @Composable
 private fun LibraryListScreen(
     title: Int,
-    content: @Composable RouteHandlerScope.() -> Unit
+    content: @Composable RouteHandlerScope.(PaddingValues) -> Unit
 ) = RouteHandler {
     GlobalRoutes()
 
     Content {
-        Scaffold(
-            key = "library-list",
-            topIconButtonId = 0,
-            onTopIconButtonClick = pop,
-            tabIndex = 0,
-            onTabChange = { },
-            tabColumnContent = { tab(0, title, R.drawable.ms_library_music) },
-            title = stringResource(title)
-        ) {
-            content()
+        CollectionScaffold(title = stringResource(title), subtitle = null, onBack = pop) { padding ->
+            content(padding)
         }
     }
 }
 
 @Composable
-private fun contentPadding(): PaddingValues = LocalPlayerAwareWindowInsets.current
-    .only(WindowInsetsSides.Bottom)
-    .asPaddingValues()
-
-@Composable
-private fun EmptyList(text: Int) = Box(
+private fun EmptyList(text: Int, padding: PaddingValues) = Box(
     modifier = Modifier
         .fillMaxSize()
+        .padding(padding)
         .padding(32.dp),
     contentAlignment = Alignment.Center
 ) {

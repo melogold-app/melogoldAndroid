@@ -55,11 +55,11 @@ import app.melogold.android.models.Playlist
 import app.melogold.android.models.Song
 import app.melogold.android.models.YtLinkMode
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.Menu
-import app.melogold.android.ui.components.themed.MenuDivider
-import app.melogold.android.ui.components.themed.MenuEntry
-import app.melogold.android.ui.components.themed.MenuHeader
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.Menu
+import app.melogold.android.ui.components.menu.MenuDivider
+import app.melogold.android.ui.components.menu.MenuEntry
+import app.melogold.android.ui.components.menu.MenuHeader
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionActions
 import app.melogold.android.ui.kit.CollectionFilterField
 import app.melogold.android.ui.kit.CollectionHeader

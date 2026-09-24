@@ -42,8 +42,8 @@ import app.melogold.android.models.Info
 import app.melogold.android.models.Song
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.CollectionMenu
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.CollectionMenu
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.AboutSection
 import app.melogold.android.ui.kit.CollectionActions
 import app.melogold.android.ui.kit.CollectionCard

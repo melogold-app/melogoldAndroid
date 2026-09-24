@@ -79,7 +79,7 @@ import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.UIStatePreferences
 import app.melogold.android.query
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.Artwork
 import app.melogold.android.ui.kit.SectionHeader
 import app.melogold.android.ui.kit.TrackRow

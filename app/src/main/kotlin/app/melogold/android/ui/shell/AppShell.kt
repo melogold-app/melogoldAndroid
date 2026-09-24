@@ -35,7 +35,7 @@ import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.service.downloadState
 import app.melogold.android.ui.components.BottomSheetMenu
 import app.melogold.android.ui.components.BottomSheetState
-import app.melogold.android.ui.components.themed.LinearProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import app.melogold.android.ui.screens.player.Player
 import kotlin.math.roundToInt
 

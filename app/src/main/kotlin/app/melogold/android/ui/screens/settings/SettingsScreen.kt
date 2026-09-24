@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import app.melogold.android.R
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.m3e.SegmentedGroupDefaults
-import app.melogold.android.ui.components.themed.Menu
+import app.melogold.android.ui.components.menu.Menu
 import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.screens.GlobalRoutes
 import app.melogold.android.ui.screens.Route

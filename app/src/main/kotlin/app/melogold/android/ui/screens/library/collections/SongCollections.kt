@@ -35,7 +35,7 @@ import app.melogold.android.R
 import app.melogold.android.models.Song
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionFilterField
 import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.DelayedLoadingIndicator

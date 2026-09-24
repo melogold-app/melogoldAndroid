@@ -39,7 +39,7 @@ import app.melogold.android.Database
 import app.melogold.android.R
 import app.melogold.android.models.Format
 import app.melogold.android.service.PlayerService
-import app.melogold.android.ui.components.themed.Menu
+import app.melogold.android.ui.components.menu.Menu
 import app.melogold.android.utils.toast
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch

@@ -10,8 +10,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.media3.common.MediaMetadata
 import app.melogold.android.R
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.Menu
-import app.melogold.android.ui.components.themed.MenuEntry
+import app.melogold.android.ui.components.menu.Menu
+import app.melogold.android.ui.components.menu.MenuEntry
 import app.melogold.android.utils.toast
 
 /**

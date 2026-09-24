@@ -1,4 +1,4 @@
-package app.melogold.android.ui.components.themed
+package app.melogold.android.ui.components.menu
 
 import android.content.Context
 import android.content.Intent

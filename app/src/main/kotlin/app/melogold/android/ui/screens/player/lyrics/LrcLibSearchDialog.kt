@@ -1,10 +1,25 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package app.melogold.android.ui.screens.player.lyrics
 
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,26 +29,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.melogold.android.R
-import app.melogold.android.transaction
-import app.melogold.android.ui.components.themed.CircularProgressIndicator
-import app.melogold.android.ui.components.themed.DefaultDialog
-import app.melogold.android.ui.components.themed.TextField
-import app.melogold.android.ui.components.themed.ValueSelectorDialogBody
-import app.melogold.android.utils.center
-import app.melogold.android.utils.semiBold
-import app.melogold.core.ui.LocalAppearance
+import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.providers.lrclib.LrcLib
 import app.melogold.providers.lrclib.models.Track
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Searches LrcLib for time-synced lyrics of [query] and lets the user pick one of the tracks found.
+ * Searches LrcLib for time-synced lyrics of [query] and lets the user pick one of the tracks found:
+ * the search field on top, the tracks under it as a list.
  */
 @Composable
 fun LrcLibSearchDialog(
@@ -42,80 +55,95 @@ fun LrcLibSearchDialog(
     onDismiss: () -> Unit,
     onPick: (Track) -> Unit,
     modifier: Modifier = Modifier
-) = DefaultDialog(
-    onDismiss = onDismiss,
-    horizontalPadding = 0.dp,
-    modifier = modifier
-) {
-    val [_, typography] = LocalAppearance.current
-
+) = BasicAlertDialog(onDismissRequest = onDismiss, modifier = modifier) {
     val tracks = remember { mutableStateListOf<Track>() }
     var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf(false) }
 
     LaunchedEffect(query) {
         loading = true
-        error = false
-
+        // Wait for the typing to stop
         delay(1000.milliseconds)
 
-        LrcLib.lyrics(
-            query = query,
-            synced = true
-        )?.onSuccess { newTracks ->
-            tracks.clear()
-            tracks.addAll(newTracks.filter { !it.syncedLyrics.isNullOrBlank() })
-            loading = false
-            error = false
-        }?.onFailure {
-            loading = false
-            error = true
-            it.printStackTrace()
-        } ?: run { loading = false }
+        val result = LrcLib.lyrics(query = query, synced = true)
+        tracks.clear()
+        result?.getOrNull()?.let { found -> tracks.addAll(found.filter { !it.syncedLyrics.isNullOrBlank() }) }
+        result?.exceptionOrNull()?.printStackTrace()
+        loading = false
     }
 
-    TextField(
-        value = query,
-        onValueChange = setQuery,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp),
-        maxLines = 1,
-        singleLine = true
-    )
-    Spacer(modifier = Modifier.height(8.dp))
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.testTag("lrclib_search")
+    ) {
+        Column(modifier = Modifier.padding(top = 24.dp, bottom = 8.dp)) {
+            Text(
+                text = stringResource(R.string.choose_lyric_track),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            OutlinedTextField(
+                value = query,
+                onValueChange = setQuery,
+                singleLine = true,
+                leadingIcon = { Icon(painter = painterResource(R.drawable.ms_search), contentDescription = null) },
+                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            )
 
-    when {
-        loading -> CircularProgressIndicator(
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 96.dp, max = 360.dp)
+            ) {
+                when {
+                    loading -> DelayedLoadingIndicator()
 
-        error || tracks.isEmpty() -> BasicText(
-            text = stringResource(R.string.no_lyrics_found),
-            style = typography.s.semiBold.center,
-            modifier = Modifier
-                .padding(all = 24.dp)
-                .align(Alignment.CenterHorizontally)
-        )
+                    tracks.isEmpty() -> Text(
+                        text = stringResource(R.string.no_lyrics_found),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(24.dp)
+                    )
 
-        else -> ValueSelectorDialogBody(
-            onDismiss = onDismiss,
-            title = stringResource(R.string.choose_lyric_track),
-            selectedValue = null,
-            values = tracks.toImmutableList(),
-            onValueSelect = {
-                transaction {
-                    onPick(it)
-                    onDismiss()
-                }
-            },
-            valueText = {
-                "${it.artistName} - ${it.trackName} (${
-                    it.duration.seconds.toComponents { minutes, seconds, _ ->
-                        "$minutes:${seconds.toString().padStart(2, '0')}"
+                    else -> LazyColumn {
+                        items(items = tracks, key = { it.id }) { track ->
+                            ListItem(
+                                onClick = {
+                                    onPick(track)
+                                    onDismiss()
+                                },
+                                supportingContent = { Text(text = track.duration.seconds.format()) },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            ) {
+                                Text(
+                                    text = "${track.artistName} — ${track.trackName}",
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
                     }
-                })"
+                }
             }
-        )
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(end = 16.dp)
+            ) {
+                Text(text = stringResource(R.string.cancel))
+            }
+        }
     }
+}
+
+private fun kotlin.time.Duration.format() = toComponents { minutes, seconds, _ ->
+    "$minutes:${seconds.toString().padStart(2, '0')}"
 }

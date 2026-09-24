@@ -43,10 +43,10 @@ import app.melogold.android.R
 import app.melogold.android.models.Artist
 import app.melogold.android.models.Song
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.Menu
-import app.melogold.android.ui.components.themed.MenuEntry
-import app.melogold.android.ui.components.themed.MenuHeader
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.Menu
+import app.melogold.android.ui.components.menu.MenuEntry
+import app.melogold.android.ui.components.menu.MenuHeader
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.AboutSection
 import app.melogold.android.ui.kit.ArtistAvatar
 import app.melogold.android.ui.kit.Artwork

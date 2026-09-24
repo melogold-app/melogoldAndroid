@@ -50,7 +50,7 @@ import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
-import app.melogold.android.ui.components.themed.NonQueuedMediaItemMenu
+import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.TrackRow

@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
-package app.melogold.android.ui.components.themed
+package app.melogold.android.ui.components.menu
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Column
@@ -26,7 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.melogold.android.ui.kit.Artwork
-import androidx.compose.material3.HorizontalDivider as M3HorizontalDivider
+import androidx.compose.material3.HorizontalDivider
 
 /**
  * The content of a menu sheet (REDESIGN-M3E T2.6): a scrolling column of [MenuHeader],
@@ -122,7 +122,7 @@ fun MenuSectionTitle(
 
 /** Separates groups of entries. */
 @Composable
-fun MenuDivider(modifier: Modifier = Modifier) = M3HorizontalDivider(
+fun MenuDivider(modifier: Modifier = Modifier) = HorizontalDivider(
     modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     color = MaterialTheme.colorScheme.outlineVariant
 )

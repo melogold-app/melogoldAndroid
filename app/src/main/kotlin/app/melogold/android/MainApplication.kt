@@ -84,7 +84,6 @@ import app.melogold.core.ui.Dimensions
 import app.melogold.core.ui.MotionLevel
 import app.melogold.core.ui.SystemBarAppearance
 import app.melogold.core.ui.isDark
-import app.melogold.core.ui.shimmerTheme
 import app.melogold.core.ui.theme.MelogoldTheme
 import app.melogold.core.ui.utils.activityIntentBundle
 import app.melogold.core.ui.utils.isAtLeastAndroid12
@@ -101,7 +100,6 @@ import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
-import com.valentinilk.shimmer.LocalShimmerTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -199,7 +197,6 @@ class MainActivity : ComponentActivity() {
             ) {
                 CompositionLocalProvider(
                     LocalPlayerServiceBinder provides vm.binder,
-                    LocalShimmerTheme provides shimmerTheme(),
                     LocalLayoutDirection provides LayoutDirection.Ltr,
                     LocalPersistMap provides Dependencies.application.persistMap,
                     LocalAppContainer provides Dependencies.application.container

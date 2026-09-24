@@ -217,7 +217,6 @@ dependencies {
     implementation(projects.compose.persist)
     implementation(projects.compose.preferences)
     implementation(projects.compose.routing)
-    implementation(projects.compose.reordering)
     implementation(libs.reorderable)
 
     implementation(platform(libs.compose.bom))
@@ -225,8 +224,6 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.util)
-    implementation(libs.compose.shimmer)
-    implementation(libs.compose.lottie)
     implementation(libs.compose.material3)
     implementation(libs.compose.adaptive)
 
