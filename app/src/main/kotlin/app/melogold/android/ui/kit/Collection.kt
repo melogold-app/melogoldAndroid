@@ -160,8 +160,9 @@ fun PlayShuffleButtons(
 }
 
 /**
- * The sort of a list as a chip: "Date added ↓". Picking the current option again reverses it;
- * an option without a direction ([hasDirection] false, e.g. "Own order") shows no arrow.
+ * The sort of a list as a chip: "Date added ↓". Picking the current option again reverses it; a
+ * new option starts in its own direction ([startsDescending]: dates newest first, names A to Z).
+ * An option without a direction ([hasDirection] false, e.g. "Own order") shows no arrow.
  */
 @Composable
 fun <T> SortChip(
@@ -171,7 +172,8 @@ fun <T> SortChip(
     label: @Composable (T) -> String,
     onSelect: (option: T, descending: Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    hasDirection: (T) -> Boolean = { true }
+    hasDirection: (T) -> Boolean = { true },
+    startsDescending: (T) -> Boolean = { false }
 ) = Box(modifier = modifier) {
     var expanded by remember { mutableStateOf(false) }
     fun arrow(option: T) = when {
@@ -201,7 +203,7 @@ fun <T> SortChip(
                 } else null,
                 onClick = {
                     expanded = false
-                    onSelect(option, if (option == selected) !descending else descending)
+                    onSelect(option, if (option == selected) !descending else startsDescending(option))
                 }
             )
         }

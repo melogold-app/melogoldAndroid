@@ -50,6 +50,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.preferences.ListSort
+import app.melogold.android.preferences.SortPreferences
+import app.melogold.android.preferences.toListSort
 import app.melogold.android.data.repo.RefreshResult
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.Song
@@ -134,8 +137,10 @@ private fun LocalPlaylistContent(
     val covers by model.covers.collectAsState()
     val refreshing by model.refreshing.collectAsState()
 
-    var sort by rememberSaveable { mutableStateOf(PlaylistSort.Custom) }
-    var descending by rememberSaveable { mutableStateOf(false) }
+    // One choice for every own playlist, kept between launches
+    val listSort = SortPreferences.playlistItems.toListSort(ListSort(PlaylistSort.Custom, descending = false))
+    val sort = listSort.field
+    val descending = listSort.descending
     var filtering by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf("") }
     var renaming by rememberSaveable { mutableStateOf(false) }
@@ -362,10 +367,10 @@ private fun LocalPlaylistContent(
                     descending = descending,
                     label = { stringResource(it.label) },
                     onSelect = { option, down ->
-                        sort = option
-                        descending = option != PlaylistSort.Custom && down
+                        SortPreferences.playlistItems = ListSort(option, option != PlaylistSort.Custom && down).encode()
                     },
                     hasDirection = { it != PlaylistSort.Custom },
+                    startsDescending = { it == PlaylistSort.DateAdded },
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }

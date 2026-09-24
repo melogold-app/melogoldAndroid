@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.preferences.ListSort
+import app.melogold.android.preferences.SortPreferences
+import app.melogold.android.preferences.toListSort
 import app.melogold.android.models.Song
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.LocalMenuState
@@ -71,6 +74,9 @@ enum class TrackSort(@param:StringRes val label: Int) {
     Duration(R.string.sort_duration)
 }
 
+/** What a list of tracks is sorted by until the user picks something else. */
+private val DefaultTrackSort = ListSort(TrackSort.DateAdded, descending = true)
+
 /** Favorites, newest like first; the screen sorts and filters it. */
 class FavoritesModel : ScreenModel() {
     val songs: StateFlow<List<Song>?> = Database
@@ -100,6 +106,8 @@ fun FavoritesScreen() = RouteHandler {
             title = stringResource(R.string.library_favorites),
             songs = songs,
             empty = R.string.favorites_empty,
+            sort = SortPreferences.favorites.toListSort(DefaultTrackSort),
+            onSort = { SortPreferences.favorites = it.encode() },
             onBack = pop
         )
     }
@@ -125,6 +133,8 @@ fun ArtistFavoritesScreen(artistId: String, name: String) = RouteHandler {
             title = name,
             songs = songs,
             empty = R.string.favorites_empty,
+            sort = SortPreferences.favorites.toListSort(DefaultTrackSort),
+            onSort = { SortPreferences.favorites = it.encode() },
             note = R.string.artist_in_library_note,
             onBack = pop
         )
@@ -149,6 +159,8 @@ fun CachedScreen() = RouteHandler {
             title = stringResource(R.string.library_downloads),
             songs = songs,
             empty = R.string.cached_empty,
+            sort = SortPreferences.downloads.toListSort(DefaultTrackSort),
+            onSort = { SortPreferences.downloads = it.encode() },
             note = R.string.cached_subtitle,
             onBack = pop
         )
@@ -156,14 +168,17 @@ fun CachedScreen() = RouteHandler {
 }
 
 /**
- * A collection of tracks: "N tracks · time" under the title, Play · Shuffle, the sort chip, a
- * filter behind the search icon, and the rows; a tap plays the list from that track.
+ * A collection of tracks: "N tracks · time" under the title, Play · Shuffle, the sort chip (its
+ * choice kept between launches by the caller), a filter behind the search icon, and the rows; a
+ * tap plays the list from that track.
  */
 @Composable
 private fun SongCollection(
     title: String,
     songs: List<Song>?,
     @StringRes empty: Int,
+    sort: ListSort<TrackSort>,
+    onSort: (ListSort<TrackSort>) -> Unit,
     onBack: () -> Unit,
     @StringRes note: Int? = null
 ) {
@@ -172,13 +187,11 @@ private fun SongCollection(
     val nav = LocalMainNav.current
     val (playingId, _) = playingSong(binder)
 
-    var sort by rememberSaveable { mutableStateOf(TrackSort.DateAdded) }
-    var descending by rememberSaveable { mutableStateOf(true) }
     var filtering by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf("") }
 
-    val shown = remember(songs, sort, descending, filter) {
-        songs?.let { list -> list.sortedAs(sort, descending).filteredBy(filter) }
+    val shown = remember(songs, sort, filter) {
+        songs?.let { list -> list.sortedAs(sort.field, sort.descending).filteredBy(filter) }
     }
     val subtitle = songs?.takeIf { it.isNotEmpty() }?.let { list ->
         val count = pluralStringResource(R.plurals.library_tracks_count, list.size, list.size)
@@ -246,13 +259,11 @@ private fun SongCollection(
                 item(key = "sort") {
                     SortChip(
                         options = persistentListOf(*TrackSort.entries.toTypedArray()),
-                        selected = sort,
-                        descending = descending,
+                        selected = sort.field,
+                        descending = sort.descending,
                         label = { stringResource(it.label) },
-                        onSelect = { option, down ->
-                            sort = option
-                            descending = down
-                        },
+                        onSelect = { option, down -> onSort(ListSort(option, down)) },
+                        startsDescending = { it == TrackSort.DateAdded },
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
