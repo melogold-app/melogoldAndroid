@@ -2,15 +2,17 @@ package app.melogold.android.models
 
 import androidx.compose.runtime.Immutable
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
  * A playlist of the Library. One saved from YouTube keeps its [browseId]; how it follows YouTube is
  * [ytLinkMode] (REWRITE §3.8): [ytSyncedAt] is the last refresh, [ytSnapshot] the video ids YouTube
- * had then, one per line, so "append" knows which tracks are new.
+ * had then, one per line, so "append" knows which tracks are new. [syncId] ties it to its copy on the
+ * Melogold server.
  */
 @Immutable
-@Entity
+@Entity(indices = [Index(value = ["syncId"], unique = true)])
 data class Playlist(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
@@ -18,7 +20,9 @@ data class Playlist(
     val thumbnail: String? = null,
     val ytLinkMode: YtLinkMode? = null,
     val ytSyncedAt: Long? = null,
-    val ytSnapshot: String? = null
+    val ytSnapshot: String? = null,
+    /** The playlist's id on the Melogold server (API §4.8 `playlistId`), once it was synced. */
+    val syncId: String? = null
 )
 
 /** How a playlist saved from YouTube follows it (REWRITE §3.8.1). */

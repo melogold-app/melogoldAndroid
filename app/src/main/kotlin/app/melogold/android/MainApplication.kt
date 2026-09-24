@@ -416,6 +416,9 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
         // The download manager lives on the thread that creates it: the main one
         container.downloads
 
+        // The library follows the account on the Melogold server while signed in
+        container.sync.start()
+
         // Deletions waiting for "Undo" reach Room before the system may kill the app in the background
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {

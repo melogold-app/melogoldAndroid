@@ -26,5 +26,7 @@ import androidx.room.ForeignKey
 data class SongPlaylistMap(
     @ColumnInfo(index = true) val songId: String,
     @ColumnInfo(index = true) val playlistId: Long,
-    val position: Int
+    val position: Int,
+    /** The order key the Melogold server gave the item (API §4.8); null until it was synced. */
+    val sortKey: String? = null
 )

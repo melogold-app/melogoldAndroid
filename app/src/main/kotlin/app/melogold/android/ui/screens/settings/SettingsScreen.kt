@@ -72,7 +72,7 @@ enum class SettingsPage(
 }
 
 /** The padding the page scaffold leaves for its app bar and the player: the pages apply it. */
-private val LocalSettingsPadding = staticCompositionLocalOf { PaddingValues() }
+val LocalSettingsPadding = staticCompositionLocalOf { PaddingValues() }
 
 /**
  * `settingsPageRoute`: one section under a medium app bar with its title that collapses as the

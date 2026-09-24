@@ -58,6 +58,10 @@ import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.YtLinkMode
 import app.melogold.android.models.SongWithContentLength
 import app.melogold.android.models.SongWithDownload
+import app.melogold.android.models.SyncState
+import app.melogold.android.models.SyncedBookmark
+import app.melogold.android.models.SyncedLike
+import app.melogold.android.models.SyncedPlaylist
 import app.melogold.android.models.TrackDownload
 import app.melogold.android.models.DownloadCollection
 import app.melogold.android.models.DownloadFailure
@@ -923,6 +927,136 @@ interface DatabaseAccessor {
     @Upsert
     fun upsert(lyrics: Lyrics)
 
+    // region Sync with the Melogold server (DESIGN §3.13, snapshot variant: REWRITE §4.12a)
+    @Query("SELECT value FROM SyncState WHERE `key` = :key")
+    fun syncState(key: String): String?
+
+    @Upsert
+    fun setSyncState(state: SyncState)
+
+    @Query("DELETE FROM SyncState")
+    fun clearSyncState()
+
+    @Query("SELECT * FROM Song WHERE likedAt IS NOT NULL AND id NOT LIKE '$LOCAL_KEY_PREFIX%'")
+    fun likedSongsNow(): List<Song>
+
+    @Query("SELECT videoId FROM SyncedLike")
+    fun syncedLikes(): List<String>
+
+    @Upsert
+    fun upsertSyncedLikes(likes: List<SyncedLike>)
+
+    @Query("DELETE FROM SyncedLike WHERE videoId IN (:videoIds)")
+    fun deleteSyncedLikes(videoIds: List<String>)
+
+    @Query("SELECT * FROM Playlist")
+    fun playlistsNow(): List<Playlist>
+
+    @Query("SELECT * FROM Playlist WHERE syncId = :syncId")
+    fun playlistBySyncId(syncId: String): Playlist?
+
+    @Query("UPDATE Playlist SET syncId = :syncId WHERE id = :id")
+    fun setPlaylistSyncId(id: Long, syncId: String?)
+
+    @Query("UPDATE Playlist SET syncId = NULL")
+    fun clearPlaylistSyncIds()
+
+    /** Forgets the order keys of a server: the tracks are sent again as new. */
+    @Query("UPDATE SongPlaylistMap SET sortKey = NULL")
+    fun clearSortKeys()
+
+    @Query("UPDATE SongPlaylistMap SET sortKey = NULL WHERE playlistId = :playlistId")
+    fun clearSortKeys(playlistId: Long)
+
+    /** The tracks of a playlist in their order. */
+    @Query("SELECT * FROM SongPlaylistMap WHERE playlistId = :playlistId ORDER BY position")
+    fun playlistMapsNow(playlistId: Long): List<SongPlaylistMap>
+
+    @Query("SELECT * FROM SyncedPlaylist")
+    fun syncedPlaylists(): List<SyncedPlaylist>
+
+    @Upsert
+    fun upsertSyncedPlaylist(playlist: SyncedPlaylist)
+
+    @Query("DELETE FROM SyncedPlaylist WHERE syncId = :syncId")
+    fun deleteSyncedPlaylist(syncId: String)
+
+    @Upsert
+    fun upsertSongPlaylistMap(map: SongPlaylistMap)
+
+    @Query("DELETE FROM SongPlaylistMap WHERE playlistId = :playlistId AND songId = :songId")
+    fun deleteSongPlaylistMap(playlistId: Long, songId: String)
+
+    @Query("UPDATE SongPlaylistMap SET position = :position WHERE playlistId = :playlistId AND songId = :songId")
+    fun setPosition(playlistId: Long, songId: String, position: Int)
+
+    @Query("SELECT * FROM Album WHERE bookmarkedAt IS NOT NULL")
+    fun bookmarkedAlbumsNow(): List<Album>
+
+    @Query("SELECT * FROM Artist WHERE bookmarkedAt IS NOT NULL")
+    fun bookmarkedArtistsNow(): List<Artist>
+
+    @Query("SELECT * FROM SyncedBookmark")
+    fun syncedBookmarks(): List<SyncedBookmark>
+
+    @Upsert
+    fun upsertSyncedBookmark(bookmark: SyncedBookmark)
+
+    @Query("DELETE FROM SyncedBookmark WHERE type = :type AND browseId = :browseId")
+    fun deleteSyncedBookmark(type: String, browseId: String)
+
+    @Query("UPDATE Album SET bookmarkedAt = :bookmarkedAt WHERE id = :id")
+    fun setAlbumBookmark(id: String, bookmarkedAt: Long?)
+
+    @Query("UPDATE Artist SET bookmarkedAt = :bookmarkedAt WHERE id = :id")
+    fun setArtistBookmark(id: String, bookmarkedAt: Long?)
+
+    @Query("SELECT * FROM Album WHERE id = :id")
+    fun albumNow(id: String): Album?
+
+    @Query("SELECT * FROM Artist WHERE id = :id")
+    fun artistNow(id: String): Artist?
+
+    @Query("SELECT * FROM Song WHERE id = :id")
+    fun songNow(id: String): Song?
+
+    @Update
+    fun update(song: Song)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertIfMissing(artist: Artist)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertIfMissing(album: Album)
+
+    @Query("DELETE FROM SyncedLike")
+    fun clearSyncedLikes()
+
+    @Query("DELETE FROM SyncedPlaylist")
+    fun clearSyncedPlaylists()
+
+    @Query("DELETE FROM SyncedBookmark")
+    fun clearSyncedBookmarks()
+
+    /**
+     * Changes whenever the Favorites, the playlists or the saved albums and artists could have: a sync may be due. The
+     * tracks of playlists count with their places, so a move changes it too.
+     */
+    @Query(
+        """
+        SELECT (SELECT COUNT(*) || ':' || TOTAL(likedAt) FROM Song WHERE likedAt IS NOT NULL) || ':' ||
+               (SELECT COUNT(*) || ':' || TOTAL(
+                   (position + 1) * (playlistId % 997 + 1) * (unicode(substr(songId, 1, 1)) + 3 * unicode(substr(songId, 4, 1)) +
+                   7 * unicode(substr(songId, 8, 1)) + 13 * unicode(substr(songId, -1, 1)))
+               ) FROM SongPlaylistMap) || ':' ||
+               (SELECT COUNT(*) || IFNULL(GROUP_CONCAT(name || IFNULL(thumbnail, ''), ''), '') FROM Playlist) || ':' ||
+               (SELECT COUNT(*) || ':' || TOTAL(bookmarkedAt) FROM Album WHERE bookmarkedAt IS NOT NULL) || ':' ||
+               (SELECT COUNT(*) || ':' || TOTAL(bookmarkedAt) FROM Artist WHERE bookmarkedAt IS NOT NULL)
+        """
+    )
+    fun libraryFingerprint(): Flow<String>
+    // endregion Sync
+
     // region Downloads (REWRITE §4.7)
     @Upsert
     fun upsert(download: TrackDownload)
@@ -1011,10 +1145,14 @@ interface DatabaseAccessor {
         Lyrics::class,
         PipedSession::class,
         TrackDownload::class,
-        DownloadCollection::class
+        DownloadCollection::class,
+        SyncState::class,
+        SyncedLike::class,
+        SyncedPlaylist::class,
+        SyncedBookmark::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 33,
+    version = 34,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -1044,7 +1182,8 @@ interface DatabaseAccessor {
         AutoMigration(from = 29, to = 30),
         AutoMigration(from = 30, to = 31),
         AutoMigration(from = 31, to = 32),
-        AutoMigration(from = 32, to = 33)
+        AutoMigration(from = 32, to = 33),
+        AutoMigration(from = 33, to = 34)
     ]
 )
 @TypeConverters(Converters::class)

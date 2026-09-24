@@ -18,7 +18,6 @@ import app.melogold.android.ui.components.m3e.SegmentedGroup
 import app.melogold.android.ui.components.m3e.SegmentedRow
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.settings.account.AccountCard
-import app.melogold.android.ui.screens.settings.account.AccountSettingsGroup
 import app.melogold.android.ui.screens.settings.account.ServerSettingsRow
 import app.melogold.android.ui.screens.settingsPageRoute
 import app.melogold.android.ui.shell.TabRootScaffold
@@ -49,7 +48,6 @@ fun RouteHandlerScope.SettingsRoot() {
         ) {
             AccountCard()
             ServerSettingsRow()
-            AccountSettingsGroup()
 
             SegmentedGroup {
                 SettingsPage.entries.forEach { page ->

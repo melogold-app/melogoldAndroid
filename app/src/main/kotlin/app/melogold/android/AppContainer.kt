@@ -8,6 +8,8 @@ import app.melogold.android.data.downloads.FileExport
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
+import app.melogold.android.sync.Account
+import app.melogold.android.sync.SyncEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,6 +32,10 @@ class AppContainer(private val application: Application) {
 
     /** "Save as file" into Music/Melogold. */
     val fileExport by lazy { FileExport(application, downloads) }
+
+    /** The account on the Melogold server and the sync of the library with it. */
+    val account by lazy { Account(application) }
+    val sync by lazy { SyncEngine(account, network, appScope) }
 
     val json = Json {
         ignoreUnknownKeys = true

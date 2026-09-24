@@ -30,6 +30,10 @@ android {
 
         multiDexEnabled = true
 
+        // The Melogold server the app offers first (Settings › Server can point it elsewhere). Until the
+        // official domain exists this is the owner's instance behind a sslip.io name (REWRITE §3.5.12)
+        buildConfigField("String", "DEFAULT_SERVER_URL", "\"https://178-250-187-202.sslip.io\"")
+
         ndk {
             //noinspection ChromeOsAbiSupport
             abiFilters += abis
@@ -65,8 +69,6 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-DEBUG"
             manifestPlaceholders["appName"] = "Melogold Debug"
-            // Account / sync screens are stubs until the Melogold server exists (REDESIGN-M3E §3.5)
-            buildConfigField("boolean", "ACCOUNT_UI", "true")
         }
 
         release {
@@ -74,7 +76,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             manifestPlaceholders["appName"] = "Melogold"
-            buildConfigField("boolean", "ACCOUNT_UI", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -88,7 +89,6 @@ android {
             applicationIdSuffix = ".nightly"
             versionNameSuffix = "-NIGHTLY"
             manifestPlaceholders["appName"] = "Melogold Nightly"
-            buildConfigField("boolean", "ACCOUNT_UI", "true")
             signingConfig = signingConfigs.findByName("ci")
         }
 
@@ -102,7 +102,6 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-STAGING"
             manifestPlaceholders["appName"] = "Melogold Debug"
-            buildConfigField("boolean", "ACCOUNT_UI", "true")
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -230,6 +229,10 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.ktor)
     implementation(libs.ktor.client.core)
+    // The Melogold server API (sync, account)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.json)
 
     implementation(libs.material.color.utilities)
 
