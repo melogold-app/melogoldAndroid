@@ -50,4 +50,40 @@
     <string name="playlist_incomplete">YouTube вернул неполный список — плейлист не сохранён</string>
     <string name="playlist_save_failed">Не удалось сохранить плейлист</string>
     <string name="playlist_loaded">Загружено %1$d</string>
+
+    <string name="local_playlist_sort_custom">Свой порядок</string>
+    <string name="local_playlist_removed_track">Убрано из плейлиста</string>
+    <string name="local_playlist_deleted">Плейлист удалён</string>
+    <string name="local_playlist_rename">Переименовать</string>
+    <string name="local_playlist_rename_confirm">Сохранить</string>
+    <string name="local_playlist_link">Связь с YouTube</string>
+    <string name="local_playlist_refresh">Обновить из YouTube</string>
+    <string name="local_playlist_delete">Удалить плейлист</string>
+    <string name="local_playlist_empty">В плейлисте нет треков. Добавляйте через ⋮ › Добавить в плейлист</string>
+    <string name="local_playlist_move_up">Переместить выше</string>
+    <string name="local_playlist_move_down">Переместить ниже</string>
+    <string name="local_playlist_refreshing">Обновляем из YouTube…</string>
+    <string name="local_playlist_synced">обновлено %1$s</string>
+    <string name="local_playlist_unlink">Отвязать</string>
+    <string name="local_playlist_unlink_hint">Больше не обновлять из YouTube</string>
+    <string name="local_playlist_mode_mirror">Зеркало</string>
+    <string name="local_playlist_mode_append">Только добавлять</string>
+    <string name="local_playlist_mode_off">Без связи</string>
+    <string name="local_playlist_incomplete">YouTube вернул неполный список — плейлист не изменён</string>
+    <string name="local_playlist_snapshot">Запомнили список YouTube — новые треки будут добавляться со следующего обновления</string>
+    <string name="local_playlist_refresh_failed">Не удалось обновить из YouTube</string>
+    <string name="local_playlist_up_to_date">Плейлист уже как на YouTube</string>
+    <plurals name="local_playlist_added">
+        <item quantity="one">%1$d новый трек из YouTube</item>
+        <item quantity="few">%1$d новых трека из YouTube</item>
+        <item quantity="many">%1$d новых треков из YouTube</item>
+        <item quantity="other">%1$d нового трека из YouTube</item>
+    </plurals>
+    <plurals name="local_playlist_mirrored">
+        <item quantity="one">Обновлено из YouTube: убран %1$d трек</item>
+        <item quantity="few">Обновлено из YouTube: убрано %1$d трека</item>
+        <item quantity="many">Обновлено из YouTube: убрано %1$d треков</item>
+        <item quantity="other">Обновлено из YouTube: убрано %1$d трека</item>
+    </plurals>
+    <string name="local_playlist_synced_now">только что</string>
 </resources>

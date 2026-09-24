@@ -55,7 +55,9 @@ fun TrackRow(
     showArtwork: Boolean = true,
     isPlaying: Boolean = false,
     explicit: Boolean = false,
-    duration: String? = null
+    duration: String? = null,
+    leading: (@Composable () -> Unit)? = null,
+    accessibilityActions: List<CustomAccessibilityAction> = emptyList()
 ) {
     val playLabel = stringResource(R.string.kit_play)
     val menuLabel = stringResource(R.string.kit_menu)
@@ -73,13 +75,15 @@ fun TrackRow(
                 customActions = listOfNotNull(
                     CustomAccessibilityAction(playLabel) { onClick(); true },
                     onMenu?.let { CustomAccessibilityAction(menuLabel) { it(); true } }
-                )
+                ) + accessibilityActions
             }
-            .padding(start = if (number != null) 4.dp else 12.dp, end = 4.dp),
+            .padding(start = if (number != null || leading != null) 4.dp else 12.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val playingOnNumber = isPlaying && !showArtwork
+
+        leading?.invoke()
 
         if (number != null) Box(
             modifier = Modifier.width(32.dp),

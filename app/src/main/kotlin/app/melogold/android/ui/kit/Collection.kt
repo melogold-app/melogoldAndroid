@@ -129,7 +129,8 @@ fun PlayShuffleButtons(
 }
 
 /**
- * The sort of a list as a chip: "Date added ↓". Picking the current option again reverses it.
+ * The sort of a list as a chip: "Date added ↓". Picking the current option again reverses it;
+ * an option without a direction ([hasDirection] false, e.g. "Own order") shows no arrow.
  */
 @Composable
 fun <T> SortChip(
@@ -138,13 +139,19 @@ fun <T> SortChip(
     descending: Boolean,
     label: @Composable (T) -> String,
     onSelect: (option: T, descending: Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    hasDirection: (T) -> Boolean = { true }
 ) = Box(modifier = modifier) {
     var expanded by remember { mutableStateOf(false) }
+    fun arrow(option: T) = when {
+        !hasDirection(option) -> ""
+        descending -> " ↓"
+        else -> " ↑"
+    }
 
     AssistChip(
         onClick = { expanded = true },
-        label = { Text(text = label(selected) + if (descending) " ↓" else " ↑") },
+        label = { Text(text = label(selected) + arrow(selected)) },
         trailingIcon = {
             Icon(
                 painter = painterResource(R.drawable.ms_keyboard_arrow_down),
@@ -159,7 +166,7 @@ fun <T> SortChip(
             DropdownMenuItem(
                 text = { Text(text = label(option)) },
                 trailingIcon = if (option == selected) {
-                    { Text(text = if (descending) "↓" else "↑") }
+                    { Text(text = arrow(option).trim().ifEmpty { "✓" }) }
                 } else null,
                 onClick = {
                     expanded = false

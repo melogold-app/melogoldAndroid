@@ -2,6 +2,8 @@ package app.melogold.android.ui.kit
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -10,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -54,5 +57,30 @@ fun Artwork(
             contentScale = ContentScale.Crop,
             modifier = Modifier.matchParentSize()
         )
+    }
+}
+
+/**
+ * The cover of an own playlist (REWRITE §3.8.1): four covers of its tracks in a square, or the
+ * first one when there are fewer.
+ */
+@Composable
+fun MosaicArtwork(
+    urls: List<String>,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(28.dp)
+) {
+    if (urls.size < 4) Artwork(url = urls.firstOrNull(), size = size, shape = shape, modifier = modifier)
+    else Column(
+        modifier = modifier
+            .size(size)
+            .clip(shape)
+    ) {
+        urls.take(4).chunked(2).forEach { row ->
+            Row {
+                row.forEach { url -> Artwork(url = url, size = size / 2, shape = RectangleShape) }
+            }
+        }
     }
 }

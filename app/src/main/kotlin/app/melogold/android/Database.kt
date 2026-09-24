@@ -455,6 +455,22 @@ interface DatabaseAccessor {
     @Query("DELETE FROM SongPlaylistMap WHERE playlistId = :id")
     fun clearPlaylist(id: Long)
 
+    @Query("SELECT * FROM SongPlaylistMap WHERE playlistId = :id")
+    fun songPlaylistMaps(id: Long): List<SongPlaylistMap>
+
+    // Newest first: the map's rowid grows as tracks are added (moves only change positions)
+    @Transaction
+    @Query(
+        """
+        SELECT Song.* FROM SongPlaylistMap
+        INNER JOIN Song ON Song.id = SongPlaylistMap.songId
+        WHERE playlistId = :id
+        ORDER BY SongPlaylistMap.ROWID DESC
+        """
+    )
+    @RewriteQueriesToDropUnusedColumns
+    fun playlistSongsByDateAdded(id: Long): Flow<List<Song>>
+
     @Query("UPDATE Playlist SET ytSyncedAt = :syncedAt, ytSnapshot = :snapshot WHERE id = :id")
     fun setYtSynced(id: Long, syncedAt: Long, snapshot: String)
 

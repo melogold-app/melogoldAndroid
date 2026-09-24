@@ -49,4 +49,36 @@
     <string name="playlist_incomplete">YouTube returned an incomplete list — the playlist was not saved</string>
     <string name="playlist_save_failed">Couldn’t save the playlist</string>
     <string name="playlist_loaded">Loaded %1$d</string>
+
+    <string name="local_playlist_sort_custom">Own order</string>
+    <string name="local_playlist_removed_track">Removed from the playlist</string>
+    <string name="local_playlist_deleted">Playlist deleted</string>
+    <string name="local_playlist_rename">Rename</string>
+    <string name="local_playlist_rename_confirm">Save</string>
+    <string name="local_playlist_link">Link with YouTube</string>
+    <string name="local_playlist_refresh">Refresh from YouTube</string>
+    <string name="local_playlist_delete">Delete playlist</string>
+    <string name="local_playlist_empty">No tracks in the playlist. Add them with ⋮ › Add to playlist</string>
+    <string name="local_playlist_move_up">Move up</string>
+    <string name="local_playlist_move_down">Move down</string>
+    <string name="local_playlist_refreshing">Refreshing from YouTube…</string>
+    <string name="local_playlist_synced">refreshed %1$s</string>
+    <string name="local_playlist_unlink">Unlink</string>
+    <string name="local_playlist_unlink_hint">No longer updated from YouTube</string>
+    <string name="local_playlist_mode_mirror">Mirror</string>
+    <string name="local_playlist_mode_append">Add new tracks</string>
+    <string name="local_playlist_mode_off">Not linked</string>
+    <string name="local_playlist_incomplete">YouTube returned an incomplete list — the playlist was not changed</string>
+    <string name="local_playlist_snapshot">Remembered the YouTube list — new tracks will be added from the next refresh</string>
+    <string name="local_playlist_refresh_failed">Couldn’t refresh from YouTube</string>
+    <string name="local_playlist_up_to_date">The playlist is up to date</string>
+    <plurals name="local_playlist_added">
+        <item quantity="one">%1$d new track from YouTube</item>
+        <item quantity="other">%1$d new tracks from YouTube</item>
+    </plurals>
+    <plurals name="local_playlist_mirrored">
+        <item quantity="one">Updated from YouTube: %1$d track gone</item>
+        <item quantity="other">Updated from YouTube: %1$d tracks gone</item>
+    </plurals>
+    <string name="local_playlist_synced_now">just now</string>
 </resources>
