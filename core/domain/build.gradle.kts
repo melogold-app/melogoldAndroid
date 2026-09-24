@@ -17,3 +17,8 @@ dependencies {
     testImplementation(libs.kotlin.serialization.json)
     testImplementation(libs.sqlite.bundled.jvm)
 }
+
+tasks.test {
+    // Rule vectors shared with the server and the desktops (docs/spec/README.md)
+    systemProperty("melogold.specDir", rootProject.file("docs/spec").absolutePath)
+}

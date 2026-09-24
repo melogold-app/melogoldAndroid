@@ -13,6 +13,7 @@
 | Файл | Правило | Код | Владелец |
 |---|---|---|---|
 | `youtube-links.vectors.json` | разбор ссылок, §4.9 | `providers/innertube`, `links/YouTubeLinkParser` | R1.2 (первая версия), R2.3 |
+| `lyrics.vectors.json` | модель и форматы текстов (TTML, LRC, расширенный LRC), `lyrics.md` | `:core:domain`, `app.melogold.domain.lyrics` | R3.9 |
 | `title-cleaner.vectors.json` | очистка названий, §4.10.8 | `CD/lyrics/TitleCleaner` | R1.2 (первая версия), R2.2 |
 | `playlist-ops.vectors.json` | порядок в плейлисте и снимок `append`, §4.3, п. 8 | `CD/playlist/PlaylistOrder` | R2.2 |
 | `queue.vectors.json` | правила очереди, §4.10.4 | `CD/queue/QueueRules` | R2.2 |
