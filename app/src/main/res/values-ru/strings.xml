@@ -107,7 +107,6 @@
     <string name="error_piped_link">Произошла ошибка при привязке вашей учетной записи Piped. Попробуйте еще раз.</string>
     <string name="error_piped_instances_unavailable">Список экземпляров Piped в данный момент недоступен</string>
     <string name="error_bassboost_init">Произошла ошибка инициализации Bass Boost. Возможно, ваше устройство не поддерживает его. Попробуйте изменить уровень усиления басов или повторите попытку.</string>
-    <string name="error_pre_cache">Произошла ошибка при предварительном кэшировании. Попробуйте еще раз.</string>
     <string name="error_url">Не удается открыть URL %1$s</string>
     <string name="media_permission_declined">Доступ к медиа отклонен, предоставьте разрешения в настройках вашего устройства.</string>
     <string name="open_settings">Открыть настройки</string>
@@ -202,8 +201,6 @@
     <string name="lyrics_show_system_bars_description">Отключение этого параметра включает полноэкранный режим на уровне системы</string>
     <string name="pip">PIP</string>
     <string name="pip_description">Автоматически переходит в режим "Картинка в картинке" при переключении в фоновый режим</string>
-    <string name="cache">Кэш</string>
-    <string name="cache_description">Когда кэш заканчивается, ресурсы, которые не использовались дольше всего, очищаются</string>
     <string name="image_cache">Кэш изображений</string>
     <string name="max_size">Максимальный размер</string>
     <string name="format_cache_space_used">%1$s использовано</string>
@@ -323,7 +320,6 @@
     <string name="add_to_blacklist">Добавить в черный список</string>
     <string name="reset_blacklist">Сбросить черный список</string>
     <string name="blacklist_empty">Черный список пуст</string>
-    <string name="pre_cache">Предварительное кэширование</string>
     <string name="swipe_to_hide_song">Проведите, чтобы скрыть песню</string>
     <string name="swipe_to_hide_song_description">Когда вы проводите по песне влево, она удаляется из базы данных и кэша</string>
     <string name="swipe_to_hide_song_confirm">Подтвердить скрытие песни</string>

@@ -8,8 +8,10 @@ import app.melogold.android.models.Playlist
 import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongPlaylistMap
+import app.melogold.android.models.SongWithDownload
 import app.melogold.android.models.SongWithLastPlayed
 import app.melogold.android.models.SongWithPlayTime
+import app.melogold.android.models.TrackDownload
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -67,6 +69,11 @@ sealed interface PendingMutation {
     /** "Don't show this track"; the row of the track must exist. */
     data class Hide(val songId: String) : PendingMutation {
         override fun commit() = Database.hide(songId)
+    }
+
+    /** "Remove download": the bytes of [videoId] and its row. */
+    data class RemoveDownload(val videoId: String) : PendingMutation {
+        override fun commit() = Dependencies.application.container.downloads.remove(videoId)
     }
 }
 
@@ -213,6 +220,19 @@ fun Set<String>.applyingHidden(pending: List<PendingMutation>): Set<String> =
 fun List<Song>.applyingHidden(pending: List<PendingMutation>): List<Song> {
     val hidden = pending.ofKind<PendingMutation.Hide>().mapTo(mutableSetOf()) { it.songId }
     return if (hidden.isEmpty()) this else filterNot { it.id in hidden }
+}
+
+/** Downloads without those being removed. */
+fun Map<String, TrackDownload>.applyingDownloads(pending: List<PendingMutation>): Map<String, TrackDownload> {
+    val removed = pending.ofKind<PendingMutation.RemoveDownload>().mapTo(mutableSetOf()) { it.videoId }
+    return if (removed.isEmpty()) this else filterKeys { it !in removed }
+}
+
+/** Tracks with a download, without the downloads being removed. */
+@JvmName("applyingDownloadsToSongs")
+fun List<SongWithDownload>.applyingDownloads(pending: List<PendingMutation>): List<SongWithDownload> {
+    val removed = pending.ofKind<PendingMutation.RemoveDownload>().mapTo(mutableSetOf()) { it.videoId }
+    return if (removed.isEmpty()) this else filterNot { it.song.id in removed }
 }
 
 /** [this] with the waiting deletions applied by [apply], again whenever they change. */

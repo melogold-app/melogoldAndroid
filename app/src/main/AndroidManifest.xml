@@ -224,16 +224,6 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
 
-        <service
-            android:name=".service.PrecacheService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync">
-
-            <intent-filter>
-                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </service>
         <!-- endregion R2.5 -->
 
         <provider
@@ -250,6 +240,16 @@
 
         <!-- region R2.7 -->
         <!-- DownloadsService (REWRITE §4.7.2) -->
+        <service
+            android:name=".service.DownloadsService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync">
+
+            <intent-filter>
+                <action android:name="androidx.media3.exoplayer.downloadService.action.RESTART" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
         <!-- endregion R2.7 -->
     </application>
 </manifest>

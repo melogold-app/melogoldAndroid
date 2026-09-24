@@ -2310,6 +2310,16 @@ UNION SELECT id FROM Song WHERE likedAt IS NOT NULL AND EXISTS (SELECT 1 FROM Do
 - **Учёт:** `StorageUsage` = `downloadCache.cacheSpace` + `streamCache.cacheSpace` (до R3.10 — размер папки, §4.7.1) + размер кэша Coil + размер `artwork/`, и `StatFs(filesDir).availableBytes`.
 - **Проверка перед коллекцией:** оценка = Σ `Format.contentLength`, а где его нет — `durationMs × 20 КБ/с`. Если оценка больше «свободно − 500 МБ», диалог «Нужно ~2,1 ГБ, свободно 1,4 ГБ». Нехватка места во время загрузки → `waiting(storage)` и уведомление.
 
+#### 4.7.5a Реализация (0.1, шаг 1)
+
+- `A/data/downloads/Downloads.kt` (в `AppContainer`, создаётся на главном потоке в `MainApplication.onCreate`): свой `SimpleCache` в `filesDir/downloads` с `NoOpCacheEvictor`, `DownloadManager` со своим индексом (`DefaultDownloadIndex(provider, "melogold")`, старый индекс `PrecacheService` не трогается), 2 загрузки параллельно, 3 повтора; требования — сеть (или Wi‑Fi при `downloads.wifiOnly`) и место на диске.
+- Состояние зеркалится в Room (`Download`, v33): `onDownloadChanged` пишет по порядку через `transaction`, прогресс опрашивается раз в секунду, пока что-то качается. На старте `reconcile` сверяет индекс Media3 и Room: лишнее удаляется, недостающее запрашивается снова.
+- `ChunkedDataSource`: загрузка идёт кусками по 4 МиБ через `Range`, полный размер берётся из `Content-Range`. Одним запросом googlevideo отдавал около 35 КБ/с, кусками — около 640 КБ/с на эмуляторе. Оборванный кусок продолжается с того же места.
+- Плеер читает сначала кэш загрузок (без записи), потом стрим-кэш и сеть: скачанный трек играет без yt-dlp.
+- `DownloadsService` — `DownloadService` Media3 (`dataSync`), `PrecacheService` удалён. Разрешение на уведомления спрашивается при «Скачать» (`LocalAskNotifications`).
+- Интерфейс: пункт меню трека (Скачать / Отменить загрузку со статусом / Скачать снова / Удалить загрузку с «Отменить» через `PendingMutation.RemoveDownload`), значок в строке трека (`DownloadBadge`), экран «Скачанное» (`DownloadsScreen`: «Скачивается» с «Пауза · Продолжить», «Ошибки» с «Повторить все», скачанное с сортировкой `sort.downloads` и фильтром), число на плитке Библиотеки, группа «Загрузки» в «Хранилище» (место, «Очистить» с диалогом, «Только по Wi‑Fi»), Android Auto «Офлайн».
+- Дальше: коллекции (`DownloadCollection` и сверка по плану §4.7.3), «Сохранить файлом», обложки и тексты без сети (§4.7.6).
+
 #### 4.7.6 Без сети
 
 - На `completed` обложка 544px сохраняется в `artwork/`, Coil-интерцептор читает оттуда первым.

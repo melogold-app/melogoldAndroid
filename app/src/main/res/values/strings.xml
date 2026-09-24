@@ -107,7 +107,6 @@
     <string name="error_piped_link">There was an unknown error linking your Piped account. Please try again.</string>
     <string name="error_piped_instances_unavailable">Piped instance list currently unavailable</string>
     <string name="error_bassboost_init">There was an error initializing Bass Boost. Probably your device doesn\'t support it. Try changing the bass boost level or try again.</string>
-    <string name="error_pre_cache">An unknown error occurred during pre-caching. Please try again.</string>
     <string name="error_url">Can\'t open url %1$s</string>
     <string name="media_permission_declined">Permission declined, please grant media permissions in the settings of your device.</string>
     <string name="open_settings">Open settings</string>
@@ -205,8 +204,6 @@
     <string name="pip_description">Automatically switches to Picture-In-Picure mode when switching to the background</string>
     <string name="auto_open_player">Open player</string>
     <string name="auto_open_player_description">Automatically expand player when tapping on a song</string>
-    <string name="cache">Cache</string>
-    <string name="cache_description">When the cache runs out of space, the resources that haven\'t been accessed for the longest time are cleared</string>
     <string name="image_cache">Image cache</string>
     <string name="max_size">Max size</string>
     <string name="format_cache_space_used">%1$s used</string>
@@ -330,7 +327,6 @@
     <string name="add_to_blacklist">Add to blacklist</string>
     <string name="reset_blacklist">Reset blacklist</string>
     <string name="blacklist_empty">Blacklist empty</string>
-    <string name="pre_cache">Pre cache</string>
     <string name="swipe_to_hide_song">Swipe to hide song</string>
     <string name="swipe_to_hide_song_description">When you swipe a song to the left, it gets removed from the database and cache</string>
     <string name="swipe_to_hide_song_confirm">Confirm swipe to hide song</string>

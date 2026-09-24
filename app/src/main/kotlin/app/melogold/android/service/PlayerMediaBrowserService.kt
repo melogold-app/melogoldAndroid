@@ -19,7 +19,6 @@ import app.melogold.android.R
 import app.melogold.android.models.Album
 import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.models.Song
-import app.melogold.android.models.SongWithContentLength
 import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.forcePlayAtIndex
@@ -281,10 +280,8 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
 
                     MediaId.OFFLINE ->
                         Database
-                            .songsWithContentLength()
+                            .downloadedSongs()
                             .first()
-                            .filter { binder.isCached(it) }
-                            .map(SongWithContentLength::song)
                             .shuffled()
 
                     MediaId.TOP ->

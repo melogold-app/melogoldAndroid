@@ -65,7 +65,7 @@ enum class SettingsPage(
 ) {
     Appearance(R.string.appearance, R.drawable.ms_palette),
     Player(R.string.player, R.drawable.ms_play_arrow),
-    Cache(R.string.cache, R.drawable.ms_cached),
+    Cache(R.string.settings_storage, R.drawable.ms_cached),
     Database(R.string.database, R.drawable.ms_backup),
     Other(R.string.other, R.drawable.ms_tune),
     About(R.string.about, R.drawable.ms_info)

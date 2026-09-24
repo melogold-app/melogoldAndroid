@@ -47,6 +47,7 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.NoOpCacheEvictor
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -62,6 +63,8 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import app.melogold.android.data.repo.applyingHidden
 import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.Database
+import app.melogold.android.MainApplication
+import app.melogold.android.data.downloads.ChunkedDataSource
 import app.melogold.android.Dependencies
 import app.melogold.android.MainActivity
 import app.melogold.android.R
@@ -69,7 +72,6 @@ import app.melogold.android.models.Event
 import app.melogold.android.models.Format
 import app.melogold.android.models.QueuedMediaItem
 import app.melogold.android.models.Song
-import app.melogold.android.models.SongWithContentLength
 import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.PlayerPreferences
@@ -970,15 +972,22 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     private fun createMediaSourceFactory() = DefaultMediaSourceFactory(
         /* dataSourceFactory = */
-        createYouTubeDataSourceResolverFactory(
-            findMediaItem = { videoId ->
-                withContext(Dispatchers.Main) {
-                    player.findNextMediaItemById(videoId)
-                }
-            },
-            context = applicationContext,
-            cache = cache
-        ),
+        // Downloads first, read-only: a downloaded track plays without a network (REWRITE §4.7.2)
+        CacheDataSource.Factory()
+            .setCache((application as MainApplication).container.downloads.cache)
+            .setCacheWriteDataSinkFactory(null)
+            .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+            .setUpstreamDataSourceFactory(
+                createYouTubeDataSourceResolverFactory(
+                    findMediaItem = { videoId ->
+                        withContext(Dispatchers.Main) {
+                            player.findNextMediaItemById(videoId)
+                        }
+                    },
+                    context = applicationContext,
+                    cache = cache
+                )
+            ),
         /* extractorsFactory = */
         DefaultExtractorsFactory()
     ).setLoadErrorHandlingPolicy(
@@ -1099,8 +1108,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             radio = null
         }
 
-        fun isCached(song: SongWithContentLength) =
-            song.contentLength?.let { cache.isCached(song.song.id, 0L, it) } ?: false
 
         fun playFromSearch(query: String) {
             coroutineScope.launch {
@@ -1217,19 +1224,25 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             SimpleCache(directory, cacheEvictor, createDatabaseProvider(context))
         }
 
+        /**
+         * Resolves a video id into its stream. With [cache], what it reads is cached there; without
+         * one (downloads, which have a cache of their own) it reads the network only.
+         */
         @Suppress("CyclomaticComplexMethod")
         fun createYouTubeDataSourceResolverFactory(
             context: Context,
-            cache: Cache,
+            cache: Cache?,
             chunkLength: Long? = DEFAULT_CHUNK_LENGTH,
             findMediaItem: suspend (videoId: String) -> MediaItem? = { null },
             uriCache: UriCache<String, Long?> = UriCache()
         ): DataSource.Factory = ResolvingDataSource.Factory(
-            ConditionalCacheDataSourceFactory(
-                cacheDataSourceFactory = cache.asDataSource,
-                upstreamDataSourceFactory = context.defaultDataSource,
-                shouldCache = { !it.isLocal }
-            )
+            cache?.let {
+                ConditionalCacheDataSourceFactory(
+                    cacheDataSourceFactory = it.asDataSource,
+                    upstreamDataSourceFactory = context.defaultDataSource,
+                    shouldCache = { spec -> !spec.isLocal }
+                )
+            } ?: ChunkedDataSource.Factory(context.defaultDataSource)
         ) { dataSpec ->
             val mediaId = dataSpec.key?.removePrefix("https://youtube.com/watch?v=")
                 ?: error("A key must be set")
@@ -1247,7 +1260,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
             if (
                 dataSpec.isLocal || (
-                    chunkLength != null && cache.isCached(
+                    chunkLength != null && cache != null && cache.isCached(
                         /* key = */
                         mediaId,
                         /* position = */

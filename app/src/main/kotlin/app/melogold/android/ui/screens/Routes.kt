@@ -1,6 +1,6 @@
 package app.melogold.android.ui.screens
 
-import app.melogold.android.ui.screens.library.collections.CachedScreen
+import app.melogold.android.ui.screens.library.collections.DownloadsScreen
 import app.melogold.android.ui.screens.library.collections.FavoritesScreen
 import app.melogold.android.ui.screens.library.collections.HistoryMode
 import app.melogold.android.ui.screens.library.collections.HistoryScreen
@@ -81,7 +81,7 @@ fun RouteHandlerScope.GlobalRoutes() {
     builtInPlaylistRoute { builtInPlaylist ->
         when (builtInPlaylist) {
             BuiltInPlaylist.Favorites -> FavoritesScreen()
-            BuiltInPlaylist.Offline -> CachedScreen()
+            BuiltInPlaylist.Offline -> DownloadsScreen()
             BuiltInPlaylist.History -> HistoryScreen(initialMode = HistoryMode.Recent)
             BuiltInPlaylist.Top -> HistoryScreen(initialMode = HistoryMode.MostPlayed)
         }

@@ -57,6 +57,12 @@ import app.melogold.android.models.SongArtistMap
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.YtLinkMode
 import app.melogold.android.models.SongWithContentLength
+import app.melogold.android.models.SongWithDownload
+import app.melogold.android.models.TrackDownload
+import app.melogold.android.models.DownloadCollection
+import app.melogold.android.models.DownloadFailure
+import app.melogold.android.models.DownloadState
+import app.melogold.android.models.DownloadWaitReason
 import app.melogold.android.models.SongWithLastPlayed
 import app.melogold.android.models.SongWithPlayTime
 import app.melogold.android.models.SortedSongPlaylistMap
@@ -917,6 +923,52 @@ interface DatabaseAccessor {
     @Upsert
     fun upsert(lyrics: Lyrics)
 
+    // region Downloads (REWRITE §4.7)
+    @Upsert
+    fun upsert(download: TrackDownload)
+
+    @Query("SELECT * FROM Download WHERE videoId = :videoId")
+    fun download(videoId: String): TrackDownload?
+
+    @Query("SELECT * FROM Download")
+    fun downloads(): Flow<List<TrackDownload>>
+
+    @Query("SELECT * FROM Download")
+    fun allDownloads(): List<TrackDownload>
+
+    /** The tracks with a download, newest request first; "Downloads" sorts and splits them. */
+    @Transaction
+    @Query("SELECT Song.* FROM Song JOIN Download ON Download.videoId = Song.id ORDER BY Download.requestedAt DESC")
+    fun songsWithDownloads(): Flow<List<SongWithDownload>>
+
+    /** The completed downloads, newest first: they play without a network. */
+    @Query(
+        """
+        SELECT Song.* FROM Song JOIN Download ON Download.videoId = Song.id
+        WHERE Download.state = 'Completed'
+        ORDER BY Download.completedAt DESC
+        """
+    )
+    fun downloadedSongs(): Flow<List<Song>>
+
+    @Query(
+        """
+        UPDATE Download SET bytesDownloaded = :bytes, contentLength = COALESCE(:contentLength, contentLength)
+        WHERE videoId = :videoId AND state = 'Downloading'
+        """
+    )
+    fun updateDownloadProgress(videoId: String, bytes: Long, contentLength: Long?)
+
+    @Query("SELECT * FROM Format WHERE songId = :songId")
+    fun formatOf(songId: String): Format?
+
+    @Query("DELETE FROM Download WHERE videoId = :videoId")
+    fun deleteDownload(videoId: String)
+
+    @Query("DELETE FROM Download")
+    fun deleteAllDownloads()
+    // endregion Downloads
+
     @Upsert
     fun upsert(album: Album, songAlbumMaps: List<SongAlbumMap>)
 
@@ -957,10 +1009,12 @@ interface DatabaseAccessor {
         Format::class,
         Event::class,
         Lyrics::class,
-        PipedSession::class
+        PipedSession::class,
+        TrackDownload::class,
+        DownloadCollection::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 32,
+    version = 33,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -989,7 +1043,8 @@ interface DatabaseAccessor {
         AutoMigration(from = 28, to = 29),
         AutoMigration(from = 29, to = 30),
         AutoMigration(from = 30, to = 31),
-        AutoMigration(from = 31, to = 32)
+        AutoMigration(from = 31, to = 32),
+        AutoMigration(from = 32, to = 33)
     ]
 )
 @TypeConverters(Converters::class)
@@ -1271,6 +1326,27 @@ object Converters {
 
     @TypeConverter
     fun ytLinkModeToString(mode: YtLinkMode?) = mode?.name
+
+    @TypeConverter
+    fun downloadStateToString(state: DownloadState) = state.name
+
+    /** An unknown state (written by a newer version) reads as queued: the download is checked again. */
+    @TypeConverter
+    fun stringToDownloadState(name: String) = DownloadState.entries.firstOrNull { it.name == name } ?: DownloadState.Queued
+
+    @TypeConverter
+    fun downloadWaitReasonToString(reason: DownloadWaitReason?) = reason?.name
+
+    @TypeConverter
+    fun stringToDownloadWaitReason(name: String?) = name?.let { value -> DownloadWaitReason.entries.firstOrNull { it.name == value } }
+
+    @TypeConverter
+    fun downloadFailureToString(failure: DownloadFailure?) = failure?.name
+
+    @TypeConverter
+    fun stringToDownloadFailure(name: String?) = name?.let { value ->
+        DownloadFailure.entries.firstOrNull { it.name == value } ?: DownloadFailure.Unknown
+    }
 
     /** An unknown mode (written by a newer version) reads as no link. */
     @TypeConverter

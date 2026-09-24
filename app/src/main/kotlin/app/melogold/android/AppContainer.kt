@@ -3,6 +3,7 @@ package app.melogold.android
 import android.app.Application
 import androidx.compose.runtime.staticCompositionLocalOf
 import app.melogold.android.data.NetworkMonitor
+import app.melogold.android.data.downloads.Downloads
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
@@ -22,6 +23,9 @@ class AppContainer(private val application: Application) {
 
     /** Deletions waiting for "Undo" (REWRITE §3.11.9), written in [appScope]. */
     val pendingMutations by lazy { PendingMutationStore(scope = appScope) }
+
+    /** Real downloads (REWRITE §4.7); first reached on the main thread (see [MainApplication]). */
+    val downloads by lazy { Downloads(application, appScope) }
 
     val json = Json {
         ignoreUnknownKeys = true

@@ -33,6 +33,4 @@
     <string name="history_empty">Listen to something — your history will show up here</string>
     <string name="history_period_empty">No plays in this period</string>
 
-    <string name="cached_subtitle">Tracks from the cache — the system may delete them</string>
-    <string name="cached_empty">Tracks played in full stay in the cache and play without a network</string>
 </resources>

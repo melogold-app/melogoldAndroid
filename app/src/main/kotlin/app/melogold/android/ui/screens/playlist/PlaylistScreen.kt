@@ -271,6 +271,7 @@ private fun PlaylistContent(
                 itemsIndexed(items = songs.items, key = { _, song -> song.key }) { index, song ->
                     TrackRow(
                         title = song.info?.name.orEmpty(),
+                        videoId = song.key,
                         subtitle = song.authors?.joinToString("") { it.name.orEmpty() },
                         artworkUrl = song.thumbnail?.url,
                         onClick = { binder?.let { model.play(it, index = index) } },

@@ -157,7 +157,7 @@ object ServiceNotifications : NotificationChannels() {
     )
 
     val download by channel(
-        description = R.string.pre_cache,
+        description = R.string.downloads_channel,
         importance = NotificationManagerCompat.IMPORTANCE_LOW,
         singleNotification = true
     )

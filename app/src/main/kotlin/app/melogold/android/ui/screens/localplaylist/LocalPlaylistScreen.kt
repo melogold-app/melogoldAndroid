@@ -387,6 +387,7 @@ private fun LocalPlaylistContent(
                     ) {
                         TrackRow(
                             title = song.title,
+                            videoId = song.id,
                             subtitle = song.artistsText,
                             artworkUrl = song.thumbnailUrl,
                             onClick = { play(rows, index) },

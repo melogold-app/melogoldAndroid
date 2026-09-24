@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Downloads (REWRITE §3.2.3, §4.7) -->
+<resources>
+    <string name="downloads_channel">Загрузки</string>
+
+    <!-- The track menu -->
+    <string name="menu_download_cancel">Отменить загрузку</string>
+    <string name="menu_download_remove">Удалить загрузку</string>
+    <string name="menu_download_retry">Скачать снова</string>
+    <string name="download_state_downloading">Скачивается · %1$d %%</string>
+    <string name="download_state_starting">Скачивается</string>
+    <string name="download_state_queued">В очереди</string>
+    <string name="download_state_paused">На паузе</string>
+    <string name="download_wait_wifi">Ждёт Wi‑Fi</string>
+    <string name="download_wait_network">Ждёт сеть</string>
+    <string name="download_wait_storage">Не хватает места</string>
+    <string name="download_failure_unavailable">Недоступно для загрузки</string>
+    <string name="download_failure_network">Сбой сети</string>
+    <string name="download_failure_storage">Нет места</string>
+    <string name="download_failure_unknown">Не удалось скачать</string>
+    <string name="download_completed">Скачано</string>
+    <string name="download_removed">Загрузка удалена</string>
+
+    <!-- The Downloads screen -->
+    <string name="downloads_active">Скачивается (%1$d)</string>
+    <string name="downloads_failed">Ошибки (%1$d)</string>
+    <string name="downloads_retry_all">Повторить все</string>
+    <string name="downloads_pause">Пауза</string>
+    <string name="downloads_resume">Продолжить</string>
+    <string name="downloads_empty">Скачайте треки — они будут играть без сети. ⋮ › Скачать</string>
+    <string name="sort_date_downloaded">Дата загрузки</string>
+    <string name="sort_size">Размер</string>
+
+    <!-- Settings -->
+    <string name="settings_storage">Хранилище</string>
+    <string name="settings_storage_description">Загрузки хранятся, пока вы их не удалите. Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.</string>
+    <string name="settings_downloads">Загрузки</string>
+    <string name="settings_downloads_wifi_only">Только по Wi‑Fi</string>
+    <string name="settings_downloads_wifi_only_description">Загрузки ждут Wi‑Fi, мобильная сеть не тратится</string>
+    <string name="settings_downloads_space">Место</string>
+    <string name="settings_downloads_delete_all">Удалить все загрузки</string>
+    <string name="settings_downloads_delete_all_title">Удалить все загрузки?</string>
+    <string name="settings_downloads_delete_all_text">%1$s, %2$s. Треки останутся в библиотеке, но без сети играть не будут.</string>
+    <string name="settings_downloads_delete">Удалить</string>
+</resources>

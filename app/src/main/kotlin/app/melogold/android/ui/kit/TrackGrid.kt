@@ -58,6 +58,7 @@ fun TrackGrid(
         itemsIndexed(items = songs, key = { _, song -> song.key }) { index, song ->
             TrackRow(
                 title = song.info?.name.orEmpty(),
+                videoId = song.key,
                 subtitle = song.authors?.joinToString { it.name.orEmpty() },
                 artworkUrl = song.thumbnail?.url,
                 number = if (numbered) index + 1 else null,

@@ -355,6 +355,7 @@ private fun ArtistContent(
                     itemsIndexed(items = shown, key = { _, song -> "library_${song.id}" }) { index, song ->
                         TrackRow(
                             title = song.title,
+                            videoId = song.id,
                             subtitle = song.artistsText,
                             artworkUrl = song.thumbnailUrl,
                             onClick = { play(favorites.map(Song::asMediaItem), index) },
@@ -429,6 +430,7 @@ private fun LazyListScope.pageSections(
         itemsIndexed(items = items.take(TOP_SONGS), key = { _, song -> "popular_${song.key}" }) { index, song ->
             TrackRow(
                 title = song.info?.name.orEmpty(),
+                videoId = song.key,
                 subtitle = song.album?.name ?: song.authors?.joinToString("") { it.name.orEmpty() },
                 artworkUrl = song.thumbnail?.url,
                 number = index + 1,

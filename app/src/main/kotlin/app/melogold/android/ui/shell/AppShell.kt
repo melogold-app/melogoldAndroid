@@ -1,7 +1,6 @@
 package app.melogold.android.ui.shell
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -15,11 +14,9 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +33,6 @@ import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import app.melogold.android.LocalPlayerAwareWindowInsets
-import app.melogold.android.service.downloadState
 import app.melogold.android.ui.components.BottomSheetMenu
 import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.screens.player.Player
@@ -104,7 +100,6 @@ fun AppShell(
 ) {
     val density = LocalDensity.current
     val insets = LocalPlayerAwareWindowInsets.current
-    val isDownloading by downloadState.collectAsState()
     val navigationBarsInsets = WindowInsets.navigationBars
     var railWidth by remember { mutableStateOf(MainNavigationRailWidth) }
 
@@ -119,17 +114,6 @@ fun AppShell(
             .fillMaxSize()
             .padding(start = if (layout.useRail) railWidth else 0.dp)
     )
-
-    AnimatedVisibility(
-        visible = isDownloading,
-        modifier = Modifier.padding(insets.asPaddingValues())
-    ) {
-        LinearProgressIndicator(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-        )
-    }
 
     Player(
         layoutState = playerSheetState,

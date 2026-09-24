@@ -57,7 +57,8 @@ fun TrackRow(
     explicit: Boolean = false,
     duration: String? = null,
     leading: (@Composable () -> Unit)? = null,
-    accessibilityActions: List<CustomAccessibilityAction> = emptyList()
+    accessibilityActions: List<CustomAccessibilityAction> = emptyList(),
+    videoId: String? = null
 ) {
     val playLabel = stringResource(R.string.kit_play)
     val menuLabel = stringResource(R.string.kit_menu)
@@ -142,6 +143,9 @@ fun TrackRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
+
+        // Downloaded, downloading or failed (REWRITE §3.11.11)
+        if (videoId != null) DownloadBadge(videoId = videoId)
 
         if (explicit) Icon(
             painter = painterResource(R.drawable.explicit),

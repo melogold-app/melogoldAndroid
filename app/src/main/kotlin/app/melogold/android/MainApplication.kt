@@ -63,6 +63,8 @@ import app.melogold.android.service.ServiceNotifications
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.shell.AppShell
+import app.melogold.android.ui.shell.LocalAskNotifications
+import app.melogold.android.ui.shell.rememberNotificationPermission
 import app.melogold.android.ui.shell.KeyboardShortcuts
 import app.melogold.android.ui.shell.LinkHandler
 import app.melogold.android.ui.shell.LocalAppSnackbar
@@ -203,7 +205,8 @@ class MainActivity : ComponentActivity() {
                     LocalPlayerServiceBinder provides vm.binder,
                     LocalLayoutDirection provides LayoutDirection.Ltr,
                     LocalPersistMap provides Dependencies.application.persistMap,
-                    LocalAppContainer provides Dependencies.application.container
+                    LocalAppContainer provides Dependencies.application.container,
+                    LocalAskNotifications provides rememberNotificationPermission()
                 ) {
                     content()
                 }
@@ -409,6 +412,9 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
         super.onCreate()
 
         ServiceNotifications.createAll()
+
+        // The download manager lives on the thread that creates it: the main one
+        container.downloads
 
         // Deletions waiting for "Undo" reach Room before the system may kill the app in the background
         ProcessLifecycleOwner.get().lifecycle.addObserver(

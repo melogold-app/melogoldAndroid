@@ -1,67 +1,15 @@
 package app.melogold.android.utils
 
 import androidx.annotation.OptIn
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.fastAll
-import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.cache.CacheDataSource
-import app.melogold.android.Database
-import app.melogold.android.LocalPlayerServiceBinder
-import app.melogold.android.R
-import app.melogold.android.models.Format
-import app.melogold.android.service.LOCAL_KEY_PREFIX
-import app.melogold.android.service.PlayerService
-import app.melogold.android.service.PrecacheService
-import app.melogold.android.service.downloadState
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.flow.distinctUntilChanged
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
-
-@OptIn(UnstableApi::class)
-@Composable
-fun isCached(
-    mediaId: String,
-    key: Any? = Unit,
-    binder: PlayerService.Binder? = LocalPlayerServiceBinder.current
-): Boolean {
-    if (mediaId.startsWith(LOCAL_KEY_PREFIX)) return true
-
-    var format: Format? by remember { mutableStateOf(null) }
-
-    LaunchedEffect(mediaId, key) {
-        Database
-            .format(mediaId)
-            .distinctUntilChanged()
-            .collect { format = it }
-    }
-
-    return remember(mediaId, binder, format, key) {
-        format?.contentLength?.let { len ->
-            binder?.cache?.isCached(mediaId, 0, len)
-        } ?: false
-    }
-}
 
 @OptIn(UnstableApi::class)
 class ConditionalCacheDataSourceFactory(

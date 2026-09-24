@@ -2,6 +2,8 @@
 
 package app.melogold.android.ui.screens.library
 
+import app.melogold.android.LocalAppContainer
+import app.melogold.android.models.DownloadState
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -185,9 +187,13 @@ private fun CollectionTiles(
         onClick = { onOpen(BuiltInPlaylist.Favorites) },
         modifier = Modifier.weight(1f)
     )
+    // The downloaded tracks; the count moves as downloads complete
+    val downloads by LocalAppContainer.current.downloads.visible.collectAsState()
+    val downloaded = downloads.values.count { it.state == DownloadState.Completed }
+
     CollectionTile(
         title = stringResource(R.string.library_downloads),
-        detail = null,
+        detail = downloaded.takeIf { it > 0 }?.toString(),
         icon = R.drawable.ms_download,
         shape = IconShape.Cookie9Sided,
         containerColor = MaterialTheme.colorScheme.tertiaryContainer,

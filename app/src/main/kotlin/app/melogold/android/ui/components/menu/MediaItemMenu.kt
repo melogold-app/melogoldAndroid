@@ -18,6 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.media3.common.MediaItem
+import app.melogold.android.LocalAppContainer
+import app.melogold.android.models.DownloadFailure
+import app.melogold.android.models.DownloadState
+import app.melogold.android.models.DownloadWaitReason
+import app.melogold.android.models.TrackDownload
+import app.melogold.android.ui.kit.rememberDownload
+import app.melogold.android.ui.shell.LocalAskNotifications
 import app.melogold.android.data.repo.PendingMutation
 import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
@@ -28,7 +35,6 @@ import app.melogold.android.data.repo.trackLinks
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.query
-import app.melogold.android.service.PrecacheService
 import app.melogold.android.service.isLocal
 import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
@@ -41,7 +47,6 @@ import app.melogold.android.utils.addNext
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.enqueue
 import app.melogold.android.utils.forcePlay
-import app.melogold.android.utils.isCached
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import kotlinx.coroutines.Dispatchers
 
@@ -218,15 +223,7 @@ fun TrackMenuEntries(
         }
     )
 
-    if (!isLocal && !isCached(songId)) MenuEntry(
-        icon = R.drawable.ms_download,
-        text = stringResource(R.string.menu_download),
-        onClick = entry {
-            runCatching {
-                PrecacheService.scheduleCache(context = context.applicationContext, mediaItem = mediaItem)
-            }.exceptionOrNull()?.printStackTrace()
-        }
-    )
+    if (!isLocal) DownloadEntry(mediaItem = mediaItem, onDismiss = onDismiss)
 
     if (!isLocal) {
         MenuEntry(
@@ -338,6 +335,85 @@ fun TrackMenuEntries(
             onClick = entry(it)
         )
     }
+}
+
+/**
+ * The download of the track (REWRITE §3.10.5): "Download"; while it goes "Cancel download" with how
+ * far it got; "Download again" after a failure; "Remove download", with "Undo", once it is done.
+ */
+@Composable
+private fun DownloadEntry(mediaItem: MediaItem, onDismiss: () -> Unit) {
+    val downloads = LocalAppContainer.current.downloads
+    val snackbar = LocalAppSnackbar.current
+    val askNotifications = LocalAskNotifications.current
+    val removedMessage = stringResource(R.string.download_removed)
+    val videoId = mediaItem.mediaId
+    val download = rememberDownload(videoId)
+
+    fun entry(action: () -> Unit): () -> Unit = {
+        onDismiss()
+        action()
+    }
+
+    when (download?.state) {
+        null -> MenuEntry(
+            icon = R.drawable.ms_download,
+            text = stringResource(R.string.menu_download),
+            onClick = entry {
+                askNotifications()
+                downloads.download(mediaItem)
+            }
+        )
+
+        DownloadState.Completed -> MenuEntry(
+            icon = R.drawable.ms_delete,
+            text = stringResource(R.string.menu_download_remove),
+            onClick = entry { snackbar.undoable(removedMessage, PendingMutation.RemoveDownload(videoId)) }
+        )
+
+        DownloadState.Failed -> MenuEntry(
+            icon = R.drawable.ms_refresh,
+            text = stringResource(R.string.menu_download_retry),
+            secondaryText = downloadStatus(download),
+            onClick = entry { downloads.retry(videoId) }
+        )
+
+        else -> MenuEntry(
+            icon = R.drawable.ms_close,
+            text = stringResource(R.string.menu_download_cancel),
+            secondaryText = downloadStatus(download),
+            onClick = entry { downloads.remove(videoId) }
+        )
+    }
+}
+
+/** How a download stands, in words: "Downloading · 45 %", "Waiting for Wi‑Fi", "Network error"… */
+@Composable
+fun downloadStatus(download: TrackDownload): String = when (download.state) {
+    DownloadState.Downloading -> download.progress
+        ?.let { stringResource(R.string.download_state_downloading, (it * 100).toInt()) }
+        ?: stringResource(R.string.download_state_starting)
+
+    DownloadState.Queued -> stringResource(R.string.download_state_queued)
+    DownloadState.Paused -> stringResource(R.string.download_state_paused)
+    DownloadState.Completed -> stringResource(R.string.download_completed)
+
+    DownloadState.Waiting -> stringResource(
+        when (download.waitReason) {
+            DownloadWaitReason.Wifi -> R.string.download_wait_wifi
+            DownloadWaitReason.Storage -> R.string.download_wait_storage
+            else -> R.string.download_wait_network
+        }
+    )
+
+    DownloadState.Failed -> stringResource(
+        when (download.failureCode) {
+            DownloadFailure.Unavailable -> R.string.download_failure_unavailable
+            DownloadFailure.Network -> R.string.download_failure_network
+            DownloadFailure.StorageFull -> R.string.download_failure_storage
+            else -> R.string.download_failure_unknown
+        }
+    )
 }
 
 /** Shares the link of the track: YouTube Music for music, YouTube for videos (FEATURES "Поделиться"). */

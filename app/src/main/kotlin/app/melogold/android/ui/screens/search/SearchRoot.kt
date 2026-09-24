@@ -504,6 +504,7 @@ private fun FocusedSearch(
                     items(items = songs, key = { "song/${it.id}" }) { song ->
                         TrackRow(
                             title = song.title,
+                            videoId = song.id,
                             subtitle = song.artistsText,
                             artworkUrl = song.thumbnailUrl,
                             duration = song.durationText,

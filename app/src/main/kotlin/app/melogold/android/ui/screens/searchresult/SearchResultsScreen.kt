@@ -506,6 +506,7 @@ private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
     when (item) {
         is Innertube.SongItem -> TrackRow(
             title = item.info?.name.orEmpty(),
+            videoId = item.key,
             subtitle = item.authors?.joinToString { it.name.orEmpty() },
             artworkUrl = item.thumbnail?.url,
             explicit = item.explicit,

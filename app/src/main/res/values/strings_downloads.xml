@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Downloads (REWRITE §3.2.3, §4.7) -->
+<resources>
+    <string name="downloads_channel">Downloads</string>
+
+    <!-- The track menu -->
+    <string name="menu_download_cancel">Cancel download</string>
+    <string name="menu_download_remove">Remove download</string>
+    <string name="menu_download_retry">Download again</string>
+    <string name="download_state_downloading">Downloading · %1$d%%</string>
+    <string name="download_state_starting">Downloading</string>
+    <string name="download_state_queued">Queued</string>
+    <string name="download_state_paused">Paused</string>
+    <string name="download_wait_wifi">Waiting for Wi‑Fi</string>
+    <string name="download_wait_network">Waiting for a network</string>
+    <string name="download_wait_storage">Not enough space</string>
+    <string name="download_failure_unavailable">Can\'t be downloaded</string>
+    <string name="download_failure_network">Network error</string>
+    <string name="download_failure_storage">No space left</string>
+    <string name="download_failure_unknown">Couldn\'t download</string>
+    <string name="download_completed">Downloaded</string>
+    <string name="download_removed">Download removed</string>
+
+    <!-- The Downloads screen -->
+    <string name="downloads_active">Downloading (%1$d)</string>
+    <string name="downloads_failed">Failed (%1$d)</string>
+    <string name="downloads_retry_all">Retry all</string>
+    <string name="downloads_pause">Pause</string>
+    <string name="downloads_resume">Resume</string>
+    <string name="downloads_empty">Download tracks to play them without a network. ⋮ › Download</string>
+    <string name="sort_date_downloaded">Date downloaded</string>
+    <string name="sort_size">Size</string>
+
+    <!-- Settings -->
+    <string name="settings_storage">Storage</string>
+    <string name="settings_storage_description">Downloads stay until you remove them. Caches free themselves: what went unused the longest goes first.</string>
+    <string name="settings_downloads">Downloads</string>
+    <string name="settings_downloads_wifi_only">Only over Wi‑Fi</string>
+    <string name="settings_downloads_wifi_only_description">Downloads wait for Wi‑Fi and don\'t use mobile data</string>
+    <string name="settings_downloads_space">Space</string>
+    <string name="settings_downloads_delete_all">Remove all downloads</string>
+    <string name="settings_downloads_delete_all_title">Remove all downloads?</string>
+    <string name="settings_downloads_delete_all_text">%1$s, %2$s. The tracks stay in the library but won\'t play without a network.</string>
+    <string name="settings_downloads_delete">Remove</string>
+</resources>

@@ -13,4 +13,7 @@ object DataPreferences : GlobalPreferencesHolder() {
     var pauseHistory by boolean(false)
     var pausePlaytime by boolean(false)
     var pauseSearchHistory by boolean(false)
+
+    /** Downloads wait for Wi-Fi (REWRITE §3.5.6). */
+    var downloadsWifiOnly by boolean(false, name = "downloads.wifiOnly")
 }

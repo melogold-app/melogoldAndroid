@@ -300,6 +300,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.recentItems(
                 items(items = group, key = { it.song.id }) { (song, lastPlayed) ->
                     TrackRow(
                         title = song.title,
+                        videoId = song.id,
                         subtitle = song.artistsText,
                         artworkUrl = song.thumbnailUrl,
                         onClick = { onPlay(song) },
@@ -331,6 +332,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
         else -> itemsIndexed(items = songs, key = { _, it -> "top_${it.song.id}" }) { index, (song, playTime) ->
             TrackRow(
                 title = song.title,
+                videoId = song.id,
                 subtitle = listOfNotNull(song.artistsText, formatListeningTime(playTime)).joinToString(" · "),
                 artworkUrl = song.thumbnailUrl,
                 onClick = { onPlay(songs, index) },

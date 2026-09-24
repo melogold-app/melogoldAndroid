@@ -32,6 +32,4 @@
     <string name="history_empty">Послушайте что-нибудь — история появится здесь</string>
     <string name="history_period_empty">За этот период прослушиваний нет</string>
 
-    <string name="cached_subtitle">Треки из кэша — система может их удалить</string>
-    <string name="cached_empty">Треки, прослушанные целиком, остаются в кэше и играют без сети</string>
 </resources>

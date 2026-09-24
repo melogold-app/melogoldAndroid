@@ -36,7 +36,6 @@ import app.melogold.android.preferences.ListSort
 import app.melogold.android.preferences.SortPreferences
 import app.melogold.android.preferences.toListSort
 import app.melogold.android.models.Song
-import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionFilterField
@@ -61,7 +60,6 @@ import app.melogold.core.data.enums.SortOrder
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 private const val KEEP_WHILE_HIDDEN_MS = 5_000L
@@ -81,14 +79,6 @@ private val DefaultTrackSort = ListSort(TrackSort.DateAdded, descending = true)
 class FavoritesModel : ScreenModel() {
     val songs: StateFlow<List<Song>?> = Database
         .favorites(SongSortBy.DateAdded, SortOrder.Descending)
-        .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
-}
-
-/** Tracks the cache holds in full, newest first. */
-class CachedModel(binder: PlayerService.Binder?) : ScreenModel() {
-    val songs: StateFlow<List<Song>?> = Database
-        .songsWithContentLength(SongSortBy.DateAdded, SortOrder.Descending)
-        .map { songs -> songs.filter { binder?.isCached(it) == true }.map { it.song } }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 }
 
@@ -136,32 +126,6 @@ fun ArtistFavoritesScreen(artistId: String, name: String) = RouteHandler {
             sort = SortPreferences.favorites.toListSort(DefaultTrackSort),
             onSort = { SortPreferences.favorites = it.encode() },
             note = R.string.artist_in_library_note,
-            onBack = pop
-        )
-    }
-}
-
-/**
- * Tracks from the cache, the "Downloads" of the Library until real downloads (REDESIGN §2.3):
- * the subtitle says the system may delete them.
- */
-@Route
-@Composable
-fun CachedScreen() = RouteHandler {
-    GlobalRoutes()
-
-    Content {
-        val binder = LocalPlayerServiceBinder.current
-        val model = rememberScreenModel("library/cached") { CachedModel(binder) }
-        val songs by model.songs.collectAsState()
-
-        SongCollection(
-            title = stringResource(R.string.library_downloads),
-            songs = songs,
-            empty = R.string.cached_empty,
-            sort = SortPreferences.downloads.toListSort(DefaultTrackSort),
-            onSort = { SortPreferences.downloads = it.encode() },
-            note = R.string.cached_subtitle,
             onBack = pop
         )
     }
@@ -283,6 +247,7 @@ private fun SongCollection(
                 itemsIndexed(items = shown, key = { _, song -> song.id }) { index, song ->
                     TrackRow(
                         title = song.title,
+                        videoId = song.id,
                         subtitle = song.artistsText,
                         artworkUrl = song.thumbnailUrl,
                         onClick = { play(shown, index) },

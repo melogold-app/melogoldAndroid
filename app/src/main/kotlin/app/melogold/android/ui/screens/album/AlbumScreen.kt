@@ -236,6 +236,7 @@ private fun AlbumContent(
                 itemsIndexed(items = songs, key = { _, song -> song.id }) { index, song ->
                     TrackRow(
                         title = song.title,
+                        videoId = song.id,
                         // The album's artists go without saying; features don't
                         subtitle = song.artistsText?.takeIf { it != album.authorsText },
                         artworkUrl = null,
