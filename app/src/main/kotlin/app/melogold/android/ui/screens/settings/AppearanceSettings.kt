@@ -77,13 +77,6 @@ fun AppearanceSettings() = with(AppearancePreferences) {
                 isChecked = PlayerPreferences.lyricsKeepScreenAwake,
                 onCheckedChange = { PlayerPreferences.lyricsKeepScreenAwake = it }
             )
-
-            SwitchSettingsEntry(
-                title = stringResource(R.string.pip),
-                text = stringResource(R.string.pip_description),
-                isChecked = autoPip,
-                onCheckedChange = { autoPip = it }
-            )
         }
         SettingsGroup(title = stringResource(R.string.songs)) {
             SwitchSettingsEntry(

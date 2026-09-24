@@ -60,7 +60,6 @@ import app.melogold.android.service.isLocal
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
-import app.melogold.android.utils.isInPip
 import app.melogold.android.utils.thumbnail
 import app.melogold.android.utils.windowState
 import app.melogold.core.ui.Dimensions
@@ -103,7 +102,7 @@ fun Thumbnail(
             spring(dampingRatio = Spring.DampingRatioLowBouncy)
         }
     ) { if (it) 1f else 0f }
-    val isInPip = isInPip()
+    val isInPip = false
 
     AnimatedContent(
         targetState = window,

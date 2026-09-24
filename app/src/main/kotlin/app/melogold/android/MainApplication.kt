@@ -41,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -59,7 +58,6 @@ import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.service.PlayerService
 import app.melogold.android.service.ServiceNotifications
 import app.melogold.android.ui.components.rememberBottomSheetState
-import app.melogold.android.ui.screens.player.Thumbnail
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.shell.AppShell
 import app.melogold.android.ui.shell.KeyboardShortcuts
@@ -75,13 +73,8 @@ import app.melogold.android.ui.shell.rememberMainNavState
 import app.melogold.android.ui.shell.rememberShellLayout
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
 import app.melogold.android.utils.DisposableListener
-import app.melogold.android.utils.KeyedCrossfade
 import app.melogold.android.utils.intent
-import app.melogold.android.utils.isInPip
-import app.melogold.android.utils.maybeEnterPip
-import app.melogold.android.utils.maybeExitPip
 import app.melogold.android.utils.rememberEffectiveMotionLevel
-import app.melogold.android.utils.shouldBePlaying
 import app.melogold.compose.persist.LocalPersistMap
 import app.melogold.compose.persist.PersistMap
 import app.melogold.compose.preferences.PreferencesHolder
@@ -287,44 +280,20 @@ class MainActivity : ComponentActivity() {
                 onDispose { shell.value = null }
             }
 
-            val pip = isInPip(
-                onChange = {
-                    // The sections leave composition during picture-in-picture: keep their data
-                    mainNav.parkCurrent(parked = it)
-                    if (!it || vm.binder?.player?.shouldBePlaying != true) return@isInPip
-                    playerBottomSheetState.expandSoft()
-                }
-            )
-
-            KeyedCrossfade(state = pip) { currentPip ->
-                if (currentPip) Thumbnail(
-                    isShowingLyrics = true,
-                    onShowLyrics = { },
-                    isShowingStatsForNerds = false,
-                    onShowStatsForNerds = { },
-                    onOpenDialog = { },
-                    likedAt = null,
-                    setLikedAt = { },
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.FillBounds,
-                    shouldShowSynchronizedLyrics = true,
-                    setShouldShowSynchronizedLyrics = { },
-                    showLyricsControls = false
-                ) else CompositionLocalProvider(
-                    LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
-                    LocalMainNav provides mainNav,
-                    LocalLinkHandler provides linkHandler,
-                    LocalAppSnackbar provides snackbar
-                ) {
-                    AppShell(
-                        nav = mainNav,
-                        layout = shellLayout,
-                        playerSheetState = playerBottomSheetState,
-                        snackbar = snackbar,
-                        bottomBarHeight = bottomBarHeight,
-                        onBottomBarHeightChange = { navigationBarHeight = it }
-                    )
-                }
+            CompositionLocalProvider(
+                LocalPlayerAwareWindowInsets provides playerAwareWindowInsets,
+                LocalMainNav provides mainNav,
+                LocalLinkHandler provides linkHandler,
+                LocalAppSnackbar provides snackbar
+            ) {
+                AppShell(
+                    nav = mainNav,
+                    layout = shellLayout,
+                    playerSheetState = playerBottomSheetState,
+                    snackbar = snackbar,
+                    bottomBarHeight = bottomBarHeight,
+                    onBottomBarHeightChange = { navigationBarHeight = it }
+                )
             }
 
             vm.binder?.player.DisposableListener {
@@ -333,10 +302,7 @@ class MainActivity : ComponentActivity() {
                         mediaItem: MediaItem?,
                         reason: Int
                     ) = when {
-                        mediaItem == null -> {
-                            maybeExitPip()
-                            playerBottomSheetState.dismissSoft()
-                        }
+                        mediaItem == null -> playerBottomSheetState.dismissSoft()
 
                         playerBottomSheetState.dismissed -> playerBottomSheetState.collapseSoft()
 
@@ -411,12 +377,6 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         unbindService(serviceConnection)
         super.onStop()
-    }
-
-    override fun onUserLeaveHint() {
-        super.onUserLeaveHint()
-
-        if (AppearancePreferences.autoPip && vm.binder?.player?.shouldBePlaying == true) maybeEnterPip()
     }
 }
 

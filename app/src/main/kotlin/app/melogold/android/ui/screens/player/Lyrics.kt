@@ -73,7 +73,6 @@ import app.melogold.android.utils.SynchronizedLyrics
 import app.melogold.android.utils.SynchronizedLyricsState
 import app.melogold.android.utils.center
 import app.melogold.android.utils.color
-import app.melogold.android.utils.isInPip
 import app.melogold.android.utils.medium
 import app.melogold.android.utils.semiBold
 import app.melogold.core.ui.LocalAppearance
@@ -133,7 +132,7 @@ fun Lyrics(
     val density = LocalDensity.current
     val view = LocalView.current
 
-    val pip = isInPip()
+    val pip = false
 
     var lyrics by remember { mutableStateOf<Lyrics?>(null) }
 

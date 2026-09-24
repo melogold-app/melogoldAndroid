@@ -80,11 +80,9 @@ import app.melogold.android.ui.modifiers.PinchDirection
 import app.melogold.android.ui.modifiers.pinchToToggle
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
 import app.melogold.android.utils.DisposableListener
-import app.melogold.android.utils.Pip
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.positionAndDurationState
 import app.melogold.android.utils.rememberEqualizerLauncher
-import app.melogold.android.utils.rememberPipHandler
 import app.melogold.android.utils.seamlessPlay
 import app.melogold.android.utils.secondary
 import app.melogold.android.utils.semiBold
@@ -409,8 +407,6 @@ private fun BoxScope.ClassicExpandedContent(
     val colorPalette = LocalAppearance.current.colorPalette
     val binder = LocalPlayerServiceBinder.current
 
-    val pipHandler = rememberPipHandler()
-
     val positionAndDuration = binder?.player.positionAndDurationState()
     val position = positionAndDuration.first
     val duration = positionAndDuration.second
@@ -445,11 +441,7 @@ private fun BoxScope.ClassicExpandedContent(
         .padding(bottom = playerBottomSheetState.collapsedBound)
 
     val thumbnailContent: @Composable (modifier: Modifier) -> Unit = { innerModifier ->
-        Pip(
-            numerator = 1,
-            denominator = 1,
-            modifier = innerModifier
-        ) {
+        Box(modifier = innerModifier) {
             Thumbnail(
                 isShowingLyrics = isShowingLyrics,
                 onShowLyrics = { isShowingLyrics = it },
@@ -466,14 +458,6 @@ private fun BoxScope.ClassicExpandedContent(
                         threshold = 1.05f,
                         onPinch = {
                             if (isShowingLyrics) isShowingLyricsDialog = true
-                        }
-                    )
-                    .pinchToToggle(
-                        key = isShowingLyricsDialog,
-                        direction = PinchDirection.In,
-                        threshold = .95f,
-                        onPinch = {
-                            pipHandler.enterPictureInPictureMode()
                         }
                     )
             )

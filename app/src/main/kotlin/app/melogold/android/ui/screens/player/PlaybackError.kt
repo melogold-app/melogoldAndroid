@@ -35,7 +35,6 @@ import app.melogold.android.service.VideoIdMismatchException
 import app.melogold.android.service.isLocal
 import app.melogold.android.utils.center
 import app.melogold.android.utils.color
-import app.melogold.android.utils.isInPip
 import app.melogold.android.utils.medium
 import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.onOverlay
@@ -52,7 +51,6 @@ fun PlaybackError(
 ) = Box(modifier = modifier) {
     val (colorPalette, typography) = LocalAppearance.current
     val message by rememberUpdatedState(newValue = messageProvider())
-    val pip = isInPip()
 
     AnimatedVisibility(
         visible = isDisplayed,
@@ -88,7 +86,6 @@ fun PlaybackError(
                 .background(colorPalette.overlay.copy(alpha = 0.4f))
                 .padding(all = 8.dp)
                 .fillMaxWidth(),
-            maxLines = if (pip) 1 else Int.MAX_VALUE,
             overflow = TextOverflow.Ellipsis
         )
     }

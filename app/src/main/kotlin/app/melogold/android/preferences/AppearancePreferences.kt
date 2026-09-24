@@ -30,7 +30,6 @@ object AppearancePreferences : GlobalPreferencesHolder() {
     var lastTab by enum(TopLevelDestination.FirstLaunch)
 
     var hideExplicit by boolean(false)
-    var autoPip by boolean(false)
 }
 
 /**
