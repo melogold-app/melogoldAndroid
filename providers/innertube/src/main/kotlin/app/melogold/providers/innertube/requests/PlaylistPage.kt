@@ -73,10 +73,15 @@ suspend fun Innertube.playlistPage(body: BrowseBody) = runCatchingCancellable {
                 ?.urlCanonical,
             songsPage = musicShelfRenderer
                 ?.toSongsPage(),
-            otherVersions = musicCarouselShelfRenderer
+            relatedAlbums = musicCarouselShelfRenderer
                 ?.contents
                 ?.mapNotNull(MusicCarouselShelfRenderer.Content::musicTwoRowItemRenderer)
                 ?.mapNotNull(Innertube.AlbumItem::from),
+            relatedAlbumsTitle = musicCarouselShelfRenderer
+                ?.header
+                ?.musicCarouselShelfBasicHeaderRenderer
+                ?.title
+                ?.text,
             otherInfo = header
                 ?.secondSubtitle
                 ?.text
@@ -140,10 +145,15 @@ suspend fun Innertube.playlistPage(body: BrowseBody) = runCatchingCancellable {
                 ?.urlCanonical,
             songsPage = musicShelfRenderer
                 ?.toSongsPage(),
-            otherVersions = musicCarouselShelfRenderer
+            relatedAlbums = musicCarouselShelfRenderer
                 ?.contents
                 ?.mapNotNull(MusicCarouselShelfRenderer.Content::musicTwoRowItemRenderer)
                 ?.mapNotNull(Innertube.AlbumItem::from),
+            relatedAlbumsTitle = musicCarouselShelfRenderer
+                ?.header
+                ?.musicCarouselShelfBasicHeaderRenderer
+                ?.title
+                ?.text,
             otherInfo = header
                 ?.secondSubtitle
                 ?.text

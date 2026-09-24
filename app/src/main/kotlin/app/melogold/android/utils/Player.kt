@@ -102,6 +102,11 @@ fun Player.addNext(mediaItem: MediaItem) = when (playbackState) {
     else -> addMediaItem(currentMediaItemIndex + 1, mediaItem)
 }
 
+fun Player.addNext(mediaItems: List<MediaItem>) = when (playbackState) {
+    Player.STATE_IDLE, Player.STATE_ENDED -> forcePlayFromBeginning(mediaItems)
+    else -> addMediaItems(currentMediaItemIndex + 1, mediaItems)
+}
+
 fun Player.enqueue(mediaItem: MediaItem) = when (playbackState) {
     Player.STATE_IDLE, Player.STATE_ENDED -> forcePlay(mediaItem)
     else -> addMediaItem(mediaItemCount, mediaItem)

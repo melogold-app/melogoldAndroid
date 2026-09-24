@@ -17,6 +17,7 @@ import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
@@ -177,6 +178,15 @@ fun RouteHandler(
 
     val transitionState = remember { SeekableTransitionState(child) }
 
+    // The screens of the stack keep their saveable state (a list's scroll) while a child covers
+    // them; a child that leaves the stack takes its state with it
+    val stateHolder = rememberSaveableStateHolder()
+    var shownChild by remember { mutableStateOf(child) }
+    LaunchedEffect(child) {
+        shownChild?.takeIf { it != child }?.let { stateHolder.removeState(it.tag) }
+        shownChild = child
+    }
+
     if (predictiveBackProgress == null) {
         LaunchedEffect(child) {
             if (transitionState.currentState != child) transitionState.animateTo(child)
@@ -196,13 +206,17 @@ fun RouteHandler(
     ).AnimatedContent(
         transitionSpec = transitionSpec,
         modifier = modifier
-    ) {
-        val scope = remember(it) { it.scope() }
+    ) { route ->
+        stateHolder.SaveableStateProvider(key = route?.tag ?: ROOT_STATE_KEY) {
+            val scope = remember(route) { route.scope() }
 
-        LaunchedEffect(predictiveBackProgress, scope) {
-            if (predictiveBackProgress == null && scope.child == null) router.current = scope
+            LaunchedEffect(predictiveBackProgress, scope) {
+                if (predictiveBackProgress == null && scope.child == null) router.current = scope
+            }
+
+            scope.content()
         }
-
-        scope.content()
     }
 }
+
+private const val ROOT_STATE_KEY = "app.melogold.compose.routing.root"

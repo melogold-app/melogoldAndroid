@@ -60,9 +60,12 @@ fun TrackRow(
     val playLabel = stringResource(R.string.kit_play)
     val menuLabel = stringResource(R.string.kit_menu)
 
+    // One line without a cover is a one-line list item (56 dp), the rest are two-line ones
+    val minHeight = if (showArtwork || !subtitle.isNullOrBlank()) 72.dp else 56.dp
+
     Row(
         modifier = modifier
-            .heightIn(min = 72.dp)
+            .heightIn(min = minHeight)
             .clip(RowShape)
             .background(if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
             .combinedClickable(onClick = onClick, onLongClick = onMenu)

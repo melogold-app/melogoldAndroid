@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Album, playlist and artist screens (REWRITE §3.6–3.8, §3.11.5) -->
+<resources>
+    <string name="detail_save">Save to library</string>
+    <string name="detail_saved">In library</string>
+    <string name="detail_saved_message">Saved to library</string>
+    <string name="detail_removed_message">Removed from library</string>
+
+    <string name="album_about">About the album</string>
+    <string name="album_radio">Album radio</string>
+
+    <plurals name="add_to_playlist_added_tracks">
+        <item quantity="one">%1$d track added to “%2$s”</item>
+        <item quantity="other">%1$d tracks added to “%2$s”</item>
+    </plurals>
+    <string name="add_to_playlist_all_present">All tracks are already in “%1$s”</string>
+</resources>

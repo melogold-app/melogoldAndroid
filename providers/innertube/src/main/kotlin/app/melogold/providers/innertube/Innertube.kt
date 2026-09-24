@@ -233,8 +233,10 @@ object Innertube {
         val thumbnail: Thumbnail?,
         val url: String?,
         val songsPage: ItemsPage<SongItem>?,
-        val otherVersions: List<AlbumItem>?,
-        val otherInfo: String?
+        /** The album carousel of the page: "Other versions", "Releases for you"… */
+        val relatedAlbums: List<AlbumItem>?,
+        val otherInfo: String?,
+        val relatedAlbumsTitle: String? = null
     )
 
     data class NextPage(

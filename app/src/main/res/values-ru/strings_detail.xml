@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_save">Сохранить в библиотеку</string>
+    <string name="detail_saved">В библиотеке</string>
+    <string name="detail_saved_message">Сохранено в библиотеку</string>
+    <string name="detail_removed_message">Убрано из библиотеки</string>
+
+    <string name="album_about">Об альбоме</string>
+    <string name="album_radio">Радио альбома</string>
+
+    <plurals name="add_to_playlist_added_tracks">
+        <item quantity="one">%1$d трек добавлен в „%2$s“</item>
+        <item quantity="few">%1$d трека добавлено в „%2$s“</item>
+        <item quantity="many">%1$d треков добавлено в „%2$s“</item>
+        <item quantity="other">%1$d трека добавлено в „%2$s“</item>
+    </plurals>
+    <string name="add_to_playlist_all_present">Все треки уже есть в „%1$s“</string>
+</resources>

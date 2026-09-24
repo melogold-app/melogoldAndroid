@@ -46,6 +46,7 @@ import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.transaction
 import app.melogold.android.ui.kit.Artwork
 import app.melogold.android.ui.kit.NewPlaylistDialog
+import app.melogold.android.ui.kit.TextInputDialog
 import app.melogold.android.ui.shell.AppSnackbar
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.core.data.enums.PlaylistSortBy
@@ -128,31 +129,8 @@ fun AddToPlaylistMenu(
     )
 
     Menu(modifier = modifier.testTag("add_to_playlist")) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 8.dp, bottom = 4.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.add_to_playlist_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.weight(1f)
-            )
-            TextButton(onClick = onDone) { Text(text = stringResource(R.string.done)) }
-        }
-
-        if ((playlists?.size ?: 0) > FILTER_THRESHOLD) OutlinedTextField(
-            value = filter,
-            onValueChange = { filter = it },
-            placeholder = { Text(text = stringResource(R.string.add_to_playlist_find)) },
-            leadingIcon = { Icon(painter = painterResource(R.drawable.ms_search), contentDescription = null) },
-            singleLine = true,
-            shape = RoundedCornerShape(28.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        PickerTitle(onDone = onDone)
+        if ((playlists?.size ?: 0) > FILTER_THRESHOLD) PickerFilter(value = filter, onValueChange = { filter = it })
 
         MenuEntry(
             icon = R.drawable.ms_add,
@@ -161,7 +139,7 @@ fun AddToPlaylistMenu(
         )
 
         playlists
-            ?.filter { filter.isBlank() || it.name.contains(filter.trim(), ignoreCase = true) }
+            ?.filteredBy(filter)
             ?.forEach { preview ->
                 val isMember = preview.id in memberOf
 
@@ -191,14 +169,154 @@ fun AddToPlaylistMenu(
                 }
             }
 
-        if (playlists?.isEmpty() == true) Text(
-            text = stringResource(R.string.add_to_playlist_empty),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
+        if (playlists?.isEmpty() == true) NoPlaylists()
     }
 }
+
+/**
+ * "Add to playlist…" for a whole collection (an album, a playlist): a tap adds, in order, the
+ * tracks the playlist doesn't have yet and closes the sheet; the snackbar offers "Undo".
+ * "New playlist" suggests the collection's [name].
+ */
+@Composable
+fun AddAllToPlaylistMenu(
+    mediaItems: List<MediaItem>,
+    name: String,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val resources = LocalContext.current.resources
+    val snackbar = LocalAppSnackbar.current
+
+    val playlists by remember {
+        Database.playlistPreviews(sortBy = PlaylistSortBy.DateAdded, sortOrder = SortOrder.Descending)
+    }.collectAsState(initial = null, context = Dispatchers.IO)
+
+    var filter by rememberSaveable { mutableStateOf("") }
+    var creating by rememberSaveable { mutableStateOf(false) }
+
+    if (creating) TextInputDialog(
+        title = stringResource(R.string.playlist_new_title),
+        label = stringResource(R.string.playlist_name),
+        confirmLabel = stringResource(R.string.playlist_create),
+        initialValue = name,
+        onDismiss = { creating = false },
+        onConfirm = { newName ->
+            creating = false
+            onDone()
+            addAll(mediaItems, playlistId = null, name = newName, resources = resources, snackbar = snackbar)
+        }
+    )
+
+    Menu(modifier = modifier.testTag("add_to_playlist")) {
+        PickerTitle(onDone = onDone)
+        if ((playlists?.size ?: 0) > FILTER_THRESHOLD) PickerFilter(value = filter, onValueChange = { filter = it })
+
+        MenuEntry(
+            icon = R.drawable.ms_add,
+            text = stringResource(R.string.new_playlist),
+            onClick = { creating = true }
+        )
+
+        playlists?.filteredBy(filter)?.forEach { preview ->
+            ListItem(
+                onClick = {
+                    onDone()
+                    addAll(mediaItems, preview.id, preview.name, resources, snackbar)
+                },
+                leadingContent = {
+                    Artwork(url = preview.thumbnail, size = 48.dp, shape = RoundedCornerShape(8.dp))
+                },
+                supportingContent = {
+                    Text(text = pluralStringResource(R.plurals.song_count_plural, preview.songCount, preview.songCount))
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.testTag("add_to_playlist_row")
+            ) {
+                Text(text = preview.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+
+        if (playlists?.isEmpty() == true) NoPlaylists()
+    }
+}
+
+/**
+ * Appends to [playlistId] (or to a new playlist [name] when null) the [mediaItems] it lacks, then
+ * posts how many with "Undo", which takes exactly those back out (or deletes the new playlist).
+ */
+private fun addAll(
+    mediaItems: List<MediaItem>,
+    playlistId: Long?,
+    name: String,
+    resources: Resources,
+    snackbar: AppSnackbar
+) = transaction {
+    val id = playlistId ?: Database.insert(Playlist(name = name)).takeIf { it != -1L } ?: return@transaction
+    val added = mediaItems
+        .distinctBy { it.mediaId }
+        .filter { playlistId == null || Database.positionIn(it.mediaId, id) == null }
+
+    var position = Database.songCountOf(id)
+    added.forEach { mediaItem ->
+        Database.insert(mediaItem)
+        Database.insert(SongPlaylistMap(mediaItem.mediaId, id, position++))
+    }
+
+    val message = if (added.isEmpty()) resources.getString(R.string.add_to_playlist_all_present, name)
+    else resources.getQuantityString(R.plurals.add_to_playlist_added_tracks, added.size, added.size, name)
+
+    Handler(Looper.getMainLooper()).post {
+        if (added.isEmpty()) snackbar.show(message)
+        else snackbar.showUndo(message) {
+            transaction {
+                if (playlistId == null) Database.delete(Playlist(id = id, name = name))
+                else added.forEach { mediaItem ->
+                    Database.positionIn(mediaItem.mediaId, id)?.let { Database.removeFrom(mediaItem.mediaId, id, it) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PickerTitle(onDone: () -> Unit) = Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = 16.dp, end = 8.dp, bottom = 4.dp)
+) {
+    Text(
+        text = stringResource(R.string.add_to_playlist_title),
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.weight(1f)
+    )
+    TextButton(onClick = onDone) { Text(text = stringResource(R.string.done)) }
+}
+
+@Composable
+private fun PickerFilter(value: String, onValueChange: (String) -> Unit) = OutlinedTextField(
+    value = value,
+    onValueChange = onValueChange,
+    placeholder = { Text(text = stringResource(R.string.add_to_playlist_find)) },
+    leadingIcon = { Icon(painter = painterResource(R.drawable.ms_search), contentDescription = null) },
+    singleLine = true,
+    shape = RoundedCornerShape(28.dp),
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+)
+
+@Composable
+private fun NoPlaylists() = Text(
+    text = stringResource(R.string.add_to_playlist_empty),
+    style = MaterialTheme.typography.bodyMedium,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+)
+
+private fun List<PlaylistPreview>.filteredBy(filter: String) =
+    filter { filter.isBlank() || it.name.contains(filter.trim(), ignoreCase = true) }
 
 /** Removes [songId] from [playlistId] and closes the gap it leaves. Call in a transaction. */
 private fun DatabaseAccessor.removeFrom(songId: String, playlistId: Long, position: Int) {
