@@ -6,6 +6,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.widget.Toast
 import androidx.annotation.OptIn
@@ -58,8 +60,16 @@ fun Context.toast(
     duration = duration
 )
 
-fun Context.toast(message: String, duration: ToastDuration = ToastDuration.Short) =
-    Toast.makeText(this, message, duration.length).show()
+/**
+ * Shows a toast from any thread: off the main thread (e.g. PrecacheService's download callbacks)
+ * `Toast.makeText` would crash, so it is posted to the main looper.
+ */
+fun Context.toast(message: String, duration: ToastDuration = ToastDuration.Short) {
+    val show = { Toast.makeText(this, message, duration.length).show() }
+    val mainLooper = Looper.getMainLooper()
+
+    if (Looper.myLooper() == mainLooper) show() else Handler(mainLooper).post(show)
+}
 
 @JvmInline
 value class ToastDuration private constructor(internal val length: Int) {

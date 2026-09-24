@@ -443,7 +443,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
                     else it
                 }
                 .penaltyLog()
-                .penaltyDeath()
+                // A violation only kills debug builds (REWRITE §5.3.1)
+                .let { if (BuildConfig.DEBUG) it.penaltyDeath() else it }
                 .build()
         )
         Dependencies.init(this)
