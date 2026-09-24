@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="trends_trending">В тренде</string>
+    <string name="trends_full_list">Весь список</string>
+    <string name="trends_moods">Настроения и жанры</string>
+</resources>

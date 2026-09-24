@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import app.melogold.android.LocalPlayerAwareWindowInsets
+import app.melogold.android.ui.components.m3e.MelogoldPullToRefreshBox
 import kotlinx.coroutines.launch
 
 /**
@@ -37,8 +38,12 @@ import kotlinx.coroutines.launch
  * inset, and the `PaddingValues` passed to [content] are its bottom and horizontal insets (the
  * mini player and the navigation bar), ready to be a list's `contentPadding`.
  *
+ * With [onRefresh], the content gets pull-to-refresh below the bar. The bar handles scrolling
+ * first, so pulling down at the top of the list expands it before the refresh starts.
+ *
  * @param subtitle a second line under the title, e.g. counts
  * @param actions icon buttons at the end of the bar
+ * @param isRefreshing a refresh started by [onRefresh] is running
  */
 @Composable
 fun TabRootScaffold(
@@ -47,6 +52,8 @@ fun TabRootScaffold(
     subtitle: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
     onScrollToTop: suspend () -> Unit = {},
+    isRefreshing: Boolean = false,
+    onRefresh: (() -> Unit)? = null,
     content: @Composable (contentPadding: PaddingValues) -> Unit
 ) {
     val nav = LocalMainNav.current
@@ -74,7 +81,6 @@ fun TabRootScaffold(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
     ) {
         LargeFlexibleTopAppBar(
             title = {
@@ -101,13 +107,27 @@ fun TabRootScaffold(
         val contentInsets = insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
 
         CompositionLocalProvider(LocalPlayerAwareWindowInsets provides contentInsets) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-            ) {
-                content(contentInsets.asPaddingValues())
+            val contentModifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+
+            // The bar's connection sits below the refresh box, so it sees the scroll first
+            val body = @Composable {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                ) {
+                    content(contentInsets.asPaddingValues())
+                }
             }
+
+            if (onRefresh == null) Box(modifier = contentModifier) { body() }
+            else MelogoldPullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
+                modifier = contentModifier
+            ) { body() }
         }
     }
 }

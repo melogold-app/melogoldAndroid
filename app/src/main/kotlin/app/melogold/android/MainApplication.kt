@@ -200,7 +200,8 @@ class MainActivity : ComponentActivity() {
                     LocalPlayerServiceBinder provides vm.binder,
                     LocalShimmerTheme provides shimmerTheme(),
                     LocalLayoutDirection provides LayoutDirection.Ltr,
-                    LocalPersistMap provides Dependencies.application.persistMap
+                    LocalPersistMap provides Dependencies.application.persistMap,
+                    LocalAppContainer provides Dependencies.application.container
                 ) {
                     content()
                 }
@@ -432,6 +433,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
         .build()
 
     val persistMap = PersistMap()
+
+    val container by lazy { AppContainer(this) }
 
     // region R2.1
     // endregion R2.1

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Trends (REWRITE §3.3) -->
+<resources>
+    <string name="trends_trending">Trending</string>
+    <string name="trends_full_list">Full list</string>
+    <string name="trends_moods">Moods &amp; genres</string>
+</resources>

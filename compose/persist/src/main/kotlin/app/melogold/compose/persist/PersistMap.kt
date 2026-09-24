@@ -7,7 +7,18 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 @JvmInline
 value class PersistMap(val map: MutableMap<String, MutableState<*>> = hashMapOf()) {
-    fun clean(prefix: String) = map.keys.removeAll { it.startsWith(prefix) }
+    /**
+     * Drops every entry under [prefix]; values that are [AutoCloseable] (screen models) are closed.
+     */
+    fun clean(prefix: String) {
+        val entries = map.entries.iterator()
+        while (entries.hasNext()) {
+            val (key, state) = entries.next()
+            if (!key.startsWith(prefix)) continue
+            (state.value as? AutoCloseable)?.close()
+            entries.remove()
+        }
+    }
 }
 
 val LocalPersistMap = compositionLocalOf<PersistMap?> {

@@ -252,11 +252,13 @@ object Innertube {
         val artists: List<ArtistItem>? = null
     )
 
+    @Serializable
     data class DiscoverPage(
         val newReleaseAlbums: List<AlbumItem>,
         val moods: List<Mood.Item>,
         val trending: Trending
     ) {
+        @Serializable
         data class Trending(
             val songs: List<SongItem>,
             val endpoint: NavigationEndpoint.Endpoint.Browse?
@@ -267,6 +269,7 @@ object Innertube {
         val title: String,
         val items: List<Item>
     ) {
+        @Serializable
         data class Item(
             val title: String,
             val stripeColor: Long,

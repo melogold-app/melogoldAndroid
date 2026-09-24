@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -28,7 +29,7 @@ import app.melogold.android.ui.components.ShimmerHost
 import app.melogold.android.ui.components.themed.Header
 import app.melogold.android.ui.components.themed.HeaderPlaceholder
 import app.melogold.android.ui.items.SongItemPlaceholder
-import app.melogold.android.ui.screens.home.MoodItem
+import app.melogold.android.ui.kit.MoodTile
 import app.melogold.android.utils.semiBold
 import app.melogold.compose.persist.persist
 import app.melogold.core.ui.Dimensions
@@ -115,8 +116,9 @@ fun MoreMoodsList(
                     items = moods,
                     key = { j, item -> "item:$j,${item.key}" }
                 ) { _, mood ->
-                    MoodItem(
-                        mood = mood,
+                    MoodTile(
+                        title = mood.title,
+                        stripeColor = Color(mood.stripeColor),
                         onClick = { mood.endpoint.browseId?.let { _ -> onMoodClick(mood) } },
                         modifier = Modifier
                             .fillMaxWidth()

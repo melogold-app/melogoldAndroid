@@ -105,10 +105,13 @@ data class Context(
 
                 return copy(
                     client = client.copy(
+                        // "ru-RU" is not a YouTube language code, "ru" is: fall back to the bare language
                         hl = locale
                             .toLanguageTag()
                             .replace("-Hant", "")
-                            .takeIf { it in validLanguageCodes } ?: "en",
+                            .takeIf { it in validLanguageCodes }
+                            ?: locale.language.takeIf { it in validLanguageCodes }
+                            ?: "en",
                         gl = locale
                             .country
                             .takeIf { it in validCountryCodes } ?: "US"

@@ -218,6 +218,7 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.ktor)
+    implementation(libs.ktor.client.core)
 
     implementation(libs.material.color.utilities)
 
