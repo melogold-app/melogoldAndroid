@@ -1,17 +1,11 @@
 package app.melogold.android.ui.screens.player.modern
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import app.melogold.android.service.isLocal
-import app.melogold.android.ui.screens.player.lyricseditor.LyricsEditorDialog
-import app.melogold.android.ui.screens.player.lyricseditor.initialDraft
-import app.melogold.android.ui.screens.player.lyricseditor.saveLyricsDraft
-import app.melogold.android.ui.screens.player.sleepTimerLeft
-import androidx.compose.foundation.layout.RowScope
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Transition
@@ -21,15 +15,18 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +34,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -86,19 +87,24 @@ import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.PlayerService
+import app.melogold.android.service.isLocal
 import app.melogold.android.transaction
 import app.melogold.android.ui.components.BottomSheetState
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.components.menu.MenuEntry
+import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.modifiers.onSwipe
 import app.melogold.android.ui.screens.player.LyricsMenu
 import app.melogold.android.ui.screens.player.PlaybackErrorCard
 import app.melogold.android.ui.screens.player.Queue
 import app.melogold.android.ui.screens.player.StreamInfoSheet
 import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
+import app.melogold.android.ui.screens.player.lyricseditor.LyricsEditorDialog
+import app.melogold.android.ui.screens.player.lyricseditor.initialDraft
+import app.melogold.android.ui.screens.player.lyricseditor.saveLyricsDraft
 import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.searchLyricsOnline
+import app.melogold.android.ui.screens.player.sleepTimerLeft
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.ui.theme.rememberArtworkColorScheme
@@ -567,7 +573,21 @@ fun ModernPlayer(
                     if (mode == PlayerMode.Lyrics) showLyricsMenu() else showPlayerMenu()
                 }
 
-                if (landscape) LandscapeLayout(
+                val fold = tabletopFold()
+
+                if (fold != null) TabletopLayout(
+                    fold = fold,
+                    transition = transition,
+                    reduceMotion = reduceMotion,
+                    onCollapse = { layoutState.collapseSoft() },
+                    onMore = onMore,
+                    indicators = indicators,
+                    artwork = artwork,
+                    titleBlock = titleBlock,
+                    compactHeader = compactHeader,
+                    lyricsArea = lyricsArea,
+                    controls = controls
+                ) else if (landscape) LandscapeLayout(
                     transition = transition,
                     reduceMotion = reduceMotion,
                     onCollapse = { layoutState.collapseSoft() },
@@ -678,7 +698,9 @@ private fun PortraitLayout(
     modifier = Modifier
         .fillMaxSize()
         .windowInsetsPadding(
-            WindowInsets.systemBarsIgnoringVisibility.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+            WindowInsets.systemBarsIgnoringVisibility
+                .union(WindowInsets.displayCutout)
+                .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
         )
 ) {
     PlayerTopBar(onCollapse = onCollapse, onMore = onMore, indicators = indicators)
@@ -803,7 +825,7 @@ private fun LandscapeLayout(
 ) = SharedTransitionLayout(
     modifier = Modifier
         .fillMaxSize()
-        .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility)
+        .windowInsetsPadding(WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout))
 ) {
     val sharedTransitionScope = this
 
@@ -864,6 +886,104 @@ private fun LandscapeLayout(
                     reduceMotion = reduceMotion
                 )
 
+                // As tall as the title block: a phone on its side has no height to spare
+                if (stageMode == PlayerMode.Lyrics) compactHeader(Modifier.height(56.dp), scopes)
+                else titleBlock(Modifier.height(56.dp), scopes)
+            }
+
+            controls(Modifier, true)
+            Spacer(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+private val TabletopControlsMaxWidth = 720.dp
+
+/**
+ * A foldable half-open like a laptop (REDESIGN §2.7): the bar and the artwork (or the lyrics) above
+ * the [fold], the title and the controls below it, where the hand is; nothing on the fold itself.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TabletopLayout(
+    fold: Fold,
+    transition: Transition<PlayerMode>,
+    reduceMotion: Boolean,
+    onCollapse: () -> Unit,
+    onMore: () -> Unit,
+    indicators: @Composable RowScope.() -> Unit,
+    artwork: @Composable (Dp, SharedScopes?) -> Unit,
+    titleBlock: @Composable (Modifier, SharedScopes?) -> Unit,
+    compactHeader: @Composable (Modifier, SharedScopes?) -> Unit,
+    lyricsArea: @Composable (Modifier, Dp, Boolean) -> Unit,
+    controls: @Composable (Modifier, Boolean) -> Unit
+) = SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
+    val sharedTransitionScope = this
+    val insets = WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout)
+    val modeSpec: AnimatedContentTransitionScope<PlayerMode>.() -> ContentTransform = {
+        if (reduceMotion) fadeIn(tween(150)) togetherWith fadeOut(tween(150))
+        else fadeIn(tween(durationMillis = 220, delayMillis = 90)) togetherWith fadeOut(tween(durationMillis = 90))
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(fold.top)
+                .windowInsetsPadding(insets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+        ) {
+            PlayerTopBar(onCollapse = onCollapse, onMore = onMore, indicators = indicators)
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                val paneHeight = maxHeight
+                val artSize = (min(maxWidth, maxHeight) - 16.dp).coerceAtLeast(64.dp)
+
+                transition.AnimatedContent(
+                    transitionSpec = modeSpec,
+                    contentKey = { it },
+                    modifier = Modifier.fillMaxSize()
+                ) { stageMode ->
+                    val scopes = SharedScopes(
+                        transition = sharedTransitionScope,
+                        visibility = this@AnimatedContent,
+                        reduceMotion = reduceMotion
+                    )
+
+                    if (stageMode == PlayerMode.Lyrics) lyricsArea(Modifier.fillMaxSize(), paneHeight / 3, false)
+                    else Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        artwork(artSize, scopes)
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height((fold.bottom - fold.top).coerceAtLeast(0.dp)))
+
+        // The controls keep a phone's reach on a wide window
+        Column(
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .weight(1f)
+                .align(Alignment.CenterHorizontally)
+                .widthIn(max = TabletopControlsMaxWidth)
+                .fillMaxWidth()
+                .windowInsetsPadding(insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+        ) {
+            transition.AnimatedContent(
+                transitionSpec = modeSpec,
+                contentKey = { it },
+                modifier = Modifier.fillMaxWidth()
+            ) { stageMode ->
+                val scopes = SharedScopes(
+                    transition = sharedTransitionScope,
+                    visibility = this@AnimatedContent,
+                    reduceMotion = reduceMotion
+                )
+
                 if (stageMode == PlayerMode.Lyrics) compactHeader(
                     Modifier
                         .padding(vertical = 8.dp)
@@ -873,7 +993,6 @@ private fun LandscapeLayout(
             }
 
             controls(Modifier, true)
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

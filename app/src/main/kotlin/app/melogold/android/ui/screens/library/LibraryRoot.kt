@@ -91,6 +91,7 @@ fun RouteHandlerScope.LibraryRoot() {
     TabRootScaffold(
         title = stringResource(R.string.nav_library),
         subtitle = subtitle,
+        centered = true,
         actions = {
             IconButton(onClick = { creating = true }) {
                 Icon(

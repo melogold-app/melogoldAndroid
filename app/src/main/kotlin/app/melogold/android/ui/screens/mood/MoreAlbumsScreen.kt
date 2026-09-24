@@ -39,7 +39,12 @@ fun MoreAlbumsScreen() = RouteHandler {
         val page by model.page.collectAsState()
         val layoutDirection = LocalLayoutDirection.current
 
-        CollectionScaffold(title = stringResource(R.string.new_releases_title), subtitle = null, onBack = pop) { padding ->
+        CollectionScaffold(
+            title = stringResource(R.string.new_releases_title),
+            subtitle = null,
+            onBack = pop,
+            centered = false
+        ) { padding ->
             LoadableContent(loadable = page, onRetry = model::load, modifier = Modifier.padding(padding)) { content ->
                 val albums = content.value.items.firstOrNull()?.items.orEmpty().filterIsInstance<Innertube.AlbumItem>()
 

@@ -43,7 +43,12 @@ fun MoreMoodsScreen() = RouteHandler {
         val page by model.page.collectAsState()
         val layoutDirection = LocalLayoutDirection.current
 
-        CollectionScaffold(title = stringResource(R.string.moods_and_genres), subtitle = null, onBack = pop) { padding ->
+        CollectionScaffold(
+            title = stringResource(R.string.moods_and_genres),
+            subtitle = null,
+            onBack = pop,
+            centered = false
+        ) { padding ->
             LoadableContent(loadable = page, onRetry = model::load, modifier = Modifier.padding(padding)) { content ->
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 160.dp),

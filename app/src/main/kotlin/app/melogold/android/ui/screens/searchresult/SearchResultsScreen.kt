@@ -1,11 +1,11 @@
 package app.melogold.android.ui.screens.searchresult
 
-import app.melogold.android.ui.shell.SearchSource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -48,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -67,6 +69,7 @@ import app.melogold.android.ui.kit.SectionError
 import app.melogold.android.ui.kit.SectionHeader
 import app.melogold.android.ui.kit.TrackRow
 import app.melogold.android.ui.kit.VideoThumbnail
+import app.melogold.android.ui.kit.centeredIn
 import app.melogold.android.ui.model.Loadable
 import app.melogold.android.ui.model.Paged
 import app.melogold.android.ui.model.PagedLoader
@@ -76,6 +79,7 @@ import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.albumRoute
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.playlistRoute
+import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.playWithRadio
 import app.melogold.android.utils.thumbnail
@@ -90,6 +94,9 @@ import coil3.compose.AsyncImage
 import kotlinx.collections.immutable.toImmutableList
 
 private const val LOAD_MORE_AHEAD = 5
+
+/** From this width "All" shows YouTube Music and YouTube side by side (REDESIGN §2.7). */
+private val TWO_COLUMNS_MIN_WIDTH = 600.dp
 
 /**
  * `searchResultRoute` (REWRITE §3.1.3, M3 search guidelines): the query stays visible on top —
@@ -144,22 +151,26 @@ fun SearchResultsScreen(
                         .padding(horizontal = 16.dp, vertical = 4.dp)
                 )
 
-                Box(modifier = Modifier.weight(1f)) {
+                BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                    // A single list is kept at most 840dp wide; "All" uses the width for two columns
+                    val centeredPadding = contentPadding.centeredIn(maxWidth, LocalLayoutDirection.current)
+
                     when (source) {
                         SearchSource.All -> AllResultsList(
                             model = model,
                             contentPadding = contentPadding,
+                            twoColumns = maxWidth >= TWO_COLUMNS_MIN_WIDTH,
                             onMoreMusic = { model.source.value = SearchSource.Music },
                             onMoreYouTube = { model.source.value = SearchSource.YouTube }
                         )
 
                         SearchSource.Music -> MusicResults(
                             model = model,
-                            contentPadding = contentPadding,
+                            contentPadding = centeredPadding,
                             onSearchYouTube = { model.source.value = SearchSource.YouTube }
                         )
 
-                        SearchSource.YouTube -> YouTubeResults(model = model, contentPadding = contentPadding)
+                        SearchSource.YouTube -> YouTubeResults(model = model, contentPadding = centeredPadding)
                     }
                 }
             }
@@ -216,10 +227,15 @@ private fun QueryBar(
     }
 }
 
+/**
+ * "All": the top of YouTube Music, then of YouTube; on a wide window (REDESIGN §2.7) the two side by
+ * side.
+ */
 @Composable
 private fun RouteHandlerScope.AllResultsList(
     model: SearchResultsModel,
     contentPadding: PaddingValues,
+    twoColumns: Boolean,
     onMoreMusic: () -> Unit,
     onMoreYouTube: () -> Unit
 ) {
@@ -236,6 +252,19 @@ private fun RouteHandlerScope.AllResultsList(
             val results = state.value
 
             if (results.isEmpty) NothingFound(onSearchYouTube = onMoreYouTube)
+            else if (twoColumns && !results.musicEmpty) Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("results_two_columns")
+            ) {
+                LazyColumn(contentPadding = contentPadding, modifier = Modifier.weight(1f)) {
+                    musicSection(results, routes = this@AllResultsList, onMore = onMoreMusic, onRetry = model::loadAll)
+                }
+                LazyColumn(contentPadding = contentPadding, modifier = Modifier.weight(1f)) {
+                    youTubeSection(results, routes = this@AllResultsList, onMore = onMoreYouTube, onRetry = model::loadAll)
+                }
+            }
             else LazyColumn(contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
                 // Nothing in the catalog: YouTube goes first, with a word why
                 if (results.musicEmpty) {

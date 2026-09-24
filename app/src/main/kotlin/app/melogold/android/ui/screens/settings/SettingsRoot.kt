@@ -36,7 +36,8 @@ fun RouteHandlerScope.SettingsRoot() {
 
     TabRootScaffold(
         title = stringResource(R.string.nav_settings),
-        onScrollToTop = { scrollState.animateScrollTo(0) }
+        onScrollToTop = { scrollState.animateScrollTo(0) },
+        centered = true
     ) { contentPadding ->
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),

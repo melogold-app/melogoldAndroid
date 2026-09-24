@@ -85,7 +85,7 @@ fun ArtistItemsScreen(
         val albums by model.albums.collectAsState()
         val layoutDirection = LocalLayoutDirection.current
 
-        CollectionScaffold(title = title, subtitle = subtitle, onBack = pop) { padding ->
+        CollectionScaffold(title = title, subtitle = subtitle, onBack = pop, centered = false) { padding ->
             LoadableContent(
                 loadable = albums,
                 onRetry = model::load,

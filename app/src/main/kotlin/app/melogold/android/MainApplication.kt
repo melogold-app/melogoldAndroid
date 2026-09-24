@@ -1,6 +1,5 @@
 package app.melogold.android
 
-import app.melogold.android.ui.shell.SearchSource
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
@@ -31,6 +30,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -67,6 +67,7 @@ import app.melogold.android.ui.shell.LocalLinkHandler
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.MainNavState
 import app.melogold.android.ui.shell.MainNavigationBarHeight
+import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.ui.shell.rememberAppSnackbar
 import app.melogold.android.ui.shell.rememberMainNavState
@@ -100,12 +101,12 @@ import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.io.File
 
 // Viewmodel in order to avoid recreating the entire Player state (WORKAROUND)
 class MainViewModel : ViewModel() {
@@ -210,16 +211,10 @@ class MainActivity : ComponentActivity() {
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     @OptIn(ExperimentalLayoutApi::class)
     fun setContent() = setContent {
-        val windowInsets = WindowInsets.systemBars
+        // Edge to edge: backgrounds reach under a camera cutout, content keeps clear of it
+        val windowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
 
-        AppWrapper(
-            modifier = Modifier.padding(
-                WindowInsets
-                    .displayCutout
-                    .only(WindowInsetsSides.Horizontal)
-                    .asPaddingValues()
-            )
-        ) {
+        AppWrapper {
             val density = LocalDensity.current
             val shellLayout = rememberShellLayout()
             val bottomDp = with(density) { windowInsets.getBottom(density).toDp() }

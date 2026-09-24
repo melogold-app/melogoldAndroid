@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.WideNavigationRail
@@ -70,7 +72,9 @@ fun MainNavigationRail(
             }
         } else null,
         // The display cutout is already padded by the activity's root
-        windowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical),
+        windowInsets = WindowInsets.systemBars
+            .union(WindowInsets.displayCutout)
+            .only(WindowInsetsSides.Start + WindowInsetsSides.Vertical),
         arrangement = if (compact) Arrangement.Center else WideNavigationRailDefaults.arrangement,
         contentPadding = if (compact) PaddingValues(vertical = 4.dp) else WideNavigationRailDefaults.ContentPadding,
         modifier = modifier.semantics {

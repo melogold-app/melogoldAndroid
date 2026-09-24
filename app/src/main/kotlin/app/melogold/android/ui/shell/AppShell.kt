@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -35,7 +39,6 @@ import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.service.downloadState
 import app.melogold.android.ui.components.BottomSheetMenu
 import app.melogold.android.ui.components.BottomSheetState
-import androidx.compose.material3.LinearProgressIndicator
 import app.melogold.android.ui.screens.player.Player
 import kotlin.math.roundToInt
 
@@ -131,6 +134,13 @@ fun AppShell(
     Player(
         layoutState = playerSheetState,
         collapsedBottomExtra = bottomBarHeight,
+        // Next to the rail, the rail already keeps clear of the start side (and its cutout)
+        windowInsets = WindowInsets.systemBars
+            .union(WindowInsets.displayCutout)
+            .only(
+                if (layout.useRail) WindowInsetsSides.End + WindowInsetsSides.Vertical
+                else WindowInsetsSides.Horizontal + WindowInsetsSides.Vertical
+            ),
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .let { modifier ->

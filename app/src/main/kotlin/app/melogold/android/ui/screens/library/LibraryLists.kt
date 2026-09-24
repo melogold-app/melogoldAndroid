@@ -88,7 +88,7 @@ fun LibraryPlaylistsScreen() = LibraryListScreen(title = R.string.library_playli
  */
 @Route
 @Composable
-fun LibraryAlbumsScreen() = LibraryListScreen(title = R.string.library_albums) { padding ->
+fun LibraryAlbumsScreen() = LibraryListScreen(title = R.string.library_albums, grid = true) { padding ->
     val model = rememberScreenModel("library/lists") { LibraryListsModel() }
     val albums by model.albums.collectAsState()
     val list = albums ?: return@LibraryListScreen
@@ -120,7 +120,7 @@ fun LibraryAlbumsScreen() = LibraryListScreen(title = R.string.library_albums) {
  */
 @Route
 @Composable
-fun LibraryArtistsScreen() = LibraryListScreen(title = R.string.library_artists) { padding ->
+fun LibraryArtistsScreen() = LibraryListScreen(title = R.string.library_artists, grid = true) { padding ->
     val model = rememberScreenModel("library/lists") { LibraryListsModel() }
     val artists by model.artists.collectAsState()
     val list = artists ?: return@LibraryListScreen
@@ -151,12 +151,13 @@ fun LibraryArtistsScreen() = LibraryListScreen(title = R.string.library_artists)
 @Composable
 private fun LibraryListScreen(
     title: Int,
+    grid: Boolean = false,
     content: @Composable RouteHandlerScope.(PaddingValues) -> Unit
 ) = RouteHandler {
     GlobalRoutes()
 
     Content {
-        CollectionScaffold(title = stringResource(title), subtitle = null, onBack = pop) { padding ->
+        CollectionScaffold(title = stringResource(title), subtitle = null, onBack = pop, centered = !grid) { padding ->
             content(padding)
         }
     }

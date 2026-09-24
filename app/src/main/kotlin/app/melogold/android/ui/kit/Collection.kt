@@ -4,11 +4,17 @@ package app.melogold.android.ui.kit
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -33,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,21 +48,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.LaunchedEffect
 import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.R
 import kotlinx.collections.immutable.ImmutableList
 
+/** Lists are at most this wide on wide windows, centered (REDESIGN §2.7); grids add columns instead. */
+val MaxContentWidth = 840.dp
+
+/** The side inset that keeps content at most [MaxContentWidth] wide, centered, in [width]. */
+fun centeredInset(width: Dp): Dp = ((width - MaxContentWidth) / 2).coerceAtLeast(0.dp)
+
+/** This padding plus the side insets that keep content at most [MaxContentWidth] wide, centered, in [width]. */
+fun PaddingValues.centeredIn(width: Dp, layoutDirection: LayoutDirection): PaddingValues {
+    val inset = centeredInset(width)
+    return PaddingValues(
+        start = calculateStartPadding(layoutDirection) + inset,
+        top = calculateTopPadding(),
+        end = calculateEndPadding(layoutDirection) + inset,
+        bottom = calculateBottomPadding()
+    )
+}
+
 /**
  * The frame of a collection (REWRITE §3.2): a medium flexible app bar with the title, a subtitle
  * ("312 tracks · 18 h 40 min"), Back and [actions], collapsing into a small bar as the list
- * scrolls. The content gets the padding of the bar and of the mini player.
+ * scrolls. The content gets the padding of the bar and of the mini player; a [centered] one (a
+ * list, not a grid) also the side insets that keep it at most 840dp wide on wide windows.
  */
 @Composable
 fun CollectionScaffold(
@@ -63,10 +90,13 @@ fun CollectionScaffold(
     subtitle: String?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    centered: Boolean = true,
     actions: @Composable RowScope.() -> Unit = { },
     content: @Composable (PaddingValues) -> Unit
-) {
+) = BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    // A centered list takes its title along: the bar keeps its full-width background
+    val inset = if (centered) centeredInset(maxWidth) else 0.dp
 
     Scaffold(
         topBar = {
@@ -82,16 +112,17 @@ fun CollectionScaffold(
                     }
                 },
                 actions = actions,
+                windowInsets = TopAppBarDefaults.windowInsets.add(WindowInsets(left = inset, right = inset)),
                 scrollBehavior = scrollBehavior
             )
         },
         contentWindowInsets = LocalPlayerAwareWindowInsets.current.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         containerColor = MaterialTheme.colorScheme.surface,
-        modifier = modifier
+        modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection)
             .testTag("collection")
     ) { padding ->
-        content(padding)
+        content(if (centered) padding.centeredIn(maxWidth, LocalLayoutDirection.current) else padding)
     }
 }
 
