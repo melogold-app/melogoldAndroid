@@ -54,13 +54,15 @@ fun BuiltInPlaylistScreen(builtInPlaylist: BuiltInPlaylist) {
                 onTopIconButtonClick = pop,
                 tabIndex = tabIndex,
                 onTabChange = onTabIndexChanged,
+                // Each collection is its own screen in the Library (REWRITE §3.2): no tabs between them
                 tabColumnContent = {
-                    tab(0, R.string.favorites, R.drawable.heart)
-                    tab(1, R.string.offline, R.drawable.airplane)
-                    tab(2, topTabTitle, R.drawable.trending_up)
-                    tab(3, R.string.history, R.drawable.history)
-                },
-                tabsEditingTitle = stringResource(R.string.playlists)
+                    when (builtInPlaylist) {
+                        BuiltInPlaylist.Favorites -> tab(0, R.string.favorites, R.drawable.heart)
+                        BuiltInPlaylist.Offline -> tab(1, R.string.offline, R.drawable.airplane)
+                        BuiltInPlaylist.Top -> tab(2, topTabTitle, R.drawable.trending_up)
+                        BuiltInPlaylist.History -> tab(3, R.string.history, R.drawable.history)
+                    }
+                }
             ) { currentTabIndex ->
                 saveableStateHolder.SaveableStateProvider(key = currentTabIndex) {
                     BuiltInPlaylist

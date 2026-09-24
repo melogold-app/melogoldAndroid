@@ -13,4 +13,5 @@
     <string name="kit_menu">Menu</string>
     <string name="kit_explicit">Explicit</string>
     <string name="kit_show_all">All</string>
+    <string name="kit_back">Back</string>
 </resources>

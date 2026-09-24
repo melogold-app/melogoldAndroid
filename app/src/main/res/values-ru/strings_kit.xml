@@ -12,4 +12,5 @@
     <string name="kit_menu">Меню</string>
     <string name="kit_explicit">Откровенный текст</string>
     <string name="kit_show_all">Все</string>
+    <string name="kit_back">Назад</string>
 </resources>
