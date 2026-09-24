@@ -2,6 +2,8 @@
 
 package app.melogold.android.ui.screens.settings
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
@@ -55,13 +58,29 @@ import app.melogold.core.ui.LocalAppearance
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
+/**
+ * A section of Settings, opened from the Settings root as a list row (M3: one level of list, then
+ * a page; no tabs).
+ */
+enum class SettingsPage(
+    @param:StringRes val title: Int,
+    @param:DrawableRes val icon: Int
+) {
+    Appearance(R.string.appearance, R.drawable.ms_palette),
+    Player(R.string.player, R.drawable.ms_play_arrow),
+    Cache(R.string.cache, R.drawable.ms_cached),
+    Database(R.string.database, R.drawable.ms_backup),
+    Other(R.string.other, R.drawable.ms_tune),
+    About(R.string.about, R.drawable.ms_info)
+}
+
+/**
+ * `settingsPageRoute`: one section with Back and its title in a small app bar.
+ */
 @Route
 @Composable
-fun SettingsScreen() {
-    val saveableStateHolder = rememberSaveableStateHolder()
-    val [tabIndex, onTabChanged] = rememberSaveable { mutableIntStateOf(0) }
-
-    PersistMapCleanup("settings/")
+fun SettingsPageScreen(page: SettingsPage) {
+    PersistMapCleanup("settings/${page.name}/")
 
     RouteHandler {
         GlobalRoutes()
@@ -69,28 +88,20 @@ fun SettingsScreen() {
         Content {
             Scaffold(
                 key = "settings",
-                topIconButtonId = R.drawable.chevron_back,
+                topIconButtonId = 0,
                 onTopIconButtonClick = pop,
-                tabIndex = tabIndex,
-                onTabChange = onTabChanged,
-                tabColumnContent = {
-                    tab(0, R.string.appearance, R.drawable.color_palette, canHide = false)
-                    tab(1, R.string.player, R.drawable.play, canHide = false)
-                    tab(2, R.string.cache, R.drawable.server, canHide = false)
-                    tab(3, R.string.database, R.drawable.server, canHide = false)
-                    tab(4, R.string.other, R.drawable.shapes, canHide = false)
-                    tab(5, R.string.about, R.drawable.information, canHide = false)
-                }
-            ) { currentTabIndex ->
-                saveableStateHolder.SaveableStateProvider(currentTabIndex) {
-                    when (currentTabIndex) {
-                        0 -> AppearanceSettings()
-                        1 -> PlayerSettings()
-                        2 -> CacheSettings()
-                        3 -> DatabaseSettings()
-                        4 -> OtherSettings()
-                        5 -> About()
-                    }
+                tabIndex = 0,
+                onTabChange = { },
+                tabColumnContent = { tab(0, page.title, page.icon) },
+                title = stringResource(page.title)
+            ) {
+                when (page) {
+                    SettingsPage.Appearance -> AppearanceSettings()
+                    SettingsPage.Player -> PlayerSettings()
+                    SettingsPage.Cache -> CacheSettings()
+                    SettingsPage.Database -> DatabaseSettings()
+                    SettingsPage.Other -> OtherSettings()
+                    SettingsPage.About -> About()
                 }
             }
         }
@@ -307,14 +318,14 @@ fun SettingsCategoryScreen(
                     .asPaddingValues()
             )
     ) {
-        Header(title = title) {
-            description?.let { description ->
-                BasicText(
-                    text = description,
-                    style = typography.s.secondary
-                )
-                SettingsGroupSpacer()
-            }
+        // The title is in the app bar of the page (SettingsPageScreen)
+        description?.let { description ->
+            BasicText(
+                text = description,
+                style = typography.s.secondary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            SettingsGroupSpacer()
         }
 
         content()

@@ -15,6 +15,8 @@ import app.melogold.android.ui.screens.mood.MoreMoodsScreen
 import app.melogold.android.ui.screens.playlist.PlaylistScreen
 import app.melogold.android.ui.screens.search.SearchResultsEntry
 import app.melogold.android.ui.screens.settings.LogsScreen
+import app.melogold.android.ui.screens.settings.SettingsPage
+import app.melogold.android.ui.screens.settings.SettingsPageScreen
 import app.melogold.compose.routing.Route0
 import app.melogold.compose.routing.Route1
 import app.melogold.compose.routing.Route4
@@ -41,6 +43,7 @@ val moreAlbumsRoute = Route0("moreAlbumsRoute")
 val libraryPlaylistsRoute = Route0("libraryPlaylistsRoute")
 val libraryAlbumsRoute = Route0("libraryAlbumsRoute")
 val libraryArtistsRoute = Route0("libraryArtistsRoute")
+val settingsPageRoute = Route1<SettingsPage>("settingsPageRoute")
 val searchResultRoute = Route1<String>("searchResultRoute")
 
 /**
@@ -71,6 +74,10 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     libraryArtistsRoute {
         LibraryArtistsScreen()
+    }
+
+    settingsPageRoute { page ->
+        SettingsPageScreen(page = page)
     }
 
     localPlaylistRoute { playlistId ->
