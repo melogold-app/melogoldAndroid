@@ -1,0 +1,1678 @@
+{
+  "format": "melogold-innertube-fixtures",
+  "formatVersion": 1,
+  "visitorDataPlaceholder": "CgtBTk9OWU1JWkVEMCiAgICABg%3D%3D",
+  "files": [
+    {
+      "file": "web/channel-videos-daftpunk.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "UC_kRDKYrUlrbtrSiyu5Tflg",
+        "params": "EgZ2aWRlb3PyBgQKAjoA"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 317253
+    },
+    {
+      "file": "web/channel-videos-daftpunk.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "UC_kRDKYrUlrbtrSiyu5Tflg",
+        "params": "EgZ2aWRlb3PyBgQKAjoA"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 328794
+    },
+    {
+      "file": "web/channel-videos.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "UCy_vnPBNh9FqtyH9Qc-aiSA",
+        "params": "EgZ2aWRlb3PyBgQKAjoA"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 308681,
+      "note": "вкладка «Видео» канала Gavrik's Archive"
+    },
+    {
+      "file": "web/channel-videos.p01.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "continuation": "4qmFsgLZCRIYVUN5X3ZuUEJOaDlGcXR5SDlRYy1haVNBGrwJOGdhRUJ4cUJCM3ItQmpyN0Jnb2tObUptWVdRM1pEa3RNREF3TUMweU5UTmlMV0psWmpndE16UmpOMlU1TWpBME5tTXpFdEFHUVdaelYydHNORWt0YXpKeFNWTndZa3M1YzFkWVZVMU9jRVI1UVZRNU5XTnpkME4yV1VnM1JVUTJMV2RVZGs5RWIwRktWWHBPTUVFNVZIaFFWVFIzU25wWVZIaFhhRTVOZVc1NGNEZFNTR3c1ZW5JME1HSmZhbWg2T1U5VlozY3lObUZITkZKdk1reGZWSEZyU25sTFNVZHpXbmxsWlRoaGFVaGZWVFJIUkdGNVpWSm1NRjkzZWkxclFtSTBaV0phY0dneU4zWXRka3R0ZVhwUmFqSjJhRjlxU1VReGVIQTRUVk5tWTNkUldGOHpTRU53ZVhkalJFbHBZV00wTjJaVVZYSTFORWhOWDNwQ05GOUVVM2xmZUZOd1dXaGxZbEpEVVZSNE9WZHBjV3BHVlZCSVluQklkbGhpYkRoV2JGcHhabk5tTlZaMGVtZHVXbHBzZVhkU1ZXMXFNMlJJYTFKblJFRkJSREl3WVUxelJrMTVSamx2Y0Uwd1EwaGxlbVJMVkUxSFFYWlpMVGRXWlVkSmJXNXViRUo0UkZoS1UzSXdRMk5hYW1GVE5uZFRVelZ3ZURZMmN6bERaVXRmVW1wdFJ6STVjemhLTlUwMFIycFdlblZmY21ReFdtb3hja3RZVm5wUFNtbHBOMDlYWDFWcmIwMUtWV2xwVHpaZlNYaDNXVkZwZEdkeGNtUlNXamhRUjFCTFJYUjRXVTl3YzFKSE5qa3dibkJFTjFkNGF6VlNTMDFRUWtaQlNFcElNMnd4V21oNWJUWlJSVFUwTlhSZlNVVmtXbk54TVUxMFExVkdWbEpaYVdKMVNYWkRMVTFmVVMxT1VGVlZkV2xxZVhvelptTnVXV2hEVDJVM2RteDVhamxoVDFOTk1FOUVWVWREWXkxWlNVUlNlVUZ6ZDFkNGRXbFdPVFEwTFhsYWFUbHJORVJETFd4b1NsVmFRelpDVjJnMVdEaDNSbFpQWW5oc2RFUTBORVpOUTFOUlUxcDRUWFZaWVVSaVF6bHlOVWhQU2t0V2FrRnViR2xsY2xSaFlVVmtXamR6V0dVMVJFazNkM1ZqVW1WWWMyNUpiRmhxZW5FeVVWWlZia3BRVUUxdWFFUjRZVkpFYXpoUk4yWm1jbWRQUjBGcmNGSkNaMU5YWkdKcmVIbFNNaTFYU214WVlWVlpaVjlrVVhWMk1EVm9iRzgzTjBSSU9IWkxMV2R2YVhwck5GVnpTVk0wVmpnMVoyNVdhbTVZVTJkaFlVMVpWbVZ6UlUxQ2RUTlNMVXR2U21OMWFEWmFOVU5oWmxJMWFuVlZaWE5DU2s5clVtazJWMEpRTmsxdVkxZHJabmhDWDBWUU1FZDFNVXROUzJ4S1pXVjZOVmxJTVhSRGNGa3pSSFEwYld0TGMycHJVVEpwVVd4Nk5tVjVkV2M1U0dnNU5WaGtiV2ROUVZwd04zSXpjVEk0WTBOWlFtMVdOVlI2YzFadVgwaFlaRzgxTTB0V1EzUm5hRVJaVEVZWUJBJTNEJTNE"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 289195,
+      "note": "продолжение web/channel-videos"
+    },
+    {
+      "file": "web/channel-videos.p01.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgLZCRIYVUN5X3ZuUEJOaDlGcXR5SDlRYy1haVNBGrwJOGdhRUJ4cUJCM3ItQmpyN0Jnb2tObUZtTkdZMU1ERXRNREF3TUMweVlUSXhMV0UyTUdJdFpEUm1OVFEzWldWbU1qQTBFdEFHUVdaelYydHNOVEJ0VDNST1pIZEdhRjh4ZUhGUk1tcGtVWE5JYUdwRFFYQnFSbGxhVmpCbVRuWTNhMDkxWlVWRU1sVk9jRXg1VkhSeGJIbGlURVJMUm1WMVJIUnlTbFI1U200M2JHZFlPRkp2UTNsRFkySm9kVUZVUnpSTmJFSkxVRFo0VjFKRmVqQnFSSEZTWnpsemJYZHJjRVZYV25WM2NuUm1NVmxmVkRGRVREWTVSblJqY0RGNk5tUm1lamhNUzNCeVZFRXhibWgyTkZRM2VFRjNSak5UUTFSVWFXMDRUR2s0V0ZGak1qbG5hbTFDT1ZGUFEyZGhXR1prYm5JMlJISnJMVFZXU1c1RmJFeElZMVV6VFc5dFdHUkJhWFZKVVZwamVGRldkVWRxWTB4VU4wWk5OeTB4T1dGa1VVSkNXRkpYUkhSc1ZtZGxRVVIyVUVGeVZHcDBaV05wWWtkQlNuSlJRamhvWXkxTlVuaEtielZsZURsSWRuWkZlVmhuWWxGMU1rWTVOelpoYVUxelRsQk5iRzB5VVVKS1pVMTZOSEJWVURWcGFuSXRSbWRqYjI5UE5WUmlZV3RPYkdOUlQyNTVhWGROVHkxeFNrRjFXWEV5YVZGRE5uRkpjRWhKY1dObVNsQlNNbkkyYUZGWWQyd3RhbFl0UVZONFgzVTVVemxaUVZnd1NWVTRaRGwxY2xwTmR5MDVjMGt5Y2pSYU1rZHlia0ZEV25CZlNURlBSRGxZVFZobVVrdERUREpsWHpaMk9GSjZaVEUyU21STk1EWk9VVmxLYXpCRVMxTXdhamRoVEc5NWJGSmxaRTkwTkcxVE5FaHhTRmR1UmxSaGEyRTRhSE14Y3pWRk5FUnlRbmhKV21WemJrSndhbWh4WkhoRWNTMXpjVEJPWmpGYWFHaHpOelZKYkhwWFpVcFVXVUkyWW13M2FsUkllRmh2TUZvMlYxZFdSMHBmWTNWMmNYaGZVbGRwVDBoc1pGOUVVSFpRV0hOa01VcE1PSEpFY0hkS1JXRk1VVzlrWlZSTldsUXpZa1l5Ym5wb1FUZFFkbk5qWmxoaVYyWkNUakJ0TmxSWVpHb3pPREl3WnpoUWRGWm9aV1ZFY0Voa00yTndNME51VGpjMmVYRlZiMFZwYW1OM1ZVRXlSRmRVYlZscmVWRmZhazQzUzNKWmJVODJablpFZEZCd2IwbGhUMGRFWDNOS01rUjBhalp4YUVwVWVteFdhRTFUVVhoMVgxaDJUbGxDVkUxa2JUUnZNblJ2ZGxCMU1scFdialpHYjJKbmNtTk9lbU5CTkU5QlJHRmZkMWgyUmtsamVrNXBMV3REUkhWT1pqUjVibFJxVHprM1RrcGZXRTlZYms1SWQza3llVEJrYkhCS2VHSlVWbGR4Y2paYWNHdHpNSEJDYTNOMVpFTmlZWHBKVVc1WVlXb3hkSEJrYXkxNFgxUmZMVzUyYVdWbVoxWnRjM0YzTjFOQlEzRmhRbDlmWWs4WUJBJTNEJTNE"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 297367,
+      "note": "продолжение web/channel-videos"
+    },
+    {
+      "file": "web/channel-videos.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "UCy_vnPBNh9FqtyH9Qc-aiSA",
+        "params": "EgZ2aWRlb3PyBgQKAjoA"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 319699,
+      "note": "вкладка «Видео» канала Gavrik's Archive"
+    },
+    {
+      "file": "web/resolve-url-handle-cyrillic.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/@%D0%9A%D0%B8%D0%BD%D0%BE%D0%93%D1%80%D1%83%D0%BF%D0%BF%D0%B0%D0%BA%D1%80%D0%BE%D0%B2%D0%B8-%D0%B74%D0%BC"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-handle-cyrillic.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/@%D0%9A%D0%B8%D0%BD%D0%BE%D0%93%D1%80%D1%83%D0%BF%D0%BF%D0%B0%D0%BA%D1%80%D0%BE%D0%B2%D0%B8-%D0%B74%D0%BC"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-handle-direct.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/@DaftPunkVEVO"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-handle-direct.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/@DaftPunkVEVO"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-handle.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/@daftpunk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 381,
+      "note": "ответ — urlEndpoint на /daftpunk, нужен второй шаг"
+    },
+    {
+      "file": "web/resolve-url-handle.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/@daftpunk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 381,
+      "note": "ответ — urlEndpoint на /daftpunk, нужен второй шаг"
+    },
+    {
+      "file": "web/resolve-url-legacy-c.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/c/daftpunk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-legacy-c.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/c/daftpunk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-legacy-user.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/user/daftpunkalive"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-legacy-user.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/user/daftpunkalive"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-not-found.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/@thisdoesnotexist-zz9qx"
+      },
+      "httpStatus": 404,
+      "recordedAt": "2026-09-24",
+      "bytes": 183,
+      "note": "HTTP 404"
+    },
+    {
+      "file": "web/resolve-url-not-found.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/@thisdoesnotexist-zz9qx"
+      },
+      "httpStatus": 404,
+      "recordedAt": "2026-09-24",
+      "bytes": 183,
+      "note": "HTTP 404"
+    },
+    {
+      "file": "web/resolve-url-vanity.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "url": "https://www.youtube.com/daftpunk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/resolve-url-vanity.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/navigation/resolve_url",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "url": "https://www.youtube.com/daftpunk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 495
+    },
+    {
+      "file": "web/search-channels.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgIQAg%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 113030
+    },
+    {
+      "file": "web/search-channels.p01.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "continuation": "EvIFEglkYWZ0IHB1bmsa5AVFZ0lRQWtnVWdnRVlWVU5mYTFKRVMxbHlWV3h5WW5SeVUybDVkVFZVWm14bmdnRVlWVU5TY2pGNFIxOHlWMGxFY3pFNFlUWmpTV2xEZUdWQmdnRVlWVU5MU0VaMlFYSjNVbmRSVlRKV1lsSnFUWEJoVmtkM2dnRVlWVU5CYkRSNmNuSm9Xa1paY2toaGJXUkZTMU5EVlV0bmdnRVlWVU52YXpkMU1raGFPRVpGWmxsTVgwVk9aRTFXTkc5UmdnRVlWVU5UTmt0Q1oxcHZUR2RTUzFwWk0xRnpNSE5YZDFwM2dnRVlWVU5uVUhGNGNEZzVkbFI0WXpVNVRISk9VRUkwYTJKQmdnRVlWVU5rTUdFME1HNDNlSFZUYW5jNFpVaFFXVFpzZG5obmdnRVlWVU4yTmtaUVQzVlBkV2hCY0ZabmVVSjZRMFpuVkdoM2dnRVlWVU0xY0ZCdE4wbFpRbVpKYlRORk5raFZWRzl1V0RCUmdnRVlWVU5mVlU0NFRIUnpTVE5rVmpWaVVsazBOMFpoUzJWM2dnRVlWVU01ZVd4Q05YcGhUbkV0VFVRM2QyVXRWMnBITWtGbmdnRVlWVU5aY0ZGcE5HVmZTbkZGTVV0TlRtWXdTV1pWWHpKUmdnRVlWVU42V0UxUmVHZFhjR2RvU3pkc1lrWlljVGc0WjNWQmdnRVlWVU5FYzFSR1ExRktkRGQwUWtNdGFuQkpaRFJuWlRGbmdnRVlWVU5TVVRoWWVuQTVkbTFKUVhaNGVqQm9Ta0pNYjFSUmdnRVlWVU5VTm5Cb1JYWnhkVzVJUVhaUFRGcFplblU0TmtGbmdnRVlWVU5IU3pkUVZqRklSR2hZVUZsNWFuaHRNR2xJYUUxUmdnRVlWVU5hWTI1NVZIUlVNRkppUmxVMFlsRlBlazlDVldkbmdnRVlWVU5RVkdaUlpVZzJkakV3ZFVSaFdrNDBiVkZ1TjJoQnNnRUdDZ1FJRkJBQxiB4OgYIgtzZWFyY2gtZmVlZA%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 107628,
+      "note": "продолжение web/search-channels"
+    },
+    {
+      "file": "web/search-channels.p01.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "EokGEiDQutC40L3QviDQs9GA0YPQv9C_0LAg0LrRgNC-0LLQuBrkBUVnSVFBa2dVZ2dFWVZVTlFOR3RHTTFWT1RuWXRZazU1VlUwelUwUXlhVFZCZ2dFWVZVTk1PVTVSTURab04wa3dRMUpWWTBkNFVGZE5kR3RSZ2dFWVZVTmFNbUZtZUd0Wk1XMXhkSEpaV1hWRk1USmlPR2xCZ2dFWVZVTlBheTFCWkZOV01ESjZRVVpNU0dKblIwRkRWMVJCZ2dFWVZVTjZZVE50ZDJoNVZVeEtlbmxwV2pWa1FUZHliMHhCZ2dFWVZVTlJYMmd6TFd0bmFWRTJkMDQyVUZKQlVteGhXbk4zZ2dFWVZVTmFSR0pJTjNwNk1XdEVUMWcwTmtsdU9UQnNNMU5uZ2dFWVZVTlZZbU5rYzFsMGIwSjZYemRuVjJabldrbDNhWE5uZ2dFWVZVTTRSMEZMY2taSGNqWk9TVWgxTnpGb2VUbDZSekpuZ2dFWVZVTlFaRWd0YXpkblpXazNkbXhWWldwNFVXWTVNMEZSZ2dFWVZVTkRibVJ3TTFGeWRWQk5WSFZPVDJKMmExTmZkR05uZ2dFWVZVTmxjblZXT1hadVptSnpPRk55TmtWaWVVaDJkR2xuZ2dFWVZVTjBTRFJSVUV0Zk1sZG1XbTU1WmxKb2JFY3lWWE5CZ2dFWVZVTmxUM05hYXpJdFpsRnBORzEyVEZvM1JXaG5iRXhuZ2dFWVZVTjNNVkozVURCTlFsaEtWV05CZERCRmJrMWlXVGhSZ2dFWVZVTlZOR2hwZVZaVU1sVklNbk5mVWpCRGVVOVdabGhCZ2dFWVZVTkpSMGRwVWtOT1ZqVmxXWFUzY1Rob1NWTlpRMWxCZ2dFWVZVTktObTFLTVhGWE4xWXpVRU5pTWtsZllrOVZlVEYzZ2dFWVZVTmZOVTFTV0VwbGJWa3dZVFZoVmpSTFRYaHBhR1IzZ2dFWVZVTlpNRTVhUzBSeGIzSlVjblZxV0VoMGREaG9OVkZuc2dFR0NnUUlGQkFDGIHg6BgiC3NlYXJjaC1mZWVk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 121223,
+      "note": "продолжение web/search-channels"
+    },
+    {
+      "file": "web/search-channels.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgIQAg%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 133306
+    },
+    {
+      "file": "web/search-live.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "lofi",
+        "params": "EgJAAQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 244222
+    },
+    {
+      "file": "web/search-live.p01.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "continuation": "EpkDEgRsb2ZpGpADRWdKQUFVZ1VnZ0VMY2taYVNFOUliQzFNT0VHQ0FRc3pVRVpLT1ZORlZGTTBUWUlCQzBVeWRrOU9abnB2ZVZKSmdnRUxia2szTWpWcFZuTjViMUdDQVF0S1JDMXJUVWx3UkdadVdZSUJDM0pRYW1WNk9IbzJNWEpKZ2dFTFFUbGtiV3BvWkd4QlMyZUNBUXN4Vkd3eVJuUldNRFp4YjRJQkMwbDRVRUZPYldwUVlXVnJnZ0VMTUcxMVNFWkNVMmw1WW5lQ0FRdGliRUZHZUdwb1p6WXlhNElCQzNsbU5VNVBlWGt4VTFoVmdnRUxNMGRSV1Rnd2FubDVjMUdDQVF0VVptMUZRMEo2YlU5dU5JSUJDM1paU1ZsSlZtMVBiek5SZ2dFTFZHWlhiM1JwZVZoSFprbUNBUXQ0VDFKRFlrbHdkSEZqWTRJQkMwTjNVRU41TVVkTVV6TTRnZ0VMUVRkVWMxZG1hVGg0YjBXQ0FRdEdhM2t4WWs5RlJ6SkZPTElCQmdvRUNCUVFBZyUzRCUzRBiB4OgYIgtzZWFyY2gtZmVlZA%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 244714,
+      "note": "продолжение web/search-live"
+    },
+    {
+      "file": "web/search-live.p01.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "EpkDEgRsb2ZpGpADRWdKQUFVZ1VnZ0VMY2taYVNFOUliQzFNT0VHQ0FRdEZNblpQVG1aNmIzbFNTWUlCQ3pOUVJrbzVVMFZVVXpSTmdnRUxTa1F0YTAxSmNFUm1ibG1DQVF0Qk9XUnRhbWhrYkVGTFo0SUJDekZVYkRKR2RGWXdObkZ2Z2dFTE1HMTFTRVpDVTJsNVluZUNBUXRKZUZCQlRtMXFVR0ZsYTRJQkMyNUpOekkxYVZaemVXOVJnZ0VMY2xCcVpYbzRlall4Y2ttQ0FRdDJXVWxaU1ZadFQyOHpVWUlCQzBOM1VFTjVNVWRNVXpNNGdnRUxlV1kxVGs5NWVURlRXRldDQVFzelIxRlpPREJxZVhselVZSUJDelY1ZURaQ1YyeEZWbU5aZ2dFTFlteEJSbmhxYUdjMk1tdUNBUXRVWmxkdmRHbDVXRWRtU1lJQkMzaFBVa05pU1hCMGNXTmpnZ0VMVkdadFJVTkNlbTFQYmpTQ0FRdEdhM2t4WWs5RlJ6SkZPTElCQmdvRUNCUVFBZyUzRCUzRBiB4OgYIgtzZWFyY2gtZmVlZA%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 261190,
+      "note": "продолжение web/search-live"
+    },
+    {
+      "file": "web/search-live.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "lofi",
+        "params": "EgJAAQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 264194
+    },
+    {
+      "file": "web/search-playlists.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgIQAw%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 201832
+    },
+    {
+      "file": "web/search-playlists.p01.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "continuation": "EvoHEglkYWZ0IHB1bmsa7AdFZ0lRQTBnVWdnRWlVRXhrV0VweVdEbFBjMkpQVm5FeVZFdDJWV016ZUVkVmNESlNiVGh1VkZWV2FJSUJJbEJNV2pZd2NrRmtWRXhXVG5WRFFWZEVPRmN6WkZwVVRFSllZbE5RWkdFdFJGaUNBU0pRVEZOa2IxWlFUVFZYYm01a1RGZzJUbWR0WWpoM2EzUk5Sall4WkVwcGNrdHNnZ0VpVUV4VFpHOVdVRTAxVjI1dVpVVlNRa3Q1WTBFeGJHaE9YM1pRVFRaSlIybEJaNElCSWxCTU5VRXRSbGhJUW5obmFqTkhabXgxWVdwbExVMTFhRmhETldsQ2MxcEdOWGVDQVNKUVRGTmtiMVpRVFRWWGJtNWtVMUZGV0ZKNk56QTBlVkZyUzNkNE56WkhkbEJXZ2dFclVrUkRURUZMTlhWNVgyNHlNRVpTV1ZGWVRuUXhjREYzVXpVMVRtb3ljakUwU1c5MVR6VjNaV0ZaVllJQklsQk1VMlJ2VmxCTk5WZHVibVV6VVRKQmVHOXpaVzF6VkdoNWQyaHlZVW93YzNXQ0FTSlFURlJVTjNwaWIxOUdkamh2YkhkaGVuVnplamRyWWxwNVJHWTFUMm8yUms1NmdnRWlVRXhUWkc5V1VFMDFWMjV1Wm1KSFZuRlJWRU5ZYWxKdVdtUTRhRmxNV1RCRFpJSUJJbEJNVTJSdlZsQk5OVmR1Ym1SV1gwRllWMGRZY0hwVmMwbDNObVpPTVZKUlZrNkNBU0pRVEZOaVJFeEdPSGRSTTI5SmEyMW5kMFpKTTBodFJWbFdMWEZvVEhkTVZraDRnZ0VpVUV4NGQzTXhUVEl0ZW1wQlVFNWlXR1ZLY2toZlZGUnpkSGRUVVdSdE9VdGFOSUlCSWxCTVlsWkZhMDVWUkdodFkwdHZaR3RaYkZsNGRsRXhNMDVVYzBZdFUxZ3lXa0dDQVNKUVRHRnlNR2RWWTNKVE1URm5VemRqUnpoTWIxQmZSMmxLY1d4UVV6Uk1ZMUZDZ2dFaVVFdzRMVzlmUzFwM2F6VTRlWGd5WlZSSlIyTkxNVVYyU0ZwclRVbGZYMVJvTklJQklsQk1VMkpFVEVZNGQxRXpiMHRqYzNSa09YbGlRMU4yTW14T2JWODRUbFJaYTBtQ0FSSlFURVUwUkVKR05VSkROa0k1TmpBeU5EaUNBU0pRVEhoQk5qZzNkRmwxVFZkcGIyNXlTRWxoWkVaTFZqWk1lbmd6TFZjelpsRk1nZ0VpVUV4VFlrUk1SamgzVVROdlRGcHJTbW81WlVZeU9HTm1lUzB4ZFhVNVVGTk5kYklCQmdvRUNCUVFBZyUzRCUzRBiB4OgYIgtzZWFyY2gtZmVlZA%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 199652,
+      "note": "продолжение web/search-playlists"
+    },
+    {
+      "file": "web/search-playlists.p01.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "EsUHEiDQutC40L3QviDQs9GA0YPQv9C_0LAg0LrRgNC-0LLQuBqgB0VnSVFBMGdVZ2dFaVVFeFpURlp2TldsQ09XZGlTRlpDTFRCU09VaFBia1pLYlhOemJEaEpRMlZEVUlJQklsQk1hRmQxYmxKeVZtSlNjamhxWW01R1NUTk1WVWRMUzNCak9WcEZTRXRTTjBLQ0FTSlFURkZTWVhSMlYwSlVkMDU0WVhWRWFYcHZVbEF4U2xoTFJuYzJTV1J1T0VJeGdnRWlVRXhPV0hSU1VrRk5ZM0oxZVZoV2FUaHplUzFOZG10aFJVeEVhblExYjJ4RFVZSUJJbEJNV25wa0xWUjZiRlZWVW1wM2NHNUxWVzVTTm1oRmFESXpVRzlSTXpOemFHT0NBU0pRVEhWeWFYUjBTMGRoY2tKelMxVlFkRTlWZUVwd1RIQnZRVU5HU0RCeExVVmhnZ0VpVUV4cGQzRkZTbk0zY0hjMlMzZGFlQzFvTVdWTVVtdFpWVlpYWVhCeWJHeG5jNElCSWxCTWMwZFVjMlZVY1ZCMll6SklSV3B1TWxGbVdrcGpjVGt0VlRsek0zQllhSHFDQVJKUVRFRTJSVUkyUVVFMFFqTXpNVUpGUXpTQ0FSSlFURE5FUVRJd1FrWTBOVFZHTkRrd05qQ0NBUkpRVERJNU5EY3lRVGRCT1VVMU1FTTJSakNDQVNKUVRHdHFSVUo0V0ZCaWFWSTBOWHBVTlUxbE16bDVTRlJpZG1KbVMybzBXRE16Z2dFU1VFd3lOall5TnpNeE1qWkVNRUkwTjBZNWdnRWlVRXhMYzBaWlRtUjRVWFpuYzJoV1VEY3phMTl6V21ScFUyY3labGhLYzNaVVU0SUJJbEJNVTBOa1MyRldlVkEzUzJsT2QyczBSalZtYm1NeVJEQnpjMmh0UjFFd2QybUNBU0pRVEV0alYwWktNVUZSWjJJNFowaEhUVjlXTkhKRVNHOWpUemhmWkd0Q05GQXdnZ0VpVUV4VmJYcEtTWHBtY2pKUk1GbFBYMVl4Y1dzd2EzTlVWVzFEWjBkUlJsUXhlb0lCSWxCTWEzTmxSVTQwVHpZdFpVVk9NV2MyU2xwbFdFWllXRlpTUVZnemJYVldjWG1DQVNKUVRFa3lkR1ZJTkVSV2RXb3lWMVk0YVdKeWMyaGxRbE5sTWpsa1NETkJlbWhGZ2dFaVVFeE9RblpuY21oR2J6VmhaMko1YkY4MU9HVTRYMjF2UW1JMVkweE9VMnRSYkxJQkJnb0VDQlFRQWclM0QlM0QYgeDoGCILc2VhcmNoLWZlZWQ%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 217409,
+      "note": "продолжение web/search-playlists"
+    },
+    {
+      "file": "web/search-playlists.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgIQAw%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 205944
+    },
+    {
+      "file": "web/search-videos.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgIQAQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 272194
+    },
+    {
+      "file": "web/search-videos.p01.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "continuation": "Ep4DEglkYWZ0IHB1bmsakANFZ0lRQVVnVWdnRUxZVFYxVVUxM1VrMUlZM09DQVF0R1IwSm9VV0p0VUhkSU9JSUJDM05QVXpsaFQwbFlVRVZyZ2dFTFZtVmhkVlZTUkMxeFRHdUNBUXRMTUVoVFJGOXBNa1IyUVlJQkMxUkRaRFpRWm5oUGVUQlpnZ0VMUWpNNFExa3RORkprTm5PQ0FRdG5RV3BTTkY5RFlsQndVWUlCQzBORFNHUk5TVVZIWVdGTmdnRUxOVTVXTmxKa2RqRmhNMG1DQVFzMGQyaEVOblZCY25sTmM0SUJDMGxPWW1kSE9VMHdWMWxGZ2dFTFRrWXRhMHg1TkRSSWJIT0NBUXRJVWpkNU0yWXhPRlZuT0lJQkMzZEpUVk5WT0c5MFV5MW5nZ0VMZW1oc0xVTnpNUzF6UnpTQ0FRdDVVMHhqT0dkYU0yOUZZNElCQzFCM1NVeHJXVGxuVW5KamdnRUxkRTVrVGpSbFptUmtVV09DQVF0cGJVSnNVRmhpUVhZMlJiSUJCZ29FQ0JRUUFnJTNEJTNEGIHg6BgiC3NlYXJjaC1mZWVk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 360355,
+      "note": "продолжение web/search-videos"
+    },
+    {
+      "file": "web/search-videos.p01.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "ErUDEiDQutC40L3QviDQs9GA0YPQv9C_0LAg0LrRgNC-0LLQuBqQA0VnSVFBVWdVZ2dFTGVFdHdla2cxWW5oWmMydUNBUXQ0ZEhocWJUZGphWGR0WTRJQkMxSmpVWFYxZGsxSVlrOU5nZ0VMU3pZNVgyMDBaM1JhUkd1Q0FRdE5WRXBvWm5sVFRGTkRVWUlCQzBWQ2VXOW1hSFpXVW1OdmdnRUxUbU5tYlRaR2NHaG9iRy1DQVF0aU5EQmFiWGxSTFRoUFJZSUJDMlJwVW5SU2FHTmhWVTVKZ2dFTGNXSlNXV014WTA1RFIyZUNBUXMyYVRkNmVIQmlUMk5oU1lJQkMwWXdVR0pVVTE4M1NGRlZnZ0VMWldOcGJtaElSWHBXUWpDQ0FRdFRhMnd0U1c1cGJqUnNZNElCQ3paRE1uUnBNM2c1VDBGQmdnRUxRVU5CZGtKQ1RXSTJRazJDQVF0clIxQmlUVzh6V21NME5JSUJDM3BJYmtGalZUaEhlblJ6Z2dFTGFUZHNlR0ZwV0ZkU2NWbUNBUXRaZW1KNk9VdDBUVlZsU2JJQkJnb0VDQlFRQWclM0QlM0QYgeDoGCILc2VhcmNoLWZlZWQ%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 304898,
+      "note": "продолжение web/search-videos"
+    },
+    {
+      "file": "web/search-videos.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB",
+      "clientVersion": "2.20260922.06.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgIQAQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 335692
+    },
+    {
+      "file": "ytm/album.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "MPREb_OLmD8O5IYNS"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 155660
+    },
+    {
+      "file": "ytm/album.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "MPREb_OLmD8O5IYNS"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 172256
+    },
+    {
+      "file": "ytm/artist-ugc-channel.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "UCy_vnPBNh9FqtyH9Qc-aiSA"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 119199,
+      "note": "обычный канал: музыкальных секций нет (§4.8.5)"
+    },
+    {
+      "file": "ytm/artist-ugc-channel.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "UCy_vnPBNh9FqtyH9Qc-aiSA"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 130825,
+      "note": "обычный канал: музыкальных секций нет (§4.8.5)"
+    },
+    {
+      "file": "ytm/artist.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "UCL9NQ06h7I0CRUcGxPWMtkQ"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 301724
+    },
+    {
+      "file": "ytm/artist.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "UCL9NQ06h7I0CRUcGxPWMtkQ"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 335148
+    },
+    {
+      "file": "ytm/explore.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "FEmusic_explore"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 427390
+    },
+    {
+      "file": "ytm/explore.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "FEmusic_explore"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 471948
+    },
+    {
+      "file": "ytm/lyrics.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "MPLYt_OLmD8O5IYNS-1"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 669,
+      "note": "вкладка «Текст» из ytm/next; строки текста заменены заглушками"
+    },
+    {
+      "file": "ytm/lyrics.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "MPLYt_OLmD8O5IYNS-1"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 679,
+      "note": "вкладка «Текст» из ytm/next; строки текста заменены заглушками"
+    },
+    {
+      "file": "ytm/mood.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "FEmusic_moods_and_genres_category",
+        "params": "ggMPOg1uX1JOQWZFeDByc2Jm"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 702624,
+      "stripped": [
+        "menu"
+      ],
+      "note": "первое настроение из ytm/moods"
+    },
+    {
+      "file": "ytm/mood.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "FEmusic_moods_and_genres_category",
+        "params": "ggMPOg1uX044Z2o5WERLckpU"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 890781,
+      "stripped": [
+        "menu"
+      ],
+      "note": "первое настроение из ytm/moods"
+    },
+    {
+      "file": "ytm/moods.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "FEmusic_moods_and_genres"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 9204
+    },
+    {
+      "file": "ytm/moods.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "FEmusic_moods_and_genres"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 9653
+    },
+    {
+      "file": "ytm/new-releases-albums.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "FEmusic_new_releases_albums"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 392718,
+      "stripped": [
+        "menu"
+      ]
+    },
+    {
+      "file": "ytm/new-releases-albums.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "FEmusic_new_releases_albums"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 403840,
+      "stripped": [
+        "menu"
+      ]
+    },
+    {
+      "file": "ytm/next-radio.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/next",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "videoId": "xtxjm7ciwmc",
+        "playlistId": "RDAMVMxtxjm7ciwmc",
+        "params": "wAEB",
+        "isAudioOnly": true
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 389535,
+      "note": "радио по треку"
+    },
+    {
+      "file": "ytm/next-radio.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/next",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "videoId": "xtxjm7ciwmc",
+        "playlistId": "RDAMVMxtxjm7ciwmc",
+        "params": "wAEB",
+        "isAudioOnly": true
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 430851,
+      "note": "радио по треку"
+    },
+    {
+      "file": "ytm/next.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/next",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "videoId": "xtxjm7ciwmc",
+        "isAudioOnly": true
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 13562
+    },
+    {
+      "file": "ytm/next.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/next",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "videoId": "xtxjm7ciwmc",
+        "isAudioOnly": true
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 15103
+    },
+    {
+      "file": "ytm/player-ios.en.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/player",
+      "client": "IOS",
+      "clientVersion": "20.10.4",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "videoId": "xtxjm7ciwmc",
+        "contentCheckOk": true,
+        "racyCheckOk": true
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 27504,
+      "note": "loudness: playerConfig.audioConfig и adaptiveFormats[].loudnessDb; url/signatureCipher удалены"
+    },
+    {
+      "file": "ytm/player-ios.ru.json",
+      "host": "www.youtube.com",
+      "endpoint": "/youtubei/v1/player",
+      "client": "IOS",
+      "clientVersion": "20.10.4",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "videoId": "xtxjm7ciwmc",
+        "contentCheckOk": true,
+        "racyCheckOk": true
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 27701,
+      "note": "loudness: playerConfig.audioConfig и adaptiveFormats[].loudnessDb; url/signatureCipher удалены"
+    },
+    {
+      "file": "ytm/playlist-editorial.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "VLRDCLAK5uy_nBE4bLuBHUXWZrF59ZrkPEToKt8M_I3Vc"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 731153,
+      "note": "первый RDCLAK5uy_ из ytm/mood"
+    },
+    {
+      "file": "ytm/playlist-editorial.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "VLRDCLAK5uy_mkEwQuegHYB8_aAzBO8Q__6gGoaFblISw"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 817675,
+      "note": "первый RDCLAK5uy_ из ytm/mood"
+    },
+    {
+      "file": "ytm/playlist-long.p00.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "VLPL85973FA7E35D0D96"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 680463
+    },
+    {
+      "file": "ytm/playlist-long.p00.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "VLPL85973FA7E35D0D96"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 743433
+    },
+    {
+      "file": "ytm/playlist-long.p01.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJnEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho6ZWg1UVZEcERSMnRwUlVWUk5FNTZiRVpTVkU1SFQwUm9RazlVVlRCT1JFV1NBUU1JdWdUd0FRQSUzRJoCElBMODU5NzNGQTdFMzVEMEQ5Ng%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 338907,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p00"
+    },
+    {
+      "file": "ytm/playlist-long.p02.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERUVGhDU1doQk0wOVVVVEZQVkVGM1VXcEdRMDVWV2tSUFZVVjNrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 340583,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p01"
+    },
+    {
+      "file": "ytm/playlist-long.p03.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERURzlEU1doQmVrMUVWVE5QUkdkNVRtcFpORkZxYTNkT1JFMTRrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 338633,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p02"
+    },
+    {
+      "file": "ytm/playlist-long.p04.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTMFZFU1doQmVrMUVTWHBTVkdoSFRrVk5OVTlVV1hkU1ZFcEZrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 341540,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p03"
+    },
+    {
+      "file": "ytm/playlist-long.p05.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTVzlGU1doQk1sRlVUa05TYWxKQ1VtcFZOVTVGU2tkT2Vra3hrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 344162,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p04"
+    },
+    {
+      "file": "ytm/playlist-long.p06.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERVRmxGU1doQ1ExSnFVWGhPUlZwRFVWVlNRMDFWVmtWTmVsSkZrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 347237,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p05"
+    },
+    {
+      "file": "ytm/playlist-long.p07.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERUalJHU1doQmVrNUZUWGxPVlU1R1QxUk5lazFWVmtWUmVsWkNrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 341084,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p06"
+    },
+    {
+      "file": "ytm/playlist-long.p08.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERUVkZIU1doQ1EwNVVRWGxTYWtrMFQwUnJORkpxU1hsU1JWa3prZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 329719,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p07"
+    },
+    {
+      "file": "ytm/playlist-long.p09.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTemhJU1doQk5VMXFXVFZPYWtaRlVWVkdSMDFVWnpOT2VtUkVrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 344339,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p08"
+    },
+    {
+      "file": "ytm/playlist-long.p10.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTbTlKU1doQ1EwOUZXWGxSYTBVelRucHJNVTVGVVROT1ZGVXdrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 339324,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p09"
+    },
+    {
+      "file": "ytm/playlist-long.p11.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTVTFLU1doQk5VNVVhRVZPZWtGNVRXdE9SRkpVVFRCUmVra3lrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 322460,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p10"
+    },
+    {
+      "file": "ytm/playlist-long.p12.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERVR2RLU1doQ1EwOVZWa0pPUkZwRlRsUlNSbEZyU2tSU1JFWkNrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 352406,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p11"
+    },
+    {
+      "file": "ytm/playlist-long.p13.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERUamhMU1doQk1rMXJSa1ZQUlZaR1RrUkplRTVyVVhkUmFrbDZrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 345348,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p12"
+    },
+    {
+      "file": "ytm/playlist-long.p14.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERUVFJNU1doQk5GSkZXWHBTYTBwSFQxUktSRTVyU1RWUFZFMTNrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 345990,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p13"
+    },
+    {
+      "file": "ytm/playlist-long.p15.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERURzlOU1doQk1FNTZXVFJOUkZWM1RrVk5NVTlWVFRCU1ZVazBrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 340871,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p14"
+    },
+    {
+      "file": "ytm/playlist-long.p16.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTemhPU1doQk1WRlVRa05QVlZsM1VXcEdRMDlFVGtkUmFrMTNrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 347598,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p15"
+    },
+    {
+      "file": "ytm/playlist-long.p17.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTakJQU1doQk5FNVVXa1ZSTUU1RVVsVkpkMUpxVVRKUmEwNUZrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 359784,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p16"
+    },
+    {
+      "file": "ytm/playlist-long.p18.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERTV2RRU1doQk1WSnFRa1JQVlZwRFRXcHNRMDVVYkVKT2VtdDZrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 360985,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p17"
+    },
+    {
+      "file": "ytm/playlist-long.p19.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "continuation": "4qmFsgJlEhRWTFBMODU5NzNGQTdFMzVEMEQ5Nho4ZWg5UVZEcERVRUZRU1doQk5VNVVVWGRQUkVwRlVWVlNRazE2YkVOT2VrSkZrZ0VEQ0xvRThBRUGaAhJQTDg1OTczRkE3RTM1RDBEOTY%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 119583,
+      "stripped": [
+        "menu"
+      ],
+      "note": "продолжение p18"
+    },
+    {
+      "file": "ytm/playlist.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "VLPLurittKGarBvW6lCCJYlTGd6U2bBfP8FE"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 90334
+    },
+    {
+      "file": "ytm/playlist.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "VLPLurittKGarBvW6lCCJYlTGd6U2bBfP8FE"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 98184
+    },
+    {
+      "file": "ytm/related.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "MPTRt_OLmD8O5IYNS-1"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 369974,
+      "note": "вкладка «Похожие» из ytm/next"
+    },
+    {
+      "file": "ytm/related.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "browseId": "MPTRt_OLmD8O5IYNS-1"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 409945,
+      "note": "вкладка «Похожие» из ytm/next"
+    },
+    {
+      "file": "ytm/search-albums.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgWKAQIYAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 135574
+    },
+    {
+      "file": "ytm/search-albums.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgWKAQIYAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 147616
+    },
+    {
+      "file": "ytm/search-all.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 175267
+    },
+    {
+      "file": "ytm/search-all.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 179920
+    },
+    {
+      "file": "ytm/search-artists.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgWKAQIgAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 27181
+    },
+    {
+      "file": "ytm/search-artists.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgWKAQIgAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 11029
+    },
+    {
+      "file": "ytm/search-community-playlists.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgeKAQQoAEABag4QAxAEEAkQChAFEBAQFQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 123687
+    },
+    {
+      "file": "ytm/search-community-playlists.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgeKAQQoAEABag4QAxAEEAkQChAFEBAQFQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 137179
+    },
+    {
+      "file": "ytm/search-featured-playlists.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgeKAQQoADgBag4QAxAEEAkQChAFEBAQFQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 33629
+    },
+    {
+      "file": "ytm/search-featured-playlists.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgeKAQQoADgBag4QAxAEEAkQChAFEBAQFQ%3D%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 10842
+    },
+    {
+      "file": "ytm/search-songs.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgWKAQIIAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 146906
+    },
+    {
+      "file": "ytm/search-songs.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgWKAQIIAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 153869
+    },
+    {
+      "file": "ytm/search-suggestions.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/music/get_search_suggestions",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "input": "daft p"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 30059
+    },
+    {
+      "file": "ytm/search-suggestions.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/music/get_search_suggestions",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "input": "кино"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 33562
+    },
+    {
+      "file": "ytm/search-videos.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "daft punk",
+        "params": "EgWKAQIQAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 119834
+    },
+    {
+      "file": "ytm/search-videos.ru.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.09.00",
+      "hl": "ru",
+      "gl": "RU",
+      "request": {
+        "query": "кино группа крови",
+        "params": "EgWKAQIQAWoOEAMQBBAJEAoQBRAQEBU%3D"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-09-24",
+      "bytes": 130927
+    }
+  ]
+}
