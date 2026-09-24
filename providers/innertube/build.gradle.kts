@@ -16,6 +16,14 @@ dependencies {
     implementation(libs.ktor.client.serialization)
     implementation(libs.ktor.serialization.json)
     implementation(libs.log4j)
+
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit)
+}
+
+tasks.test {
+    // Rule vectors shared with the desktops (docs/spec/README.md)
+    systemProperty("melogold.specDir", rootProject.file("docs/spec").absolutePath)
 }
 
 kotlin {
