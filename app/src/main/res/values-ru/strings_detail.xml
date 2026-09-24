@@ -31,4 +31,9 @@
     <string name="artist_about">Об исполнителе</string>
     <string name="artist_all">Все</string>
     <string name="artist_all_count">Все (%1$d)</string>
+
+    <string name="channel_shuffle">Перемешать видео</string>
+    <string name="channel_videos">Видео</string>
+    <string name="channel_playlists">Плейлисты канала</string>
+    <string name="channel_about">О канале</string>
 </resources>

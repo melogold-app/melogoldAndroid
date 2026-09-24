@@ -1286,6 +1286,8 @@ Release                                          Debug / nightly (ACCOUNT_UI)
 
 Подписка — это закладка `Artist(UC…)` с `bookmarkedAt`, API: `bookmark.set type=artist`.
 
+**Реализация:** выбор делает `ArtistModel`: страница исполнителя — если у YTM есть «Популярное», альбомы или синглы (одних клипов мало: архивный канал с двумя клипами читается лучше как канал); иначе WEB-запрос `youTubeChannel` (вкладка «Видео», `parseYouTubeChannel`, продолжения `parseYouTubeChannelContinuation`, тесты на `fixtures/web/channel-videos*`). Шапка без исполнителя в YTM (`musicVisualHeaderRenderer`) не тратит второй запрос за английскими заголовками.
+
 ---
 
 ### 3.8 Плейлисты (R3.6)

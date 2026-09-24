@@ -20,12 +20,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,10 +57,12 @@ import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.DetailBody
 import app.melogold.android.ui.kit.DetailScaffold
 import app.melogold.android.ui.kit.LoadableContent
+import app.melogold.android.ui.kit.SectionError
 import app.melogold.android.ui.kit.SectionHeader
 import app.melogold.android.ui.kit.StaleChip
 import app.melogold.android.ui.kit.TrackRow
 import app.melogold.android.ui.kit.VideoCard
+import app.melogold.android.ui.kit.VideoRow
 import app.melogold.android.ui.kit.detailTwoPane
 import app.melogold.android.ui.kit.iconAction
 import app.melogold.android.ui.kit.primaryAction
@@ -81,8 +85,10 @@ import app.melogold.android.utils.playingSong
 import app.melogold.compose.routing.RouteHandler
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.NavigationEndpoint
+import app.melogold.providers.innertube.youtube.YouTubeItem
 
 private const val TOP_SONGS = 5
+private const val LOAD_MORE_AHEAD = 5
 private const val LIBRARY_SONGS = 5
 private val AvatarSize = 120.dp
 
@@ -110,7 +116,8 @@ fun ArtistScreen(browseId: String) = RouteHandler {
                 if (id.startsWith("VL")) playlistRoute(id, endpoint.params, null, false)
                 else artistItemsRoute(id, endpoint.params, title, subtitle)
             },
-            onOpenFavorites = { name -> artistFavoritesRoute(browseId, name) }
+            onOpenFavorites = { name -> artistFavoritesRoute(browseId, name) },
+            onOpenPlaylist = { playlistId -> playlistRoute("VL$playlistId", null, null, false) }
         )
     }
 }
@@ -125,7 +132,8 @@ private fun ArtistContent(
     onOpenAlbum: (String) -> Unit,
     onOpenArtist: (String) -> Unit,
     onOpenMore: (endpoint: NavigationEndpoint.Endpoint.Browse, title: String, subtitle: String?) -> Unit,
-    onOpenFavorites: (name: String) -> Unit
+    onOpenFavorites: (name: String) -> Unit,
+    onOpenPlaylist: (playlistId: String) -> Unit
 ) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
@@ -180,7 +188,7 @@ private fun ArtistContent(
                 text = shareLabel,
                 onClick = {
                     menuState.hide()
-                    context.shareArtist(browseId)
+                    context.shareArtist(browseId, channel = details.channel != null)
                 }
             )
         }
@@ -207,8 +215,16 @@ private fun ArtistContent(
             onRetry = onRetry,
             modifier = Modifier.padding(padding)
         ) { content ->
-            val (artist, page, favorites) = content.value
+            val (artist, page, favorites, channel) = content.value
             val name = artist.name ?: stringResource(R.string.unknown)
+            val paged = channel?.videos?.state?.collectAsState()?.value
+            val videos = paged?.items.orEmpty().filterIsInstance<YouTubeItem.Video>()
+            val playlists = channel?.playlists?.collectAsState()?.value.orEmpty()
+
+            if (channel != null) LaunchedEffect(listState, channel) {
+                snapshotFlow { listState.layoutInfo.run { (visibleItemsInfo.lastOrNull()?.index ?: 0) to totalItemsCount } }
+                    .collect { (last, total) -> if (last >= total - LOAD_MORE_AHEAD) channel.videos.loadMore() }
+            }
 
             DetailBody(
                 twoPane = twoPane,
@@ -220,9 +236,10 @@ private fun ArtistContent(
                         artwork = { size ->
                             Artwork(url = artist.thumbnailUrl, size = min(size, AvatarSize), shape = CircleShape)
                         },
-                        subtitle = page?.subscribersCountText?.let {
-                            AnnotatedString(stringResource(R.string.format_subscribers, it))
-                        },
+                        subtitle = (
+                            channel?.page?.let { listOfNotNull(it.subscribersText, it.videosText).joinToString(" · ") }
+                                ?: page?.subscribersCountText?.let { stringResource(R.string.format_subscribers, it) }
+                            )?.let(::AnnotatedString),
                         status = content.staleSince?.let { since ->
                             { StaleChip(since = since, reason = content.staleReason, onClick = onRetry) }
                         },
@@ -230,29 +247,38 @@ private fun ArtistContent(
                         centered = true,
                         onTitleBottom = { titleBottom = it },
                         actions = {
-                            val shuffleLabel = stringResource(R.string.collection_shuffle)
+                            val shuffleLabel = stringResource(
+                                if (channel != null) R.string.channel_shuffle else R.string.collection_shuffle
+                            )
                             val subscribeLabel = stringResource(R.string.artist_subscribe)
                             val subscribedLabel = stringResource(R.string.artist_subscribed)
                             val moreLabel = stringResource(R.string.kit_menu)
                             val topSongs = page?.songs.orEmpty()
 
                             CollectionActions(compact = compact) {
-                                primaryAction(
+                                if (channel != null) primaryAction(
                                     icon = R.drawable.ms_shuffle,
                                     label = shuffleLabel,
-                                    onClick = {
-                                        page?.shuffleEndpoint?.let(::startRadio)
-                                            ?: play(topSongs.map { it.asMediaItem }.shuffled(), 0)
-                                    },
-                                    enabled = page?.shuffleEndpoint != null || topSongs.isNotEmpty()
-                                )
-                                iconAction(
-                                    icon = R.drawable.ms_sensors,
-                                    label = radioLabel,
-                                    onClick = { startRadio(page?.radioEndpoint) },
-                                    enabled = page?.radioEndpoint != null,
-                                    testTag = "action_radio"
-                                )
+                                    onClick = { play(videos.shuffled().map { it.asMediaItem }, 0) },
+                                    enabled = videos.isNotEmpty()
+                                ) else {
+                                    primaryAction(
+                                        icon = R.drawable.ms_shuffle,
+                                        label = shuffleLabel,
+                                        onClick = {
+                                            page?.shuffleEndpoint?.let(::startRadio)
+                                                ?: play(topSongs.map { it.asMediaItem }.shuffled(), 0)
+                                        },
+                                        enabled = page?.shuffleEndpoint != null || topSongs.isNotEmpty()
+                                    )
+                                    iconAction(
+                                        icon = R.drawable.ms_sensors,
+                                        label = radioLabel,
+                                        onClick = { startRadio(page?.radioEndpoint) },
+                                        enabled = page?.radioEndpoint != null,
+                                        testTag = "action_radio"
+                                    )
+                                }
                                 toggleAction(
                                     checked = artist.bookmarkedAt != null,
                                     icon = R.drawable.ms_library_add,
@@ -278,7 +304,7 @@ private fun ArtistContent(
                     )
                 }
             ) {
-                if (page == null && content.refreshing) item(key = "loading") {
+                if (page == null && channel == null && content.refreshing) item(key = "loading") {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -300,6 +326,19 @@ private fun ArtistContent(
                     },
                     onOpenAlbum = onOpenAlbum,
                     onOpenMore = onOpenMore
+                )
+
+                if (channel != null) channelSections(
+                    videos = videos,
+                    playlists = playlists,
+                    loading = paged?.loading == true,
+                    error = paged?.error,
+                    onRetry = channel.videos::retry,
+                    onPlay = ::play,
+                    onMenu = { mediaItem ->
+                        menuState.display { NonQueuedMediaItemMenu(onDismiss = menuState::hide, mediaItem = mediaItem) }
+                    },
+                    onOpenPlaylist = onOpenPlaylist
                 )
 
                 if (favorites.isNotEmpty()) {
@@ -351,10 +390,10 @@ private fun ArtistContent(
                     }
                 }
 
-                page?.description?.takeIf { it.isNotBlank() }?.let { description ->
+                (page?.description ?: channel?.page?.description)?.takeIf { it.isNotBlank() }?.let { description ->
                     item(key = "about") {
                         AboutSection(
-                            title = stringResource(R.string.artist_about),
+                            title = stringResource(if (channel != null) R.string.channel_about else R.string.artist_about),
                             text = description,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -451,6 +490,64 @@ private fun LazyListScope.pageSections(
     }
 }
 
+/** A plain channel (REWRITE §3.7.2): its playlists, then its videos, newest first and endless. */
+private fun LazyListScope.channelSections(
+    videos: List<YouTubeItem.Video>,
+    playlists: List<YouTubeItem.Playlist>,
+    loading: Boolean,
+    error: Loadable.Error.Kind?,
+    onRetry: () -> Unit,
+    onPlay: (List<MediaItem>, Int) -> Unit,
+    onMenu: (MediaItem) -> Unit,
+    onOpenPlaylist: (String) -> Unit
+) {
+    if (playlists.isNotEmpty()) {
+        item(key = "playlists_title") { SectionHeader(title = stringResource(R.string.channel_playlists)) }
+        item(key = "playlists") {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.testTag("channel_playlists")
+            ) {
+                items(items = playlists, key = { it.key }) { playlist ->
+                    VideoCard(
+                        title = playlist.title,
+                        subtitle = playlist.videoCountText,
+                        thumbnailUrl = playlist.thumbnailUrl,
+                        onClick = { onOpenPlaylist(playlist.playlistId) },
+                        width = 200.dp
+                    )
+                }
+            }
+        }
+    }
+
+    item(key = "videos_title") { SectionHeader(title = stringResource(R.string.channel_videos)) }
+    itemsIndexed(items = videos, key = { _, video -> "video_${video.key}" }) { index, video ->
+        VideoRow(
+            title = video.title,
+            subtitle = listOfNotNull(video.viewsText, video.publishedText).joinToString(" · "),
+            thumbnailUrl = video.thumbnailUrl,
+            badge = video.liveLabel ?: video.durationText,
+            live = video.isLive,
+            onClick = { onPlay(videos.map { it.asMediaItem }, index) },
+            onLongClick = { onMenu(video.asMediaItem) }
+        )
+    }
+
+    if (loading) item(key = "videos_loading") {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
+        ) {
+            DelayedLoadingIndicator()
+        }
+    }
+    error?.let { kind -> item(key = "videos_error") { SectionError(kind = kind, onRetry = onRetry) } }
+}
+
 private fun LazyListScope.albumSection(
     key: String,
     title: Int,
@@ -489,10 +586,11 @@ private fun LazyListScope.albumSection(
     }
 }
 
-private fun Context.shareArtist(browseId: String) {
+private fun Context.shareArtist(browseId: String, channel: Boolean) {
+    val host = if (channel) "www.youtube.com" else "music.youtube.com"
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/channel/$browseId")
+        putExtra(Intent.EXTRA_TEXT, "https://$host/channel/$browseId")
     }
 
     startActivity(Intent.createChooser(intent, null))

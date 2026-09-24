@@ -6,6 +6,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -67,6 +70,49 @@ fun VideoThumbnail(
             )
             .padding(horizontal = 4.dp, vertical = 1.dp)
     )
+}
+
+/**
+ * A video in a list (REWRITE §3.11.2): the 16:9 preview with its badge, the title on up to two
+ * lines and "views · date" under it. Long tap opens the menu.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun VideoRow(
+    title: String,
+    subtitle: String?,
+    thumbnailUrl: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    badge: String? = null,
+    live: Boolean = false,
+    onLongClick: (() -> Unit)? = null
+) = Row(
+    modifier = modifier
+        .fillMaxWidth()
+        .heightIn(min = 72.dp)
+        .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        .padding(horizontal = 16.dp, vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(12.dp)
+) {
+    VideoThumbnail(url = thumbnailUrl, badge = badge, live = live)
+    Column(modifier = Modifier.weight(1f)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (!subtitle.isNullOrBlank()) Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 /** A video in a row (an artist's clips): the 16:9 preview with the title and a line under it. */

@@ -30,4 +30,9 @@
     <string name="artist_about">About</string>
     <string name="artist_all">All</string>
     <string name="artist_all_count">All (%1$d)</string>
+
+    <string name="channel_shuffle">Shuffle videos</string>
+    <string name="channel_videos">Videos</string>
+    <string name="channel_playlists">Channel playlists</string>
+    <string name="channel_about">About the channel</string>
 </resources>

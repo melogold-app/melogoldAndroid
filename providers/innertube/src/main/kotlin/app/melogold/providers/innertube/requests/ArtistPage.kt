@@ -58,6 +58,23 @@ suspend fun Innertube.artistPage(body: BrowseBody) = runCatchingCancellable {
         return localized?.contents?.getOrNull(index)?.takeIf { it.isSameKindAs(section) } ?: section
     }
 
+    // Not an artist (a plain channel has a visual header): nothing to look for, the caller
+    // reads the channel from YouTube itself
+    if (response.header?.musicImmersiveHeaderRenderer == null) return@runCatchingCancellable Innertube.ArtistPage(
+        name = null,
+        description = null,
+        thumbnail = null,
+        shuffleEndpoint = null,
+        radioEndpoint = null,
+        songs = null,
+        songsEndpoint = null,
+        albums = null,
+        albumsEndpoint = null,
+        singles = null,
+        singlesEndpoint = null,
+        subscribersCountText = null
+    )
+
     val songsSection = findSectionByTitle("Songs")?.musicShelfRenderer
     val albumsSection = findSectionByTitle("Albums")?.musicCarouselShelfRenderer
     val singlesSection = (findSectionByTitle("Singles & EPs") ?: findSectionByTitle("Singles"))

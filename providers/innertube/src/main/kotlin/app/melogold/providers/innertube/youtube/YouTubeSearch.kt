@@ -134,7 +134,7 @@ private fun parseItem(item: JsonElement): YouTubeItem? {
     return null
 }
 
-private fun parseVideo(video: JsonObject): YouTubeItem.Video? {
+internal fun parseVideo(video: JsonObject): YouTubeItem.Video? {
     val videoId = video.str("videoId") ?: return null
     val byline = (video.obj("longBylineText") ?: video.obj("ownerText"))?.arr("runs")?.firstOrNull()
     val liveLabel = video.arr("badges")
@@ -176,7 +176,7 @@ private val playlistLockups = setOf(
     "LOCKUP_CONTENT_TYPE_PODCAST"
 )
 
-private fun parsePlaylist(lockup: JsonObject): YouTubeItem.Playlist? {
+internal fun parsePlaylist(lockup: JsonObject): YouTubeItem.Playlist? {
     if (lockup.str("contentType") !in playlistLockups) return null
     val playlistId = lockup.str("contentId") ?: return null
     val metadata = lockup.obj("metadata")?.obj("lockupMetadataViewModel")
@@ -206,18 +206,18 @@ private fun parsePlaylist(lockup: JsonObject): YouTubeItem.Playlist? {
     )
 }
 
-private fun String.absoluteUrl() = if (startsWith("//")) "https:$this" else this
+internal fun String.absoluteUrl() = if (startsWith("//")) "https:$this" else this
 
-private fun JsonElement?.obj(key: String) = (this as? JsonObject)?.get(key) as? JsonObject
-private fun JsonElement?.arr(key: String) = (this as? JsonObject)?.get(key) as? JsonArray
-private fun JsonElement?.str(key: String) = ((this as? JsonObject)?.get(key) as? JsonPrimitive)
+internal fun JsonElement?.obj(key: String) = (this as? JsonObject)?.get(key) as? JsonObject
+internal fun JsonElement?.arr(key: String) = (this as? JsonObject)?.get(key) as? JsonArray
+internal fun JsonElement?.str(key: String) = ((this as? JsonObject)?.get(key) as? JsonPrimitive)
     ?.takeIf { it.isString }
     ?.content
 
 /**
  * A YouTube text: `simpleText`, or the `runs` joined.
  */
-private fun JsonObject.text(key: String): String? {
+internal fun JsonObject.text(key: String): String? {
     val text = obj(key) ?: return null
     return (text.str("simpleText") ?: text.arr("runs")?.joinToString("") { it.str("text").orEmpty() })
         ?.trim()
