@@ -41,7 +41,6 @@ import app.melogold.android.DatabaseInitializer.From8To9Migration
 import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
 import app.melogold.android.models.Event
-import app.melogold.android.models.EventWithSong
 import app.melogold.android.models.Format
 import app.melogold.android.models.Info
 import app.melogold.android.models.Lyrics
@@ -628,32 +627,6 @@ interface DatabaseAccessor {
     )
     @RewriteQueriesToDropUnusedColumns
     fun trending(limit: Int = 3): Flow<List<Song>>
-
-    @Transaction
-    @Query(
-        """
-        SELECT Song.* FROM Event
-        JOIN Song ON Song.id = songId
-        WHERE (:now - Event.timestamp) <= :period AND
-        Song.id NOT LIKE '$LOCAL_KEY_PREFIX%'
-        GROUP BY songId
-        ORDER BY SUM(playTime) DESC
-        LIMIT :limit
-        """
-    )
-    @RewriteQueriesToDropUnusedColumns
-    fun trending(
-        limit: Int = 3,
-        now: Long = System.currentTimeMillis(),
-        period: Long
-    ): Flow<List<Song>>
-
-    @Transaction
-    @Query("SELECT * FROM Event ORDER BY timestamp DESC")
-    fun events(): Flow<List<EventWithSong>>
-
-    @Query("SELECT COUNT (*) FROM Event")
-    fun eventsCount(): Flow<Int>
 
     @Query("DELETE FROM Event WHERE songId = :songId")
     fun clearEventsFor(songId: String)

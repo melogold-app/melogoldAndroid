@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.R
 import app.melogold.android.ui.components.themed.Header
-import app.melogold.android.ui.components.themed.NumberFieldDialog
 import app.melogold.android.ui.components.themed.Scaffold
 import app.melogold.android.ui.components.themed.Slider
 import app.melogold.android.ui.components.themed.Switch
@@ -209,42 +208,6 @@ fun SliderSettingsEntry(
             .let { if (usePadding) it.padding(start = 32.dp, end = 16.dp) else it }
             .padding(vertical = 16.dp)
             .fillMaxWidth()
-    )
-}
-
-@Composable
-inline fun IntSettingsEntry(
-    title: String,
-    text: String,
-    currentValue: Int,
-    crossinline setValue: (Int) -> Unit,
-    range: IntRange,
-    modifier: Modifier = Modifier,
-    defaultValue: Int = 0,
-    isEnabled: Boolean = true,
-    usePadding: Boolean = true
-) {
-    var isShowingDialog by remember { mutableStateOf(false) }
-
-    if (isShowingDialog) NumberFieldDialog(
-        onDismiss = { isShowingDialog = false },
-        onAccept = {
-            setValue(it)
-            isShowingDialog = false
-        },
-        initialValue = currentValue,
-        defaultValue = defaultValue,
-        convert = { it.toIntOrNull() },
-        range = range
-    )
-
-    SettingsEntry(
-        modifier = modifier,
-        title = title,
-        text = text,
-        onClick = { isShowingDialog = true },
-        isEnabled = isEnabled,
-        usePadding = usePadding
     )
 }
 

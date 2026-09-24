@@ -17,20 +17,15 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -211,36 +206,4 @@ fun Modifier.onSwipe(
             else -> modifier
         }
     }
-}
-
-fun Modifier.swipeToClose(
-    key: Any = Unit,
-    state: SwipeState? = null,
-    delay: Duration = Duration.ZERO,
-    decay: Density.() -> DecayAnimationSpec<Float> = { splineBasedDecay(this) },
-    requireUnconsumed: Boolean = false,
-    onClose: suspend (animationJob: Job) -> Unit
-) = this.composed {
-    val swipeState = state ?: rememberSwipeState(key)
-
-    val density = LocalDensity.current
-
-    var currentWidth by remember { mutableIntStateOf(0) }
-    val currentWidthDp by remember { derivedStateOf { currentWidth.px.dp(density) } }
-    val bounds by remember { derivedStateOf { -currentWidthDp..0.dp } }
-
-    this
-        .onSizeChanged { currentWidth = it.width }
-        .alpha((currentWidthDp + swipeState.calculateOffset(bounds = bounds)) / currentWidthDp)
-        .onSwipe(
-            state = swipeState,
-            key = key,
-            animateOffset = true,
-            onSwipeLeft = onClose,
-            orientation = Orientation.Horizontal,
-            delay = delay,
-            decay = decay,
-            requireUnconsumed = requireUnconsumed,
-            bounds = bounds
-        )
 }
