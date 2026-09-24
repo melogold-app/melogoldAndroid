@@ -15,5 +15,4 @@ object DataPreferences : GlobalPreferencesHolder() {
     var pausePlaytime by boolean(false)
     var pauseSearchHistory by boolean(false)
     var cachedQuickPicks by json(Innertube.RelatedPage())
-    var autoSyncPlaylists by boolean(true)
 }

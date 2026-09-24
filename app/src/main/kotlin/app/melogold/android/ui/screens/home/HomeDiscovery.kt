@@ -83,7 +83,6 @@ import app.melogold.providers.innertube.requests.discoverPage
 fun HomeDiscovery(
     onMoodClick: (mood: Innertube.Mood.Item) -> Unit,
     onNewReleaseAlbumClick: (String) -> Unit,
-    onSearchClick: () -> Unit,
     onMoreMoodsClick: () -> Unit,
     onMoreAlbumsClick: () -> Unit,
     onPlaylistClick: (browseId: String) -> Unit
@@ -345,11 +344,7 @@ fun HomeDiscovery(
             }
         }
 
-        FloatingActionsContainerWithScrollToTop(
-            scrollState = scrollState,
-            icon = R.drawable.search,
-            onClick = onSearchClick
-        )
+        FloatingActionsContainerWithScrollToTop(scrollState = scrollState)
     }
 }
 

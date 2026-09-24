@@ -68,8 +68,7 @@ import app.melogold.providers.piped.models.PlaylistPreview as PipedPlaylistPrevi
 fun HomePlaylists(
     onBuiltInPlaylist: (BuiltInPlaylist) -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
-    onPipedPlaylistClick: (Session, PipedPlaylistPreview) -> Unit,
-    onSearchClick: () -> Unit
+    onPipedPlaylistClick: (Session, PipedPlaylistPreview) -> Unit
 ) = with(OrderPreferences) {
     val (colorPalette) = LocalAppearance.current
 
@@ -291,10 +290,6 @@ fun HomePlaylists(
                 }
         }
 
-        FloatingActionsContainerWithScrollToTop(
-            lazyGridState = lazyGridState,
-            icon = R.drawable.search,
-            onClick = onSearchClick
-        )
+        FloatingActionsContainerWithScrollToTop(lazyGridState = lazyGridState)
     }
 }

@@ -37,9 +37,6 @@ import kotlin.system.exitProcess
 fun DatabaseSettings() = with(DataPreferences) {
     val context = LocalContext.current
 
-    val eventsCount by remember { Database.eventsCount().distinctUntilChanged() }
-        .collectAsState(initial = 0)
-
     val blacklistLength by remember { Database.blacklistLength().distinctUntilChanged() }
         .collectAsState(initial = 0)
 
@@ -94,20 +91,6 @@ fun DatabaseSettings() = with(DataPreferences) {
                 SettingsDescription(
                     text = stringResource(R.string.pause_playback_history_warning),
                     important = true
-                )
-            }
-
-            AnimatedVisibility(visible = !(pauseHistory && eventsCount == 0)) {
-                SettingsEntry(
-                    title = stringResource(R.string.reset_quick_picks),
-                    text = if (eventsCount > 0) pluralStringResource(
-                        R.plurals.format_reset_quick_picks_amount,
-                        eventsCount,
-                        eventsCount
-                    )
-                    else stringResource(R.string.quick_picks_empty),
-                    onClick = { query(Database::clearEvents) },
-                    isEnabled = eventsCount > 0
                 )
             }
 

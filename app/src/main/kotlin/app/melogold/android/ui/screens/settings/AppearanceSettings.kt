@@ -85,23 +85,6 @@ fun AppearanceSettings() = with(AppearancePreferences) {
         }
         SettingsGroup(title = stringResource(R.string.songs)) {
             SwitchSettingsEntry(
-                title = stringResource(R.string.swipe_to_hide_song),
-                text = stringResource(R.string.swipe_to_hide_song_description),
-                isChecked = swipeToHideSong,
-                onCheckedChange = { swipeToHideSong = it }
-            )
-            AnimatedVisibility(
-                visible = swipeToHideSong,
-                label = ""
-            ) {
-                SwitchSettingsEntry(
-                    title = stringResource(R.string.swipe_to_hide_song_confirm),
-                    text = stringResource(R.string.swipe_to_hide_song_confirm_description),
-                    isChecked = swipeToHideSongConfirm,
-                    onCheckedChange = { swipeToHideSongConfirm = it }
-                )
-            }
-            SwitchSettingsEntry(
                 title = stringResource(R.string.hide_explicit),
                 text = stringResource(R.string.hide_explicit_description),
                 isChecked = hideExplicit,

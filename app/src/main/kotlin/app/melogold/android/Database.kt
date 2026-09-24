@@ -5,9 +5,6 @@ import android.database.SQLException
 import android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE
 import android.os.Parcel
 import androidx.annotation.OptIn
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.database.getFloatOrNull
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaLibraryInfo
@@ -69,14 +66,9 @@ import app.melogold.core.data.enums.SortOrder
 import app.melogold.core.ui.utils.songBundle
 import io.ktor.http.Url
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 object DatabaseDependency {
-    private var _instance by mutableStateOf(buildDatabase())
-    private val mutex = Mutex()
-    val instance get() = _instance
+    val instance = buildDatabase()
 
     private fun buildDatabase() = Room
         .databaseBuilder(
@@ -92,13 +84,6 @@ object DatabaseDependency {
             From23To24Migration()
         )
         .build()
-
-    // Unfortunately, this HAS to block with the current architecture
-    fun reload() = runBlocking {
-        mutex.withLock {
-            _instance = buildDatabase()
-        }
-    }
 }
 
 @Dao // WHY WHY WHY WHY
@@ -618,9 +603,6 @@ interface DatabaseAccessor {
     )
     fun move(playlistId: Long, fromPosition: Int, toPosition: Int)
 
-    @Query("DELETE FROM SongPlaylistMap WHERE playlistId = :id")
-    fun clearPlaylist(id: Long)
-
     @Query("DELETE FROM SongAlbumMap WHERE albumId = :id")
     fun clearAlbum(id: String)
 
@@ -675,9 +657,6 @@ interface DatabaseAccessor {
 
     @Query("SELECT COUNT (*) FROM Event")
     fun eventsCount(): Flow<Int>
-
-    @Query("DELETE FROM Event")
-    fun clearEvents()
 
     @Query("DELETE FROM Event WHERE songId = :songId")
     fun clearEventsFor(songId: String)

@@ -29,8 +29,6 @@ object AppearancePreferences : GlobalPreferencesHolder() {
      */
     var lastTab by enum(TopLevelDestination.FirstLaunch)
 
-    var swipeToHideSong by boolean(false)
-    var swipeToHideSongConfirm by boolean(true)
     var hideExplicit by boolean(false)
     var autoPip by boolean(false)
 }

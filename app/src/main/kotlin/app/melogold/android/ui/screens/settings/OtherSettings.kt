@@ -5,76 +5,43 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.melogold.android.Database
-import app.melogold.android.DatabaseDependency
-import app.melogold.android.Dependencies
-import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
-import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.DataPreferences
-import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.service.PlayerMediaBrowserService
-import app.melogold.android.service.PrecacheService
-import app.melogold.android.ui.components.themed.SecondaryTextButton
-import app.melogold.android.ui.components.themed.SliderDialog
-import app.melogold.android.ui.components.themed.SliderDialogBody
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.logsRoute
-import app.melogold.android.utils.findActivity
-import app.melogold.android.utils.intent
 import app.melogold.android.utils.isIgnoringBatteryOptimizations
-import app.melogold.android.utils.smoothScrollToBottom
 import app.melogold.android.utils.toast
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid6
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
-import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.milliseconds
 
 @SuppressLint("BatteryLife")
 @Route
 @Composable
 fun OtherSettings() {
     val context = LocalContext.current
-    val binder = LocalPlayerServiceBinder.current
     val uriHandler = LocalUriHandler.current
 
     val scrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
 
     var isAndroidAutoEnabled by remember {
         val component = ComponentName(context, PlayerMediaBrowserService::class.java)
@@ -146,14 +113,6 @@ fun OtherSettings() {
                 )
             }
         }
-        SettingsGroup(title = stringResource(R.string.playlists)) {
-            SwitchSettingsEntry(
-                title = stringResource(R.string.auto_sync_playlists),
-                text = stringResource(R.string.auto_sync_playlists_description),
-                isChecked = DataPreferences.autoSyncPlaylists,
-                onCheckedChange = { DataPreferences.autoSyncPlaylists = it }
-            )
-        }
         SettingsGroup(title = stringResource(R.string.service_lifetime)) {
             AnimatedVisibility(visible = !isIgnoringBatteryOptimizations) {
                 SettingsDescription(
@@ -202,114 +161,10 @@ fun OtherSettings() {
             SettingsDescription(text = stringResource(R.string.service_lifetime_report_issue))
         }
 
-        var showTroubleshoot by rememberSaveable { mutableStateOf(false) }
-
-        AnimatedContent(showTroubleshoot, label = "") { show ->
-            if (show) SettingsGroup(
-                title = stringResource(R.string.troubleshooting),
-                description = stringResource(R.string.troubleshooting_warning),
-                important = true
-            ) {
-                val troubleshootScope = rememberCoroutineScope()
-                var reloading by rememberSaveable { mutableStateOf(false) }
-                var upgrading by rememberSaveable { mutableStateOf(false) }
-
-                SecondaryTextButton(
-                    text = stringResource(R.string.upgrade_yt_dlp),
-                    onClick = {
-                        upgrading = true
-                        context.toast(R.string.please_wait)
-                        val job = troubleshootScope.launch {
-                            val success = runCatching {
-                                withContext(Dispatchers.IO) {
-                                    Dependencies.upgradeYoutubeDl()
-                                }
-                            }.also { it.exceptionOrNull()?.printStackTrace() }.getOrNull()
-
-                            withContext(Dispatchers.Main) {
-                                context.toast(
-                                    if (success == true) R.string.yt_dlp_success
-                                    else R.string.yt_dlp_fail
-                                )
-                            }
-                        }
-                        job.invokeOnCompletion { upgrading = false }
-                    },
-                    enabled = !reloading && !upgrading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp)
-                        .padding(horizontal = 16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                SecondaryTextButton(
-                    text = stringResource(R.string.reload_app_internals),
-                    onClick = {
-                        if (!reloading) troubleshootScope.launch {
-                            reloading = true
-                            with(context) {
-                                stopService(intent<PrecacheService>())
-                            }
-                            binder?.restartForegroundOrStop()
-                            DatabaseDependency.reload()
-                            reloading = false
-                        }
-                    },
-                    enabled = !reloading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp)
-                        .padding(horizontal = 16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                SecondaryTextButton(
-                    text = stringResource(R.string.kill_app),
-                    onClick = {
-                        binder?.stopRadio()
-                        context.findActivity().finishAndRemoveTask()
-                        binder?.restartForegroundOrStop()
-                        troubleshootScope.launch {
-                            delay(500L.milliseconds)
-                            Handler(Looper.getMainLooper()).postAtFrontOfQueue { exitProcess(0) }
-                        }
-                    },
-                    enabled = !reloading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp)
-                        .padding(horizontal = 16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                SecondaryTextButton(
-                    text = stringResource(R.string.show_logs),
-                    onClick = {
-                        logsRoute.global()
-                    },
-                    enabled = !reloading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp)
-                        .padding(horizontal = 16.dp)
-                )
-            } else SecondaryTextButton(
-                text = stringResource(R.string.show_troubleshoot_section),
-                onClick = {
-                    coroutineScope.launch {
-                        delay(500.milliseconds)
-                        scrollState.smoothScrollToBottom()
-                    }
-                    showTroubleshoot = true
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, bottom = 16.dp)
-                    .padding(horizontal = 16.dp)
+        SettingsGroup(title = stringResource(R.string.troubleshooting)) {
+            SettingsEntry(
+                title = stringResource(R.string.show_logs),
+                onClick = { logsRoute.global() }
             )
         }
     }

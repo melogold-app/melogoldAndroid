@@ -13,9 +13,7 @@ import app.melogold.android.ui.screens.albumRoute
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.home.QuickPicks
 import app.melogold.android.ui.screens.playlistRoute
-import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
-import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.compose.routing.RouteHandlerScope
 
 /**
@@ -25,7 +23,6 @@ import app.melogold.compose.routing.RouteHandlerScope
 @Route
 @Composable
 fun RouteHandlerScope.WhatsNewRoot() {
-    val nav = LocalMainNav.current
     // The old page owns its scroll state: "to the top" recreates it
     var generation by rememberSaveable { mutableIntStateOf(0) }
 
@@ -44,8 +41,7 @@ fun RouteHandlerScope.WhatsNewRoot() {
                         p2 = null,
                         p3 = it.channel?.name == "YouTube Music"
                     )
-                },
-                onSearchClick = { nav.select(TopLevelDestination.Search) }
+                }
             )
         }
     }

@@ -46,8 +46,7 @@ import kotlinx.collections.immutable.toImmutableList
 @Route
 @Composable
 fun HomeArtistList(
-    onArtistClick: (Artist) -> Unit,
-    onSearchClick: () -> Unit
+    onArtistClick: (Artist) -> Unit
 ) = with(OrderPreferences) {
     val (colorPalette) = LocalAppearance.current
 
@@ -123,10 +122,6 @@ fun HomeArtistList(
             }
         }
 
-        FloatingActionsContainerWithScrollToTop(
-            lazyGridState = lazyGridState,
-            icon = R.drawable.search,
-            onClick = onSearchClick
-        )
+        FloatingActionsContainerWithScrollToTop(lazyGridState = lazyGridState)
     }
 }

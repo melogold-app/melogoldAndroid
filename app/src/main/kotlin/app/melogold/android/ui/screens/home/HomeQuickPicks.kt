@@ -80,8 +80,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 fun QuickPicks(
     onAlbumClick: (Innertube.AlbumItem) -> Unit,
     onArtistClick: (Innertube.ArtistItem) -> Unit,
-    onPlaylistClick: (Innertube.PlaylistItem) -> Unit,
-    onSearchClick: () -> Unit
+    onPlaylistClick: (Innertube.PlaylistItem) -> Unit
 ) {
     val (colorPalette, typography) = LocalAppearance.current
     val binder = LocalPlayerServiceBinder.current
@@ -368,10 +367,6 @@ fun QuickPicks(
             }
         }
 
-        FloatingActionsContainerWithScrollToTop(
-            scrollState = scrollState,
-            icon = R.drawable.search,
-            onClick = onSearchClick
-        )
+        FloatingActionsContainerWithScrollToTop(scrollState = scrollState)
     }
 }

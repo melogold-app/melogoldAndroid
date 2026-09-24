@@ -62,7 +62,7 @@ else Manifest.permission.READ_EXTERNAL_STORAGE
 
 @Route
 @Composable
-fun HomeLocalSongs(onSearchClick: () -> Unit) = with(OrderPreferences) {
+fun HomeLocalSongs() = with(OrderPreferences) {
     val context = LocalContext.current
     val [_, typography] = LocalAppearance.current
 
@@ -80,7 +80,6 @@ fun HomeLocalSongs(onSearchClick: () -> Unit) = with(OrderPreferences) {
     }
 
     if (hasPermission) HomeSongs(
-        onSearchClick = onSearchClick,
         songProvider = {
             Database.songs(
                 sortBy = localSongSortBy,

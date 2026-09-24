@@ -29,9 +29,7 @@ import app.melogold.android.ui.screens.home.HomePlaylists
 import app.melogold.android.ui.screens.home.HomeSongs
 import app.melogold.android.ui.screens.localPlaylistRoute
 import app.melogold.android.ui.screens.pipedPlaylistRoute
-import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
-import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.compose.routing.RouteHandlerScope
 
 private enum class LibraryTab(val title: Int) {
@@ -49,12 +47,10 @@ private enum class LibraryTab(val title: Int) {
 @Route
 @Composable
 fun RouteHandlerScope.LibraryRoot() {
-    val nav = LocalMainNav.current
     val saveableStateHolder = rememberSaveableStateHolder()
     var tabIndex by rememberSaveable { mutableIntStateOf(0) }
     // The old lists own their scroll state: "to the top" recreates the list
     var generation by rememberSaveable { mutableIntStateOf(0) }
-    val onSearchClick = { nav.select(TopLevelDestination.Search) }
 
     TabRootScaffold(
         title = stringResource(R.string.nav_library),
@@ -88,23 +84,20 @@ fun RouteHandlerScope.LibraryRoot() {
                                         p1 = session.token,
                                         p2 = playlist.id.toString()
                                     )
-                                },
-                                onSearchClick = onSearchClick
+                                }
                             )
 
-                            LibraryTab.Songs -> HomeSongs(onSearchClick = onSearchClick)
+                            LibraryTab.Songs -> HomeSongs()
 
                             LibraryTab.Artists -> HomeArtistList(
-                                onArtistClick = { artistRoute(it.id) },
-                                onSearchClick = onSearchClick
+                                onArtistClick = { artistRoute(it.id) }
                             )
 
                             LibraryTab.Albums -> HomeAlbums(
-                                onAlbumClick = { albumRoute(it.id) },
-                                onSearchClick = onSearchClick
+                                onAlbumClick = { albumRoute(it.id) }
                             )
 
-                            LibraryTab.OnDevice -> HomeLocalSongs(onSearchClick = onSearchClick)
+                            LibraryTab.OnDevice -> HomeLocalSongs()
                         }
                     }
                 }

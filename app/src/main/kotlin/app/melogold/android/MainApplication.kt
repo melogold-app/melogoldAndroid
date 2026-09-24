@@ -534,14 +534,6 @@ object Dependencies {
         .callAttr("download", quickjsPath.absolutePath, id)
         .toString()
 
-    fun upgradeYoutubeDl(packageName: String = "yt-dlp"): Boolean {
-        val success = runCatching { module.callAttr("upgrade", packageName) }
-            .also { it.exceptionOrNull()?.printStackTrace() }
-            .isSuccess
-        if (!success) Log.e("Python", "Upgrading $packageName resulted in non-zero exit code!")
-        return success
-    }
-
     val credentialManager by lazy { CredentialManager.create(application) }
 
     internal fun init(application: MainApplication) {

@@ -1,6 +1,5 @@
 package app.melogold.android.ui.screens.localplaylist
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -11,23 +10,17 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LookaheadScope
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.melogold.android.Database
@@ -36,12 +29,9 @@ import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.Song
-import app.melogold.android.models.SongPlaylistMap
-import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.query
 import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
-import app.melogold.android.ui.components.themed.CircularProgressIndicator
 import app.melogold.android.ui.components.themed.ConfirmationDialog
 import app.melogold.android.ui.components.themed.FloatingActionsContainerWithScrollToTop
 import app.melogold.android.ui.components.themed.Header
@@ -56,26 +46,18 @@ import app.melogold.android.ui.components.themed.TextFieldDialog
 import app.melogold.android.ui.items.SongItem
 import app.melogold.android.utils.PlaylistDownloadIcon
 import app.melogold.android.utils.asMediaItem
-import app.melogold.android.utils.completed
 import app.melogold.android.utils.enqueue
 import app.melogold.android.utils.forcePlayAtIndex
 import app.melogold.android.utils.forcePlayFromBeginning
-import app.melogold.android.utils.launchYouTubeMusic
 import app.melogold.android.utils.playingSong
-import app.melogold.android.utils.toast
 import app.melogold.compose.reordering.animateItemPlacement
 import app.melogold.compose.reordering.draggedItem
 import app.melogold.compose.reordering.rememberReorderingState
 import app.melogold.core.ui.Dimensions
 import app.melogold.core.ui.LocalAppearance
 import app.melogold.core.ui.utils.isLandscape
-import app.melogold.providers.innertube.Innertube
-import app.melogold.providers.innertube.models.bodies.BrowseBody
-import app.melogold.providers.innertube.requests.playlistPage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.launch
 
 @Composable
 fun LocalPlaylistSongs(
@@ -91,21 +73,8 @@ fun LocalPlaylistSongs(
     val (colorPalette) = LocalAppearance.current
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
-    val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
 
-    val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
-
-    var loading by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        if (DataPreferences.autoSyncPlaylists) playlist.browseId?.let { browseId ->
-            loading = true
-            sync(playlist, browseId)
-            loading = false
-        }
-    }
 
     val reorderingState = rememberReorderingState(
         lazyListState = lazyListState,
@@ -176,10 +145,6 @@ fun LocalPlaylistSongs(
 
                             Spacer(modifier = Modifier.weight(1f))
 
-                            AnimatedVisibility(loading) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                            }
-
                             PlaylistDownloadIcon(
                                 songs = songs.map { it.asMediaItem }.toImmutableList()
                             )
@@ -190,59 +155,6 @@ fun LocalPlaylistSongs(
                                 onClick = {
                                     menuState.display {
                                         Menu {
-                                            playlist.browseId?.let { browseId ->
-                                                MenuEntry(
-                                                    icon = R.drawable.sync,
-                                                    text = stringResource(R.string.sync),
-                                                    enabled = !loading,
-                                                    onClick = {
-                                                        menuState.hide()
-                                                        coroutineScope.launch {
-                                                            loading = true
-                                                            sync(playlist, browseId)
-                                                            loading = false
-                                                        }
-                                                    }
-                                                )
-
-                                                songs.firstOrNull()?.id?.let { firstSongId ->
-                                                    MenuEntry(
-                                                        icon = R.drawable.play,
-                                                        text = stringResource(R.string.watch_playlist_on_youtube),
-                                                        onClick = {
-                                                            menuState.hide()
-                                                            binder?.player?.pause()
-                                                            uriHandler.openUri(
-                                                                "https://youtube.com/watch?v=$firstSongId&list=${
-                                                                    playlist.browseId.drop(2)
-                                                                }"
-                                                            )
-                                                        }
-                                                    )
-
-                                                    val errorMessage =
-                                                        stringResource(R.string.youtube_music_not_installed)
-                                                    MenuEntry(
-                                                        icon = R.drawable.musical_notes,
-                                                        text = stringResource(R.string.open_in_youtube_music),
-                                                        onClick = {
-                                                            menuState.hide()
-                                                            binder?.player?.pause()
-                                                            if (
-                                                                !launchYouTubeMusic(
-                                                                    context = context,
-                                                                    endpoint = "watch?v=$firstSongId&list=${
-                                                                        playlist.browseId.drop(2)
-                                                                    }"
-                                                                )
-                                                            ) {
-                                                                context.toast(errorMessage)
-                                                            }
-                                                        }
-                                                    )
-                                                }
-                                            }
-
                                             MenuEntry(
                                                 icon = R.drawable.pencil,
                                                 text = stringResource(R.string.rename),
@@ -331,33 +243,4 @@ fun LocalPlaylistSongs(
             }
         )
     }
-}
-
-private suspend fun sync(
-    playlist: Playlist,
-    browseId: String
-) = runCatching {
-    Innertube.playlistPage(
-        BrowseBody(browseId = browseId)
-    )?.completed()?.getOrNull()?.let { remotePlaylist ->
-        transaction {
-            Database.clearPlaylist(playlist.id)
-
-            remotePlaylist.songsPage
-                ?.items
-                ?.map { it.asMediaItem }
-                ?.onEach { Database.insert(it) }
-                ?.mapIndexed { position, mediaItem ->
-                    SongPlaylistMap(
-                        songId = mediaItem.mediaId,
-                        playlistId = playlist.id,
-                        position = position
-                    )
-                }
-                ?.let(Database::insertSongPlaylistMaps)
-        }
-    }
-}.onFailure {
-    if (it is CancellationException) throw it
-    it.printStackTrace()
 }

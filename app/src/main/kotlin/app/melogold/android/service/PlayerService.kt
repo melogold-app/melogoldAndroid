@@ -1082,14 +1082,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             radio = null
         }
 
-        /**
-         * This method should ONLY be called when the application (sc. activity) is in the foreground!
-         */
-        fun restartForegroundOrStop() {
-            player.pause()
-            stopSelf()
-        }
-
         fun isCached(song: SongWithContentLength) =
             song.contentLength?.let { cache.isCached(song.song.id, 0L, it) } ?: false
 
