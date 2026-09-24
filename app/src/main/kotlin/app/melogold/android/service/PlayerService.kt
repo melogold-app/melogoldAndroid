@@ -78,7 +78,6 @@ import app.melogold.android.query
 import app.melogold.android.transaction
 import app.melogold.android.utils.ActionReceiver
 import app.melogold.android.utils.ConditionalCacheDataSourceFactory
-import app.melogold.android.utils.GlyphInterface
 import app.melogold.android.utils.InvincibleService
 import app.melogold.android.utils.TimerJob
 import app.melogold.android.utils.YouTubeDLResponse
@@ -96,7 +95,6 @@ import app.melogold.android.utils.get
 import app.melogold.android.utils.handleUnknownErrors
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.mediaItems
-import app.melogold.android.utils.progress
 import app.melogold.android.utils.readOnlyWhen
 import app.melogold.android.utils.setPlaybackPitch
 import app.melogold.android.utils.shouldBePlaying
@@ -129,7 +127,6 @@ import app.melogold.providers.sponsorblock.requests.segments
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
@@ -141,7 +138,6 @@ import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.flowOf
@@ -149,7 +145,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -268,8 +263,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             initialValue = false
         )
 
-    private val glyphInterface by lazy { GlyphInterface(applicationContext) }
-
     private var poiTimestamp: Long? by mutableStateOf(null)
 
     override fun onBind(intent: Intent?): AndroidBinder {
@@ -281,7 +274,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
     override fun onCreate() {
         super.onCreate()
 
-        glyphInterface.tryInit()
         notificationActionReceiver.register(flags = ContextCompat.RECEIVER_EXPORTED)
 
         bitmapProvider = BitmapProvider(
@@ -441,7 +433,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
             preferenceUpdaterJob?.cancel()
 
             coroutineScope.cancel()
-            glyphInterface.close()
         }
 
         super.onDestroy()
@@ -1148,7 +1139,6 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
 
         fun setBitmapListener(listener: ((Bitmap?) -> Unit)?) = bitmapProvider.setListener(listener)
 
-        @kotlin.OptIn(FlowPreview::class)
         fun startSleepTimer(delayMillis: Long) {
             timerJob?.cancel()
 
@@ -1166,19 +1156,7 @@ class PlayerService : InvincibleService(), Player.Listener, PlaybackStatsListene
                 handler.post {
                     player.pause()
                     player.stop()
-
-                    glyphInterface.glyph {
-                        turnOff()
-                    }
                 }
-            }.also { job ->
-                glyphInterface.progress(
-                    job
-                        .millisLeft
-                        .takeWhile { it != null }
-                        .debounce(500.milliseconds)
-                        .map { ((it ?: 0L) / delayMillis.toFloat() * 100).toInt() }
-                )
             }
         }
 

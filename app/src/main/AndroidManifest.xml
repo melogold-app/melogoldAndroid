@@ -3,10 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature
-        android:name="android.software.leanback"
-        android:required="false" />
-
-    <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
 
@@ -26,8 +22,6 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-    <uses-permission android:name="com.nothing.ketchum.permission.ENABLE" />
-
     <queries>
         <intent>
             <action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" />
@@ -46,7 +40,6 @@
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
-        android:banner="@mipmap/ic_banner"
         android:configChanges="colorMode|density|fontScale|keyboard|keyboardHidden|layoutDirection|locale|mcc|mnc|navigation|orientation|screenLayout|screenSize|smallestScreenSize|touchscreen|uiMode"
         android:enableOnBackInvokedCallback="true"
         android:hardwareAccelerated="true"
@@ -74,7 +67,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.APP_MUSIC" />
                 <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
 
             <intent-filter>
@@ -228,10 +220,6 @@
         <meta-data
             android:name="com.google.android.gms.car.notification.SmallIcon"
             android:resource="@drawable/app_icon" />
-
-        <meta-data
-            android:name="NothingKey"
-            android:value="test" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"
