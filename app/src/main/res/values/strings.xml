@@ -401,8 +401,4 @@
         <item quantity="one">Delete %1$s playback event</item>
         <item quantity="other">Delete %1$s playback events</item>
     </plurals>
-    <plurals name="song_count_plural">
-        <item quantity="one">%1$d song</item>
-        <item quantity="other">%1$d songs</item>
-    </plurals>
 </resources>

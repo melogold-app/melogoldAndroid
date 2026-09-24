@@ -1,6 +1,10 @@
 package app.melogold.android.ui.screens.search
 
 import app.melogold.android.Database
+import app.melogold.android.data.repo.applying
+import app.melogold.android.data.repo.applyingHidden
+import app.melogold.android.data.repo.applyingHistory
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.data.NetworkMonitor
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.SearchQuery
@@ -53,6 +57,7 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
 
     val recentlyPlayed: StateFlow<List<Song>> = Database
         .history(RECENTLY_PLAYED)
+        .withPending { applyingHistory(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN.inWholeMilliseconds), emptyList())
 
     /**
@@ -73,7 +78,7 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
         .flatMapLatest { text ->
             if (text.isEmpty()) flowOf(emptyList())
             else patterns(text).let { (asTyped, lower, capitalized) ->
-                Database.searchSongs(asTyped, lower, capitalized, LIBRARY_SONGS)
+                Database.searchSongs(asTyped, lower, capitalized, LIBRARY_SONGS).withPending { applyingHidden(it) }
             }
         }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN.inWholeMilliseconds), emptyList())
@@ -83,7 +88,7 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
         .flatMapLatest { text ->
             if (text.isEmpty()) flowOf(emptyList())
             else patterns(text).let { (asTyped, lower, capitalized) ->
-                Database.searchPlaylists(asTyped, lower, capitalized, LIBRARY_PLAYLISTS)
+                Database.searchPlaylists(asTyped, lower, capitalized, LIBRARY_PLAYLISTS).withPending { applying(it) }
             }
         }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN.inWholeMilliseconds), emptyList())

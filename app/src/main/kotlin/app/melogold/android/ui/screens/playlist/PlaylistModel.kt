@@ -1,5 +1,7 @@
 package app.melogold.android.ui.screens.playlist
 
+import app.melogold.android.data.repo.applying
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
 import app.melogold.android.data.repo.IncompletePlaylistException
 import app.melogold.android.data.repo.PlaylistLinks
@@ -77,7 +79,7 @@ class PlaylistModel(
     val state: StateFlow<Loadable<PlaylistDetails>> = combine(
         page,
         songs.state,
-        Database.playlistByBrowseId(browseId)
+        Database.playlistByBrowseId(browseId).withPending { applying(it) }
     ) { page, songs, saved ->
         when {
             page != null -> Loadable.Content(PlaylistDetails(page = page, songs = songs, saved = saved))

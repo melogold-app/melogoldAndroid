@@ -37,6 +37,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
+import app.melogold.android.data.repo.PendingMutation
+import app.melogold.android.data.repo.applying
+import app.melogold.android.data.repo.pendingMutations
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
 import app.melogold.android.DatabaseAccessor
 import app.melogold.android.R
@@ -87,9 +91,15 @@ fun AddToPlaylistMenu(
 
     val playlists by remember {
         Database.playlistPreviews(sortBy = PlaylistSortBy.DateAdded, sortOrder = SortOrder.Descending)
+            .withPending { applying(it) }
     }.collectAsState(initial = null, context = Dispatchers.IO)
     val memberOf by remember(songId) {
-        Database.playlistIdsOf(songId)
+        Database.playlistIdsOf(songId).withPending { pending ->
+            val leaving = pending.filterIsInstance<PendingMutation.RemoveFromPlaylist>()
+                .filter { it.songId == songId }
+                .map { it.playlistId }
+            if (leaving.isEmpty()) this else this - leaving.toSet()
+        }
     }.collectAsState(initial = emptyList(), context = Dispatchers.IO)
 
     val edits = remember { ConcurrentHashMap<Long, PlaylistEdit>() }
@@ -102,6 +112,9 @@ fun AddToPlaylistMenu(
 
     fun toggle(preview: PlaylistPreview, isMember: Boolean) {
         edits.putIfAbsent(preview.id, PlaylistEdit(name = preview.name, wasMember = isMember))
+
+        // Being taken out of it: keeping it there is dropping that
+        if (!isMember && pendingMutations.undo(PendingMutation.RemoveFromPlaylist(preview.id, songId))) return
 
         transaction {
             if (isMember) Database.positionIn(songId, preview.id)?.let { position ->
@@ -152,7 +165,7 @@ fun AddToPlaylistMenu(
                     supportingContent = {
                         Text(
                             text = pluralStringResource(
-                                R.plurals.song_count_plural,
+                                R.plurals.library_tracks_count,
                                 preview.songCount,
                                 preview.songCount
                             )
@@ -190,6 +203,7 @@ fun AddAllToPlaylistMenu(
 
     val playlists by remember {
         Database.playlistPreviews(sortBy = PlaylistSortBy.DateAdded, sortOrder = SortOrder.Descending)
+            .withPending { applying(it) }
     }.collectAsState(initial = null, context = Dispatchers.IO)
 
     var filter by rememberSaveable { mutableStateOf("") }
@@ -228,7 +242,7 @@ fun AddAllToPlaylistMenu(
                     Artwork(url = preview.thumbnail, size = 48.dp, shape = RoundedCornerShape(8.dp))
                 },
                 supportingContent = {
-                    Text(text = pluralStringResource(R.plurals.song_count_plural, preview.songCount, preview.songCount))
+                    Text(text = pluralStringResource(R.plurals.library_tracks_count, preview.songCount, preview.songCount))
                 },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.testTag("add_to_playlist_row")
@@ -253,6 +267,8 @@ private fun addAll(
     snackbar: AppSnackbar
 ) = transaction {
     val id = playlistId ?: Database.insert(Playlist(name = name)).takeIf { it != -1L } ?: return@transaction
+    // Tracks being taken out of it stay instead
+    mediaItems.forEach { pendingMutations.undo(PendingMutation.RemoveFromPlaylist(id, it.mediaId)) }
     val added = mediaItems
         .distinctBy { it.mediaId }
         .filter { playlistId == null || Database.positionIn(it.mediaId, id) == null }

@@ -391,9 +391,4 @@
         <item quantity="few">Удалить %1$s событий воспроизведения</item>
         <item quantity="many">Удалить %1$s событий воспроизведения</item>
     </plurals>
-    <plurals name="song_count_plural">
-        <item quantity="one">%1$d песня</item>
-        <item quantity="few">%1$d песни</item>
-        <item quantity="many">%1$d песен</item>
-    </plurals>
 </resources>

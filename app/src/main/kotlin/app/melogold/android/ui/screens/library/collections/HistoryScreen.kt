@@ -42,12 +42,14 @@ import androidx.compose.ui.unit.dp
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
-import app.melogold.android.models.Event
+import app.melogold.android.data.repo.PendingMutation
+import app.melogold.android.data.repo.applyingHistory
+import app.melogold.android.data.repo.applyingPlays
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongWithLastPlayed
 import app.melogold.android.models.SongWithPlayTime
 import app.melogold.android.preferences.DataPreferences
-import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
 import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
@@ -98,48 +100,41 @@ enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
     AllTime(null, R.string.history_all_time)
 }
 
-/** History › Recent and Most played, forgetting a track and clearing all, each with "Undo". */
+/**
+ * History › Recent and Most played, forgetting a track and clearing all; both wait for "Undo"
+ * ([PendingMutation]) and the lists hide what they delete meanwhile.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryModel : ScreenModel() {
     val period = MutableStateFlow(HistoryPeriod.Month)
 
     val recent: StateFlow<List<SongWithLastPlayed>?> = Database.recentlyPlayed()
+        .withPending { applyingHistory(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     val mostPlayed: StateFlow<List<SongWithPlayTime>?> = period
         .flatMapLatest { period -> mostPlayedIn(period) }
+        .withPending { applyingHistory(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     val playCount: StateFlow<Int> = Database.eventCount()
+        .withPending { applyingPlays(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), 0)
 
     private fun mostPlayedIn(period: HistoryPeriod): Flow<List<SongWithPlayTime>> = Database.mostPlayed(
         since = period.days?.let { System.currentTimeMillis() - TimeUnit.DAYS.toMillis(it) } ?: 0L
     )
 
-    /** Forgets every play of [song] (likes and playlists stay), with "Undo". */
+    /** Forgets every play of [song] so far (likes and playlists stay), with "Undo". */
     fun forget(song: Song, snackbar: AppSnackbar, message: String) = scope.launch {
-        val events = withContext(Dispatchers.IO) {
-            Database.eventsOf(song.id).also {
-                Database.deleteEventsOf(song.id)
-                Database.setTotalPlayTime(song.id, 0L)
-            }
-        }
-        snackbar.showUndo(message) { restore(events, mapOf(song.id to song.totalPlayTimeMs)) }
+        val before = System.currentTimeMillis()
+        val plays = withContext(Dispatchers.IO) { Database.eventCountOf(song.id) }
+        snackbar.undoable(message, PendingMutation.ForgetTrack(song.id, before = before, plays = plays))
     }
 
-    /** Deletes every play, with "Undo". */
-    fun clear(snackbar: AppSnackbar, message: String) = scope.launch {
-        val events = withContext(Dispatchers.IO) {
-            Database.allEvents().also { Database.deleteAllEvents() }
-        }
-        snackbar.showUndo(message) { restore(events, emptyMap()) }
-    }
-
-    private fun restore(events: List<Event>, playTimes: Map<String, Long>) = transaction {
-        Database.insertEvents(events)
-        playTimes.forEach { (songId, time) -> Database.setTotalPlayTime(songId, time) }
-    }
+    /** Deletes every play so far, with "Undo". */
+    fun clear(snackbar: AppSnackbar, message: String) =
+        snackbar.undoable(message, PendingMutation.ClearHistory(before = System.currentTimeMillis()))
 }
 
 /**

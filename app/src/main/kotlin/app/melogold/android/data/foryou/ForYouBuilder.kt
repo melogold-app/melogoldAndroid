@@ -1,6 +1,8 @@
 package app.melogold.android.data.foryou
 
 import android.util.Log
+import app.melogold.android.data.repo.applyingHidden
+import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.Database
 import app.melogold.android.data.repo.Timed
 import app.melogold.providers.innertube.Innertube
@@ -85,7 +87,9 @@ class ForYouBuilder(
             results.firstNotNullOfOrNull { it?.exceptionOrNull() } ?: IOException("related pages are empty")
         )
 
-        val hidden = withContext(Dispatchers.IO) { Database.hiddenSongIds().toSet() }
+        val hidden = withContext(Dispatchers.IO) {
+            Database.hiddenSongIds().toSet().applyingHidden(pendingMutations.pending.value)
+        }
         val seedIds = seeds.map { it.id }.toSet()
 
         val forYou = ForYou(

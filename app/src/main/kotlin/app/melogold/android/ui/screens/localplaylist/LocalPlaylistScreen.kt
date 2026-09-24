@@ -33,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +49,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.data.repo.PendingMutation
 import app.melogold.android.preferences.ListSort
 import app.melogold.android.preferences.SortPreferences
 import app.melogold.android.preferences.toListSort
@@ -89,7 +89,6 @@ import app.melogold.android.utils.forcePlayAtIndex
 import app.melogold.android.utils.playingSong
 import app.melogold.compose.routing.RouteHandler
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -129,7 +128,6 @@ private fun LocalPlaylistContent(
     val nav = LocalMainNav.current
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val coroutineScope = rememberCoroutineScope()
     val (playingId, _) = playingSong(binder)
 
     val ownOrder by model.songs.collectAsState()
@@ -185,10 +183,9 @@ private fun LocalPlaylistContent(
         binder?.player?.forcePlayAtIndex(list.map(Song::asMediaItem), index)
     }
 
-    fun delete() = coroutineScope.launch {
-        val deleted = model.delete() ?: return@launch
+    fun delete() {
         onBack()
-        snackbar.showUndo(deletedMessage) { LocalPlaylistModel.restore(deleted) }
+        snackbar.undoable(deletedMessage, PendingMutation.DeletePlaylist(playlist.id))
     }
 
     fun openLinkSheet() = menuState.display {
@@ -400,8 +397,10 @@ private fun LocalPlaylistContent(
                                         mediaItem = song.asMediaItem,
                                         onRemoveFromPlaylist = if (position >= 0) {
                                             {
-                                                val undo = model.remove(song, position)
-                                                snackbar.showUndo(removedMessage, undo)
+                                                snackbar.undoable(
+                                                    removedMessage,
+                                                    PendingMutation.RemoveFromPlaylist(playlist.id, song.id)
+                                                )
                                             }
                                         } else null
                                     )

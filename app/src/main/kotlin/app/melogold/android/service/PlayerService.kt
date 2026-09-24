@@ -59,6 +59,8 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.extractor.DefaultExtractorsFactory
+import app.melogold.android.data.repo.applyingHidden
+import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.Database
 import app.melogold.android.Dependencies
 import app.melogold.android.MainActivity
@@ -1072,7 +1074,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             ).let { radioData ->
                 isLoadingRadio = true
                 radioJob = coroutineScope.launch {
-                    val items = radioData.process().let { Database.filterBlacklistedSongs(it) }
+                    val hiding = emptySet<String>().applyingHidden(pendingMutations.pending.value)
+                    val items = radioData.process()
+                        .let { Database.filterBlacklistedSongs(it) }
+                        .filter { it.mediaId !in hiding }
 
                     withContext(Dispatchers.Main) {
                         if (justAdd) {

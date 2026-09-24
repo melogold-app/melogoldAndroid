@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.media3.common.MediaItem
+import app.melogold.android.data.repo.PendingMutation
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
@@ -160,8 +162,11 @@ fun TrackMenuEntries(
 
     val likedAt by remember(songId) { Database.likedAt(songId) }
         .collectAsState(initial = null, context = Dispatchers.IO)
-    val blacklisted by remember(songId) { Database.blacklisted(songId) }
-        .collectAsState(initial = false, context = Dispatchers.IO)
+    val blacklisted by remember(songId) {
+        Database.blacklisted(songId).withPending { pending ->
+            this || pending.any { it is PendingMutation.Hide && it.songId == songId }
+        }
+    }.collectAsState(initial = false, context = Dispatchers.IO)
 
     // What the item carries at once; Room and then YouTube Music fill in the rest
     var links by remember(mediaItem) { mutableStateOf(mediaItem.knownTrackLinks) }
@@ -291,13 +296,12 @@ fun TrackMenuEntries(
         icon = R.drawable.ms_visibility_off,
         text = stringResource(if (blacklisted) R.string.menu_show_again else R.string.menu_dont_show),
         onClick = entry {
-            transaction {
-                Database.insert(mediaItem)
-                Database.toggleBlacklist(songId)
-            }
-            if (!blacklisted) {
+            if (blacklisted) transaction { Database.toggleBlacklist(songId) }
+            else {
+                // The hiding is written later, to the row of the track
+                transaction { Database.insert(mediaItem) }
                 onHidden()
-                snackbar.showUndo(hiddenMessage) { transaction { Database.toggleBlacklist(songId) } }
+                snackbar.undoable(hiddenMessage, PendingMutation.Hide(songId))
             }
         }
     )

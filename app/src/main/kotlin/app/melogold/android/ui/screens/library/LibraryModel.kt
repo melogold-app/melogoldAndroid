@@ -1,6 +1,10 @@
 package app.melogold.android.ui.screens.library
 
 import app.melogold.android.Database
+import app.melogold.android.data.repo.applying
+import app.melogold.android.data.repo.applyingPlays
+import app.melogold.android.data.repo.applyingPlaylists
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
 import app.melogold.android.models.PlaylistPreview
@@ -35,10 +39,10 @@ data class LibraryCounts(
 class LibraryModel : ScreenModel() {
     val counts: StateFlow<LibraryCounts?> = combine(
         Database.favoritesCount(),
-        Database.playlistsCount(),
+        Database.playlistsCount().withPending { applyingPlaylists(it) },
         Database.savedAlbumsCount(),
         Database.savedArtistsCount(),
-        Database.eventsCount()
+        Database.eventsCount().withPending { applyingPlays(it) }
     ) { favorites, playlists, albums, artists, plays ->
         LibraryCounts(favorites, playlists, albums, artists, plays)
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
@@ -46,6 +50,7 @@ class LibraryModel : ScreenModel() {
     /** The newest playlists shown in the hub. */
     val playlists: StateFlow<List<PlaylistPreview>> = Database
         .playlistPreviews(PlaylistSortBy.DateAdded, SortOrder.Descending)
+        .withPending { applying(it) }
         .map { it.take(HUB_PLAYLISTS) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), emptyList())
 }
@@ -56,6 +61,7 @@ class LibraryModel : ScreenModel() {
 class LibraryListsModel : ScreenModel() {
     val playlists: StateFlow<List<PlaylistPreview>?> = Database
         .playlistPreviews(PlaylistSortBy.DateAdded, SortOrder.Descending)
+        .withPending { applying(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     val albums: StateFlow<List<Album>?> = Database

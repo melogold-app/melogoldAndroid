@@ -12,6 +12,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.util.UnstableApi
+import app.melogold.android.data.repo.applying
+import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.Database
 import app.melogold.android.R
 import app.melogold.android.models.Album
@@ -100,6 +102,7 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
                     Database
                         .playlistPreviewsByDateAddedDesc()
                         .first()
+                        .applying(pendingMutations.pending.value)
                         .map { it.asBrowserMediaItem }
                         .toMutableList()
                         .apply {
@@ -220,7 +223,7 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
                 .setTitle(playlist.name)
                 .setSubtitle(
                     resources.getQuantityString(
-                        R.plurals.song_count_plural,
+                        R.plurals.library_tracks_count,
                         songCount,
                         songCount
                     )

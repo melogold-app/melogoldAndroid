@@ -3,10 +3,12 @@ package app.melogold.android.ui.screens.localplaylist
 import app.melogold.android.Database
 import app.melogold.android.data.repo.PlaylistLinks
 import app.melogold.android.data.repo.RefreshResult
-import app.melogold.android.internal
+import app.melogold.android.data.repo.PendingMutation
+import app.melogold.android.data.repo.applying
+import app.melogold.android.data.repo.applyingTo
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.Song
-import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.YtLinkMode
 import app.melogold.android.query
 import app.melogold.android.transaction
@@ -18,39 +20,41 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val KEEP_WHILE_HIDDEN_MS = 5_000L
+private const val COVERS = 4
 
 /** A linked playlist is refreshed on opening when its last refresh is older than this. */
 private const val AUTO_REFRESH_AFTER_MS = 12 * 60 * 60 * 1000L
 
-/** What deleting a playlist removed, to put it back on "Undo". */
-class DeletedPlaylist internal constructor(
-    val playlist: Playlist,
-    val maps: List<SongPlaylistMap>
-)
-
 /**
  * An own playlist (REWRITE §3.8.1): its tracks in their order (or newest first), its covers, and
- * the edits — reorder, remove, rename, delete, the YouTube link and its refresh.
+ * the edits — reorder, rename, the YouTube link and its refresh. Removing a track and deleting the
+ * playlist wait for "Undo" ([PendingMutation]); the flows hide what they delete meanwhile.
  */
 class LocalPlaylistModel(
     private val playlistId: Long,
     private val appScope: CoroutineScope
 ) : ScreenModel() {
     val playlist: StateFlow<Playlist?> = Database.playlist(playlistId)
+        .withPending { applying(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     val songs: StateFlow<List<Song>?> = Database.playlistSongs(playlistId)
+        .withPending { applyingTo(playlistId, it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     val songsByDateAdded: StateFlow<List<Song>?> = Database.playlistSongsByDateAdded(playlistId)
+        .withPending { applyingTo(playlistId, it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
-    val covers: StateFlow<List<String>> = Database.playlistThumbnailUrls(playlistId)
+    /** The artwork of the first four tracks, from the tracks as shown. */
+    val covers: StateFlow<List<String>> = songs
+        .map { songs -> songs.orEmpty().mapNotNull { it.thumbnailUrl }.take(COVERS) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), emptyList())
 
     private val mutableRefreshing = MutableStateFlow(false)
@@ -87,41 +91,20 @@ class LocalPlaylistModel(
         playlist.value?.let { Database.update(it.copy(name = name)) }
     }
 
-    /** Moves a track in the own order. */
+    /**
+     * Moves the track at [from] in the own order to [to], both indices in the list as shown: Room
+     * may still hold tracks being taken out, so the move goes by the tracks, not by the indices.
+     */
     fun move(from: Int, to: Int) {
         if (from == to) return
-        transaction { Database.move(playlistId, from, to) }
-    }
+        val shown = songs.value ?: return
+        val moved = shown.getOrNull(from) ?: return
+        val target = shown.getOrNull(to) ?: return
 
-    /** Removes the track at [position]; the result puts it back on "Undo". */
-    fun remove(song: Song, position: Int): () -> Unit {
         transaction {
-            Database.move(playlistId, position, Int.MAX_VALUE)
-            Database.delete(SongPlaylistMap(song.id, playlistId, Int.MAX_VALUE))
-        }
-        return {
-            transaction {
-                val count = Database.songCountOf(playlistId)
-                Database.insert(SongPlaylistMap(song.id, playlistId, count))
-                if (position < count) Database.move(playlistId, count, position)
-            }
-        }
-    }
-
-    /** Deletes the playlist; what it returns restores it, tracks and order included. */
-    suspend fun delete(): DeletedPlaylist? = withContext(Dispatchers.IO) {
-        val current = playlist.value ?: return@withContext null
-        Database.internal.runInTransaction<DeletedPlaylist> {
-            val maps = Database.songPlaylistMaps(playlistId)
-            Database.delete(current)
-            DeletedPlaylist(current, maps)
-        }
-    }
-
-    companion object {
-        fun restore(deleted: DeletedPlaylist) = transaction {
-            Database.insert(deleted.playlist)
-            Database.insertSongPlaylistMaps(deleted.maps)
+            val fromPosition = Database.positionIn(moved.id, playlistId) ?: return@transaction
+            val toPosition = Database.positionIn(target.id, playlistId) ?: return@transaction
+            Database.move(playlistId, fromPosition, toPosition)
         }
     }
 }

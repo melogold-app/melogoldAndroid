@@ -5,6 +5,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import app.melogold.android.data.NetworkMonitor
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
+import app.melogold.android.data.repo.PendingMutationStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +19,9 @@ class AppContainer(private val application: Application) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val network by lazy { NetworkMonitor(application) }
+
+    /** Deletions waiting for "Undo" (REWRITE §3.11.9), written in [appScope]. */
+    val pendingMutations by lazy { PendingMutationStore(scope = appScope) }
 
     val json = Json {
         ignoreUnknownKeys = true

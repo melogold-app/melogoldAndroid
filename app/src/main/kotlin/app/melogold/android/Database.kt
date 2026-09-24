@@ -290,6 +290,15 @@ interface DatabaseAccessor {
     @Query("DELETE FROM Event WHERE songId = :songId")
     fun deleteEventsOf(songId: String)
 
+    @Query("DELETE FROM Event WHERE songId = :songId AND timestamp <= :before")
+    fun deleteEventsOf(songId: String, before: Long)
+
+    @Query("DELETE FROM Event WHERE timestamp <= :before")
+    fun deleteEventsBefore(before: Long)
+
+    @Query("SELECT COUNT(*) FROM Event WHERE songId = :songId")
+    fun eventCountOf(songId: String): Int
+
     @Query("DELETE FROM Event")
     fun deleteAllEvents()
 
@@ -568,16 +577,6 @@ interface DatabaseAccessor {
         }
     }
 
-    @Query(
-        """
-        SELECT thumbnailUrl FROM Song
-        JOIN SongPlaylistMap ON id = songId
-        WHERE playlistId = :id AND thumbnailUrl IS NOT NULL
-        ORDER BY position
-        LIMIT 4
-        """
-    )
-    fun playlistThumbnailUrls(id: Long): Flow<List<String>>
 
     @Transaction
     @Query(
@@ -721,6 +720,13 @@ interface DatabaseAccessor {
     @Transaction
     @Query("UPDATE Song SET blacklisted = NOT blacklisted WHERE id = :songId")
     fun toggleBlacklist(songId: String)
+
+    @Query("UPDATE Song SET blacklisted = 1 WHERE id = :songId")
+    fun hide(songId: String)
+
+    /** Deletes the playlist; its track links go with it (cascade). */
+    @Query("DELETE FROM Playlist WHERE id = :playlistId")
+    fun deletePlaylist(playlistId: Long)
 
     suspend fun filterBlacklistedSongs(songs: List<MediaItem>): List<MediaItem> {
         val blacklistedIds = blacklistedIds()
