@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Search: root and input (REWRITE §3.1.1, §3.1.2) -->
+<resources>
+    <string name="search_hint">Search music and videos</string>
+    <string name="search_paste_link">Paste link</string>
+    <string name="search_clipboard_empty">The clipboard is empty</string>
+    <string name="search_clear_field">Clear</string>
+    <string name="search_tip">We search in two places: the YouTube Music catalog and regular YouTube — re-uploads, covers, concerts. The button on the right of the field pastes a video link.</string>
+    <string name="search_tip_ok">Got it</string>
+    <string name="search_recent_queries">Recent searches</string>
+    <string name="search_clear_history">Clear</string>
+    <string name="search_clear_history_title">Clear search history?</string>
+    <plurals name="search_clear_history_text">
+        <item quantity="one">%d search will be removed.</item>
+        <item quantity="other">%d searches will be removed.</item>
+    </plurals>
+    <string name="search_history_paused">Search history isn\'t saved</string>
+    <string name="search_query_removed">Search removed</string>
+    <string name="search_fill">Put into the field</string>
+    <string name="search_remove">Remove</string>
+    <string name="search_recently_played">Recently played</string>
+    <string name="search_offline">No network — searching your library only</string>
+    <string name="search_open_link">Open link: %1$s</string>
+    <string name="search_link_video">YouTube video</string>
+    <string name="search_link_playlist">playlist</string>
+    <string name="search_link_album">album</string>
+    <string name="search_link_channel">channel</string>
+    <string name="search_import_apple">Import from Apple Music is coming later</string>
+    <string name="search_import_yandex">Import from Yandex Music is coming later</string>
+    <string name="search_import_spotify">Import from Spotify is coming later</string>
+    <string name="search_in_library">In your library</string>
+    <string name="search_suggestions">Suggestions</string>
+    <string name="link_channel_later">Links to @channels will open in a later version</string>
+    <string name="link_import_later">Import from other services is coming later</string>
+    <string name="link_unsupported">Can\'t open this link</string>
+    <string name="kit_cancel">Cancel</string>
+</resources>

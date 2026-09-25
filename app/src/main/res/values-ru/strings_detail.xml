@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_save">Сохранить в библиотеку</string>
+    <string name="detail_saved">В библиотеке</string>
+    <string name="detail_saved_message">Сохранено в библиотеку</string>
+    <string name="detail_removed_message">Убрано из библиотеки</string>
+
+    <string name="album_about">Об альбоме</string>
+    <string name="album_radio">Радио альбома</string>
+
+    <plurals name="add_to_playlist_added_tracks">
+        <item quantity="one">%1$d трек добавлен в „%2$s“</item>
+        <item quantity="few">%1$d трека добавлено в „%2$s“</item>
+        <item quantity="many">%1$d треков добавлено в „%2$s“</item>
+        <item quantity="other">%1$d трека добавлено в „%2$s“</item>
+    </plurals>
+    <string name="add_to_playlist_all_present">Все треки уже есть в „%1$s“</string>
+
+    <string name="artist_radio">Радио</string>
+    <string name="artist_subscribe">Подписаться</string>
+    <string name="artist_subscribed">Вы подписаны</string>
+    <string name="artist_subscribed_message">Вы подписались</string>
+    <string name="artist_unsubscribed_message">Подписка отменена</string>
+    <string name="artist_popular">Популярное</string>
+    <string name="artist_albums">Альбомы</string>
+    <string name="artist_singles">Синглы и EP</string>
+    <string name="artist_videos">Клипы</string>
+    <string name="artist_in_library">В вашей библиотеке</string>
+    <string name="artist_in_library_note">Треки исполнителя из Избранного</string>
+    <string name="artist_related">Похожие исполнители</string>
+    <string name="artist_about">Об исполнителе</string>
+    <string name="artist_all">Все</string>
+    <string name="artist_all_count">Все (%1$d)</string>
+
+    <string name="channel_shuffle">Перемешать видео</string>
+    <string name="channel_videos">Видео</string>
+    <string name="channel_playlists">Плейлисты канала</string>
+    <string name="channel_about">О канале</string>
+
+    <string name="playlist_save_title">Сохранить в библиотеку</string>
+    <string name="playlist_link_append">Связать: только добавлять</string>
+    <string name="playlist_link_append_hint">Новые треки с YouTube добавляются в конец, ваши правки сохраняются. Рекомендуем</string>
+    <string name="playlist_link_mirror">Связать: зеркало</string>
+    <string name="playlist_link_mirror_hint">Список всегда как на YouTube, ваши правки перезапишутся</string>
+    <string name="playlist_link_off">Сохранить копию без связи</string>
+    <string name="playlist_link_off_hint">Не обновляется из YouTube</string>
+    <string name="playlist_saving">Сохраняем плейлист…</string>
+    <string name="playlist_saved">Сохранено в Библиотеку</string>
+    <string name="playlist_open">Открыть</string>
+    <string name="playlist_incomplete">YouTube вернул неполный список — плейлист не сохранён</string>
+    <string name="playlist_save_failed">Не удалось сохранить плейлист</string>
+    <string name="playlist_loaded">Загружено %1$d</string>
+
+    <string name="local_playlist_sort_custom">Свой порядок</string>
+    <string name="local_playlist_removed_track">Убрано из плейлиста</string>
+    <string name="local_playlist_deleted">Плейлист удалён</string>
+    <string name="local_playlist_rename">Переименовать</string>
+    <string name="local_playlist_rename_confirm">Сохранить</string>
+    <string name="local_playlist_link">Связь с YouTube</string>
+    <string name="local_playlist_refresh">Обновить из YouTube</string>
+    <string name="local_playlist_delete">Удалить плейлист</string>
+    <string name="local_playlist_empty">В плейлисте нет треков. Добавляйте через ⋮ › Добавить в плейлист</string>
+    <string name="local_playlist_move_up">Переместить выше</string>
+    <string name="local_playlist_move_down">Переместить ниже</string>
+    <string name="local_playlist_refreshing">Обновляем из YouTube…</string>
+    <string name="local_playlist_synced">обновлено %1$s</string>
+    <string name="local_playlist_unlink">Отвязать</string>
+    <string name="local_playlist_unlink_hint">Больше не обновлять из YouTube</string>
+    <string name="local_playlist_mode_mirror">Зеркало</string>
+    <string name="local_playlist_mode_append">Только добавлять</string>
+    <string name="local_playlist_mode_off">Без связи</string>
+    <string name="local_playlist_incomplete">YouTube вернул неполный список — плейлист не изменён</string>
+    <string name="local_playlist_snapshot">Запомнили список YouTube — новые треки будут добавляться со следующего обновления</string>
+    <string name="local_playlist_refresh_failed">Не удалось обновить из YouTube</string>
+    <string name="local_playlist_up_to_date">Плейлист уже как на YouTube</string>
+    <plurals name="local_playlist_added">
+        <item quantity="one">%1$d новый трек из YouTube</item>
+        <item quantity="few">%1$d новых трека из YouTube</item>
+        <item quantity="many">%1$d новых треков из YouTube</item>
+        <item quantity="other">%1$d нового трека из YouTube</item>
+    </plurals>
+    <plurals name="local_playlist_mirrored">
+        <item quantity="one">Обновлено из YouTube: убран %1$d трек</item>
+        <item quantity="few">Обновлено из YouTube: убрано %1$d трека</item>
+        <item quantity="many">Обновлено из YouTube: убрано %1$d треков</item>
+        <item quantity="other">Обновлено из YouTube: убрано %1$d трека</item>
+    </plurals>
+    <string name="local_playlist_synced_now">только что</string>
+    <string name="new_releases_title">Новые альбомы и синглы</string>
+    <string name="settings_cache_unlimited">Без ограничений</string>
+    <string name="logs">Журнал</string>
+    <string name="size_mb">%1$s МБ</string>
+    <string name="size_gb">%1$s ГБ</string>
+</resources>

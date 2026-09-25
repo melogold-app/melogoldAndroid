@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_in_favorites">%1$d в Избранном</string>
+    <plurals name="library_playlists_count">
+        <item quantity="one">%d плейлист</item>
+        <item quantity="few">%d плейлиста</item>
+        <item quantity="many">%d плейлистов</item>
+        <item quantity="other">%d плейлиста</item>
+    </plurals>
+    <plurals name="library_tracks_count">
+        <item quantity="one">%d трек</item>
+        <item quantity="few">%d трека</item>
+        <item quantity="many">%d треков</item>
+        <item quantity="other">%d трека</item>
+    </plurals>
+    <string name="library_favorites">Избранное</string>
+    <string name="library_downloads">Скачанное</string>
+    <string name="library_history">История</string>
+    <string name="library_playlists">Плейлисты</string>
+    <string name="library_all_count">Все (%1$d)</string>
+    <string name="library_new_playlist">Новый плейлист</string>
+    <string name="library_albums">Альбомы</string>
+    <string name="library_artists">Исполнители и каналы</string>
+    <string name="library_empty_title">Здесь будет ваша музыка</string>
+    <string name="library_empty_text">Лайкайте треки и сохраняйте альбомы. Всё хранится на устройстве, аккаунт не нужен.</string>
+    <string name="library_find_music">Найти музыку</string>
+    <string name="library_no_albums">Здесь появятся сохранённые альбомы</string>
+    <string name="library_no_artists">Здесь появятся исполнители и каналы, на которые вы подписались</string>
+    <string name="library_no_playlists">Здесь появятся ваши плейлисты</string>
+    <string name="playlist_new_title">Новый плейлист</string>
+    <string name="playlist_name">Название</string>
+    <string name="playlist_create">Создать</string>
+</resources>

@@ -1,0 +1,32 @@
+package app.melogold.android.models
+
+import androidx.compose.runtime.Immutable
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.ForeignKey
+
+@Immutable
+@Entity(
+    primaryKeys = ["songId", "playlistId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = Song::class,
+            parentColumns = ["id"],
+            childColumns = ["songId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = Playlist::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
+data class SongPlaylistMap(
+    @ColumnInfo(index = true) val songId: String,
+    @ColumnInfo(index = true) val playlistId: Long,
+    val position: Int,
+    /** The order key the Melogold server gave the item (API §4.8); null until it was synced. */
+    val sortKey: String? = null
+)

@@ -1,2 +1,0 @@
-* Android 17 is now officially supported
-* Stability fixes

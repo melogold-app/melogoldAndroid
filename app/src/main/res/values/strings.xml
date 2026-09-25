@@ -107,16 +107,14 @@
     <string name="error_piped_link">There was an unknown error linking your Piped account. Please try again.</string>
     <string name="error_piped_instances_unavailable">Piped instance list currently unavailable</string>
     <string name="error_bassboost_init">There was an error initializing Bass Boost. Probably your device doesn\'t support it. Try changing the bass boost level or try again.</string>
-    <string name="error_pre_cache">An unknown error occurred during pre-caching. Please try again.</string>
     <string name="error_url">Can\'t open url %1$s</string>
     <string name="media_permission_declined">Permission declined, please grant media permissions in the settings of your device.</string>
     <string name="open_settings">Open settings</string>
     <string name="no_items_found">No items found</string>
     <string name="no_search_results">No results found. Please try a different query or category</string>
-    <string name="no_browser_installed">Couldn\'t find an application to browse the internet</string>
     <string name="no_equalizer_installed">Couldn\'t find an application to equalize audio</string>
     <string name="no_file_chooser_installed">Couldn\'t find an application to create documents</string>
-    <string name="no_battery_optimization_settings_found">Couldn\'t find battery optimization settings, please whitelist ViTune manually</string>
+    <string name="no_battery_optimization_settings_found">Couldn\'t find battery optimization settings, please whitelist Melogold manually</string>
     <string name="related_albums">Related albums</string>
     <string name="similar_artists">Similar artists</string>
     <string name="recommended_playlists">Playlists you might like</string>
@@ -131,9 +129,7 @@
     <string name="show_synchronized_lyrics">Show synchronized lyrics</string>
     <string name="provided_lyrics_by">Provided by lrclib.net &amp; kugou.com</string>
     <string name="edit_lyrics">Edit lyrics</string>
-    <string name="search_lyrics_online">Search lyrics online</string>
     <string name="refetch_lyrics">Fetch lyrics again</string>
-    <string name="pick_from_lrclib">Pick lyrics from lrclib.net</string>
     <string name="set_lyrics_start_offset">Set start offset</string>
     <string name="set_lyrics_start_offset_description">Offsets the synchronized lyrics by the current playback time</string>
     <string name="playback_speed">Speed</string>
@@ -153,7 +149,7 @@
     <string name="view_album">View album</string>
     <string name="view_playlist">View playlist</string>
     <string name="search_placeholder">Search…</string>
-    <string name="format_version_credits">v%1$s by Huizengek &amp; vfsfitvnm</string>
+    <string name="format_version_credits">v%1$s</string>
     <string name="social">Social</string>
     <string name="contact">Contact</string>
     <string name="github">GitHub</string>
@@ -208,8 +204,6 @@
     <string name="pip_description">Automatically switches to Picture-In-Picure mode when switching to the background</string>
     <string name="auto_open_player">Open player</string>
     <string name="auto_open_player_description">Automatically expand player when tapping on a song</string>
-    <string name="cache">Cache</string>
-    <string name="cache_description">When the cache runs out of space, the resources that haven\'t been accessed for the longest time are cleared</string>
     <string name="image_cache">Image cache</string>
     <string name="max_size">Max size</string>
     <string name="format_cache_space_used">%1$s used</string>
@@ -230,7 +224,7 @@
     <string name="backup_description">Personal preferences (i.e. the theme mode) and the cache are excluded.</string>
     <string name="backup_action_description">Export the database to the external storage</string>
     <string name="restore">Restore</string>
-    <string name="restore_warning">Existing data will be overwritten.\nViTune will automatically close itself after restoring the database.</string>
+    <string name="restore_warning">Existing data will be overwritten.\nMelogold will automatically close itself after restoring the database.</string>
     <string name="restore_description">Import the database from the external storage</string>
     <string name="other">Other</string>
     <string name="android_auto">Android Auto</string>
@@ -310,7 +304,7 @@
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="login">Login</string>
-    <string name="sync_description">You can host playlists elsewhere and synchronize them with ViTune. Currently only supports Piped.</string>
+    <string name="sync_description">You can host playlists elsewhere and synchronize them with Melogold. Currently only supports Piped.</string>
     <string name="add_account">Add account</string>
     <string name="add_account_description">Link a Piped account with your instance, username and password.</string>
     <string name="learn_more">Learn more</string>
@@ -333,7 +327,6 @@
     <string name="add_to_blacklist">Add to blacklist</string>
     <string name="reset_blacklist">Reset blacklist</string>
     <string name="blacklist_empty">Blacklist empty</string>
-    <string name="pre_cache">Pre cache</string>
     <string name="swipe_to_hide_song">Swipe to hide song</string>
     <string name="swipe_to_hide_song_description">When you swipe a song to the left, it gets removed from the database and cache</string>
     <string name="swipe_to_hide_song_confirm">Confirm swipe to hide song</string>
@@ -341,12 +334,6 @@
     <string name="hide_explicit">Hide explicit songs</string>
     <string name="hide_explicit_description">Hides all explicit songs, throughout the entire app. The player will also skip explicit songs when it encounters one and this setting is enabled.</string>
     <string name="version">Version</string>
-    <string name="check_new_version">Check for updates</string>
-    <string name="current_version">You\'re currently running version v%1$s</string>
-    <string name="error_github">An unknown error occurred while fetching data from GitHub</string>
-    <string name="new_version_available">A new version is available</string>
-    <string name="more_information">More information</string>
-    <string name="up_to_date">You\'re currently up-to-date: no updates available</string>
     <string name="dynamic_thumbnails">Dynamic thumbnails</string>
     <string name="max_dynamic_thumbnail_size">Max dynamic thumbnail size</string>
     <string name="max_dynamic_thumbnail_size_description">The maximum size of a thumbnail when a dynamic thumbnail is used</string>
@@ -369,6 +356,33 @@
     <string name="yt_dlp_success">Upgrading yt-dlp succeeded</string>
     <string name="yt_dlp_fail">Upgrading yt-dlp failed</string>
     <string name="upgrade_yt_dlp">Upgrade yt-dlp</string>
+    <!-- Apple-style player -->
+    <string name="player_lyrics">Lyrics</string>
+    <string name="player_queue">Queue</string>
+    <string name="player_output">Audio output</string>
+    <string name="player_repeat">Repeat</string>
+    <string name="repeat_off">Off</string>
+    <string name="repeat_all">All</string>
+    <string name="repeat_one">One</string>
+    <string name="unlike">Remove from favorites</string>
+    <string name="collapse_player">Collapse player</string>
+    <string name="more_options">More options</string>
+    <string name="volume">Volume</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
+    <string name="seek_position_format">%1$s of %2$s</string>
+    <string name="seek_back_10">Back 10 seconds</string>
+    <string name="seek_forward_10">Forward 10 seconds</string>
+    <string name="lyrics_loading">Loading lyrics</string>
+    <string name="lyrics_unavailable_title">Lyrics aren\'t available</string>
+    <string name="lyrics_load_failed">Couldn\'t load lyrics</string>
+    <string name="retry">Retry</string>
+    <string name="lyrics_enter_manually">Enter manually</string>
+    <string name="lyrics_jump_to_line">Jump to line</string>
+    <string name="lyrics_copy_line">Copy line</string>
+    <string name="copied">Copied</string>
+    <string name="lyrics_instrumental">Instrumental</string>
+    <string name="no_output_switcher">Can\'t open output settings</string>
     <plurals name="format_reset_blacklist_description">
         <item quantity="one">Remove %1$s song from the blacklist</item>
         <item quantity="other">Remove all %1$s songs from the blacklist</item>
@@ -376,9 +390,5 @@
     <plurals name="format_reset_quick_picks_amount">
         <item quantity="one">Delete %1$s playback event</item>
         <item quantity="other">Delete %1$s playback events</item>
-    </plurals>
-    <plurals name="song_count_plural">
-        <item quantity="one">%1$d song</item>
-        <item quantity="other">%1$d songs</item>
     </plurals>
 </resources>

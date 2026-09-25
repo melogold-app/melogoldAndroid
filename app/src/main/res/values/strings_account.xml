@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The account on the Melogold server and the sync (REWRITE §3.5.12, §3.5.13) -->
+<resources>
+    <!-- The card in Settings -->
+    <string name="account_signed_in_as">Signed in as %1$s</string>
+    <string name="account_auth_required_title">Sign in again</string>
+    <string name="account_auth_required_text">The server ended the session. Your library is still on this device</string>
+    <string name="sync_status_syncing">Syncing…</string>
+    <string name="sync_status_done">Synced · %1$s</string>
+    <string name="sync_status_never">Not synced yet</string>
+    <string name="sync_status_offline">Can\'t reach the server</string>
+    <string name="sync_status_failed">Couldn\'t sync</string>
+    <string name="sync_just_now">just now</string>
+
+    <!-- Sign-in and sign-up -->
+    <string name="account_sign_in_title">Sign in</string>
+    <string name="account_sign_in_text">Sign in to have the same Favorites, playlists and saved albums on all your devices</string>
+    <string name="account_register_title">New account</string>
+    <string name="account_register_text">Only a login and a password. The server never asks for an email or a phone number</string>
+    <string name="account_login">Login</string>
+    <string name="account_login_hint">3–32 characters: Latin letters, digits, dot, _ and -</string>
+    <string name="account_password">Password</string>
+    <string name="account_password_hint">At least 8 characters</string>
+    <string name="account_password_repeat">Password again</string>
+    <string name="account_password_show">Show password</string>
+    <string name="account_password_hide">Hide password</string>
+    <string name="account_sign_in">Sign in</string>
+    <string name="account_register">Create account</string>
+    <string name="account_no_account">No account? Create one</string>
+    <string name="account_on_server">Server: %1$s</string>
+
+    <!-- Errors -->
+    <string name="account_error_credentials">Wrong login or password</string>
+    <string name="account_error_throttled">Too many attempts. Try again in a few minutes</string>
+    <string name="account_error_device_limit">The account already has the most devices it can. Unlink one on another device</string>
+    <string name="account_error_login_taken">This login is taken</string>
+    <string name="account_error_login_format">Login: 3–32 characters, Latin letters, digits, dot, _ and -</string>
+    <string name="account_error_password_short">The password is shorter than 8 characters</string>
+    <string name="account_error_password_weak">The password is too easy to guess. Make it longer or a phrase of a few words</string>
+    <string name="account_error_password_mismatch">The passwords don\'t match</string>
+    <string name="account_error_registration_closed">Registration is closed on this server</string>
+    <string name="account_error_network">Can\'t reach the server</string>
+    <string name="account_error_password_needed">This device is new on the account: confirm with the password</string>
+    <string name="account_error_invalid_password">Wrong password</string>
+    <string name="account_error_unknown">Something went wrong. Try again</string>
+
+    <!-- The recovery code -->
+    <string name="account_recovery_title">Recovery code</string>
+    <string name="account_recovery_text">If you forget the password, this code gets you back into the account. It is shown only once: keep it in a password manager or write it down</string>
+    <string name="account_recovery_copy">Copy</string>
+    <string name="account_recovery_copied">Code copied</string>
+    <string name="account_recovery_saved">I saved the code</string>
+    <string name="account_recovery_done">Done</string>
+
+    <!-- The account page -->
+    <string name="account_title">Account</string>
+    <string name="account_sync_group">Sync</string>
+    <string name="account_sync_now">Sync now</string>
+    <string name="account_sync_what">Favorites, playlists, saved albums and artists</string>
+    <string name="account_devices_group">Devices</string>
+    <string name="account_device_current">This device</string>
+    <string name="account_device_seen">Last seen %1$s</string>
+    <string name="account_device_revoke">Unlink</string>
+    <string name="account_device_revoke_title">Unlink “%1$s”?</string>
+    <string name="account_device_revoke_text">It signs out of the account and keeps its library</string>
+    <string name="account_revoke_others">Sign out on other devices</string>
+    <string name="account_revoke_others_title">Sign out on other devices?</string>
+    <string name="account_revoke_others_text">Every device but this one signs out of the account</string>
+    <string name="account_revoked_others">Devices unlinked: %1$d</string>
+    <string name="account_sign_out">Sign out</string>
+    <string name="account_sign_out_title">Sign out of the account?</string>
+    <string name="account_sign_out_text">The library stays on this device but stops syncing</string>
+    <string name="account_password_confirm">Confirm</string>
+
+    <!-- The server page -->
+    <string name="server_title">Melogold server</string>
+    <string name="server_text">Your library syncs through this server. You can use your own: the server is open source and installs with one command</string>
+    <string name="server_address">Server address</string>
+    <string name="server_check">Check</string>
+    <string name="server_connect">Connect</string>
+    <string name="server_default">Default server</string>
+    <string name="server_info">%1$s · version %2$s</string>
+    <string name="server_registration_open">Registration is open</string>
+    <string name="server_registration_closed">Registration is closed</string>
+    <string name="server_registration_first">Registration is open for the first account</string>
+    <string name="server_not_melogold">This is not a Melogold server</string>
+    <string name="server_unreachable">The server doesn\'t answer</string>
+    <string name="server_https_needed">An internet address must start with https://</string>
+    <string name="server_switch_signs_out">After switching servers you will sign in again</string>
+    <string name="server_error_malformed">This doesn\'t look like a server address</string>
+    <string name="server_error_scheme">The address starts with https:// or http://</string>
+    <string name="server_error_params">The address can\'t contain a login, parameters or #</string>
+    <string name="server_insecure">Not a secure connection: use it only at home</string>
+    <string name="server_current">In use</string>
+</resources>

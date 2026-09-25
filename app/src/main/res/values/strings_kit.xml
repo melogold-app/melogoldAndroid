@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared screen states and rows (REWRITE §3.0, §3.11) -->
+<resources>
+    <string name="kit_error_offline">No connection to YouTube. Check your network or VPN.</string>
+    <string name="kit_error_blocked">YouTube didn\'t respond: a bot check or a block. Try again later or switch networks.</string>
+    <string name="kit_error_parser">YouTube changed the page. A fix will come with an update.</string>
+    <string name="kit_error_unknown">Something went wrong.</string>
+    <string name="kit_retry">Retry</string>
+    <string name="kit_open_library">Open Library</string>
+    <string name="kit_stale_offline">No network — data from %1$s</string>
+    <string name="kit_stale">Not updated — data from %1$s</string>
+    <string name="kit_play">Play</string>
+    <string name="kit_menu">Menu</string>
+    <string name="kit_explicit">Explicit</string>
+    <string name="kit_show_all">All</string>
+    <string name="kit_back">Back</string>
+</resources>

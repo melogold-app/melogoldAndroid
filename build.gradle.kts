@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.android.lint) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.chaquo) apply false
+    alias(libs.plugins.aboutlibraries) apply false
     alias(libs.plugins.detekt)
 }
 
@@ -22,8 +23,9 @@ tasks.register<Delete>("clean") {
 val topLevelLibs = libs
 
 allprojects {
-    group = "app.vitune"
-    version = "1.2.4"
+    group = "app.melogold"
+    // The version of the app: gradle.properties, bumped by scripts/release.sh
+    version = providers.gradleProperty("melogold.version").get()
 
     apply(plugin = "dev.detekt")
 

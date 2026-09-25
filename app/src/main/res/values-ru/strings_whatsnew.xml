@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="whatsnew_new_releases">Новые альбомы и синглы</string>
+    <string name="whatsnew_for_you">Для вас</string>
+    <string name="whatsnew_play_all">Слушать всё</string>
+    <string name="whatsnew_based_on">По мотивам: %1$s</string>
+    <string name="whatsnew_similar_artists">Похожие исполнители</string>
+    <string name="whatsnew_similar_albums">Похожие альбомы</string>
+    <string name="whatsnew_playlists_for_you">Плейлисты для вас</string>
+    <string name="whatsnew_no_history">Послушайте пару треков — здесь появится подборка</string>
+    <string name="whatsnew_whats_trending">Что слушают сейчас</string>
+</resources>

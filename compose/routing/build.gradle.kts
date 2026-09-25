@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "app.vitune.compose.routing"
+    namespace = "app.melogold.compose.routing"
     compileSdk = 37
 
     defaultConfig {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Самообновление из GitHub Releases (REWRITE §4.14) -->
+<resources>
+    <plurals name="nav_badge">
+        <item quantity="one">%d уведомление</item>
+        <item quantity="few">%d уведомления</item>
+        <item quantity="many">%d уведомлений</item>
+        <item quantity="other">%d уведомления</item>
+    </plurals>
+
+    <!-- Карточка вверху Настроек -->
+    <string name="update_available_title">Вышла новая версия %1$s</string>
+    <string name="update_available_text">%1$s · установка займёт минуту, всё останется на месте</string>
+    <string name="update_action">Обновить</string>
+    <string name="update_downloading">Скачивание обновления · %1$d%%</string>
+    <string name="update_ready">Обновление скачано</string>
+    <string name="update_install">Установить</string>
+    <string name="update_installing">Установка…</string>
+    <string name="update_failed_download">Не удалось скачать обновление</string>
+    <string name="update_failed_install">Не удалось установить обновление</string>
+    <string name="update_retry">Повторить</string>
+    <string name="update_whats_new">Что нового</string>
+    <string name="update_whats_new_title">Что нового в %1$s</string>
+    <string name="update_close">Закрыть</string>
+    <string name="update_permission_title">Разрешите обновления</string>
+    <string name="update_permission_text">Чтобы обновляться, Melogold нужно разрешение «Установка неизвестных приложений». Включите его для Melogold и вернитесь</string>
+    <string name="update_permission_action">Открыть настройки</string>
+
+    <!-- О приложении -->
+    <string name="update_check">Проверить обновления</string>
+    <string name="update_checking">Проверка…</string>
+    <string name="update_version">Версия %1$s</string>
+    <string name="update_up_to_date">Версия %1$s · последняя</string>
+    <string name="update_version_new">Версия %1$s · вышла %2$s</string>
+    <string name="update_offline">Версия %1$s · нет связи с GitHub</string>
+    <string name="update_disabled">Версия %1$s · эта сборка не обновляется сама</string>
+</resources>

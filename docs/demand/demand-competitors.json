@@ -1,0 +1,807 @@
+{
+ "source": "competitors",
+ "total_seen": 1090,
+ "notes": "Method: I read the READMEs of 21 active or relevant YouTube Music clients: Metrolist (12.9k stars, now in maintenance mode), SimpMusic (11.4k, Android and desktop on Compose Multiplatform), ArchiveTune (6.3k), InnerTune (6.1k, dormant), OuterTune (5.4k, no longer developed), RiMusic (3.9k, archived), vivi-music (3.1k), Harmony Music (3.1k, unmaintained, issues disabled), Flow (2.3k), Echo-Music (1.3k), Kreate (1.2k, RiMusic fork), N-Zik (Kreate fork), Velune, Muzza, SpMp/Kanon, PixelPlayer, Namida. On desktop: Pear Desktop (33.6k, formerly th-ch/youtube-music), ytmdesktop (6.5k), Kaset (2.3k, native macOS) and Limusic (Tauri/Rust). I also counted ViMusic, ViTune's own parent, because its open requests apply directly to our code. For each repo I pulled the top 40 open issues and the top 30 closed issues by reaction count through the GitHub search API, then ran about 30 keyword searches across the Android repos. That is roughly 1,090 issues plus READMEs.\n\nPopularity: the `reactions` field holds the issue's total reaction count when the url is an issue. When the url is a README it holds the repo's star count, and those items have state \"implemented (README)\". Most items name the other repos that ask for or ship the same feature. Evidence is spread across many issues because repos close requests as duplicates.\n\nChecked against our Android code (app.vitune.android). ViTune already has these, so I left them out: SponsorBlock (the most-upvoted request at Metrolist #601 and OuterTune #680), a sleep timer with \"until song ends\", like and loop buttons in the notification, a per-song blacklist, bass boost, reverb, speed, pitch, skip silence, loudness normalization, precache, local MediaStore songs, voice play-from-search, \"add queue to playlist\", lyrics editing, and Piped import.\n\nWhat ViTune is missing, by code check: any Cast or MediaRouter support, app widgets, lyrics translation (providers/translate exists but is never called), romanization, scrobbling, Discord presence, audio quality selection, a built-in equalizer (it only opens the system one), YouTube account login, podcasts, charts, online content in Android Auto (its browse tree is library-only), multi-select, search inside a playlist (the filter exists only on the Songs tab), and downloads kept separate from the ExoPlayer cache.\n\nDemand for a desktop or iOS version appears in almost every Android repo (see the \"Desktop version requested\" item). That supports Melogold's cross-platform direction. The desktop issues from Pear, ytmdesktop, Kaset and Limusic show what users of native desktop clients expect: Flatpak and Homebrew packages, self-update, a mini player, media keys, MPRIS/SMTC and the tray, choosing the output device, and remembered playback state.\n\nAcross the ecosystem, the largest threads are playback breakage (403, 2000/2004, \"sign in to confirm you're not a bot\"). That is the main reliability risk, and I've included it as a compat item. Listen Together, shared playlists and collaborative playlists fit naturally with Melogold's own server and QR linking.",
+ "items": [
+  {
+   "title": "Google Cast / Chromecast output",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1115",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "Users want to cast audio to Chromecast and Google/Nest speakers. Metrolist and PixelPlayer ship it, and the same request is open at ViMusic #597 (10), RiMusic #2211 (DLNA) and OuterTune #519 (Sonos). ViTune has no cast or MediaRouter support.",
+   "reactions": 34,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Casting from the desktop client",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/113",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "Desktop users ask to cast to Chromecast and network speakers. This is one of Pear's two most-upvoted open issues, and ytmdesktop #29 (45) asks for the same.",
+   "reactions": 46,
+   "state": "open"
+  },
+  {
+   "title": "FCast (open casting protocol) support",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1160",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "Users request FCast as an open alternative to Google Cast (also Flow #862).",
+   "reactions": 12,
+   "state": "open"
+  },
+  {
+   "title": "Crossfade between tracks",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/345",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Configurable crossfade between songs, one of the most-upvoted Metrolist requests (now shipped). It is also requested at OuterTune #36, InnerTune #889, RiMusic #3614 and Kreate #1231. SimpMusic advertises a DJ-style crossfade. ViTune has no audio crossfade.",
+   "reactions": 28,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Crossfade implementation pitfalls (blip / silence after switch)",
+   "url": "https://github.com/rukamori/ArchiveTune/issues/1039",
+   "source": "rukamori/ArchiveTune",
+   "kind": "bug",
+   "area": "player",
+   "summary": "ArchiveTune's crossfade makes an audible blip at the transition (#1039, #1240), and Pear's crossfade can leave silence after a song change (#3918, 7). These are lessons for our own crossfade: handle two players and pre-resolved stream URLs carefully.",
+   "reactions": 5,
+   "state": "open"
+  },
+  {
+   "title": "Home screen widgets",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/234",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "widgets",
+   "summary": "A player widget is the most-upvoted feature request still open in ViTune's parent project. Metrolist #649 (26), ArchiveTune #263 (16) and OuterTune #231 closed after shipping one. ViTune has no AppWidget.",
+   "reactions": 37,
+   "state": "open"
+  },
+  {
+   "title": "Richer widget set (turntable, playlist, listening insights)",
+   "url": "https://github.com/maxrave-dev/SimpMusic",
+   "source": "maxrave-dev/SimpMusic",
+   "kind": "feature",
+   "area": "widgets",
+   "summary": "SimpMusic ships turntable, playlist and listening-insights widgets. N-Zik ships Compact, Turntable and Playlist widgets built with Glance.",
+   "reactions": 11417,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Dislike / block songs and artists from recommendations",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1553",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "library",
+   "summary": "Users want a dislike action and artist blocking that keep content out of radio, quick picks and search. See also Metrolist #294 (6, open) and #1459, OuterTune #80 (13), SimpMusic #400 (7), InnerTune #1487 (7), RiMusic #3351 and ArchiveTune #318. ViTune only has a per-song blacklist.",
+   "reactions": 21,
+   "state": "closed (duplicate)"
+  },
+  {
+   "title": "Prefer the audio 'song' version over the music video",
+   "url": "https://github.com/fast4x/RiMusic/issues/5124",
+   "source": "fast4x/RiMusic",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "When a YT Music playlist contains a music video, users want the clean album-audio track played instead, without skits or intros. Metrolist #781 (19) and ArchiveTune #172 add audio-only or hide-video-songs toggles.",
+   "reactions": 11,
+   "state": "open"
+  },
+  {
+   "title": "Custom download/cache location, including SD card",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/264",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "summary": "Users want to store downloads on a microSD card or in a chosen folder: InnerTune #1220 (14, open), ArchiveTune #170 (6, shipped), OuterTune #389, vivi #891. ViTune's cache sits only in internal app storage.",
+   "reactions": 18,
+   "state": "closed (duplicate)"
+  },
+  {
+   "title": "Export downloads as real audio files usable by other apps",
+   "url": "https://github.com/z-huang/InnerTune/issues/1167",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "summary": "Users want downloaded songs visible and copyable outside the app. See Metrolist #119 (14, open), SimpMusic #186 (14), vivi #390 and Echo #375 (export as MP3). N-Zik exports tagged files with cover art through FFmpeg. ViTune downloads exist only inside the ExoPlayer cache.",
+   "reactions": 28,
+   "state": "closed (not_planned)"
+  },
+  {
+   "title": "Permanent downloads separate from the auto-cache",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/83",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "summary": "This is the top-voted ViMusic feature. Kreate, Echo and N-Zik keep downloaded songs and playlists in a download manager separate from the LRU cache, so they are never evicted. ViTune's precache writes into the same cache.",
+   "reactions": 55,
+   "state": "open"
+  },
+  {
+   "title": "Auto-download liked songs and new playlist additions",
+   "url": "https://github.com/z-huang/InnerTune/issues/763",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "summary": "Automatically download songs when they are liked or added to the library, and keep downloaded playlists up to date: Metrolist #520 (6), OuterTune #49 (5), ArchiveTune #675.",
+   "reactions": 12,
+   "state": "open"
+  },
+  {
+   "title": "Download lyrics together with offline songs",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/2596",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "lyrics",
+   "summary": "When a song is downloaded, fetch and store its lyrics and cover too, so they show offline: InnerTune #1495 (7), RiMusic #1455 (5), Metrolist #1874, Kreate #1733.",
+   "reactions": 10,
+   "state": "closed (duplicate)"
+  },
+  {
+   "title": "Last.fm scrobbling",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/296",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Native Last.fm scrobbling is built into Metrolist, SimpMusic, ArchiveTune, Limusic and Pear. ViMusic refused it (#138), and ViTune has none.",
+   "reactions": 13,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "ListenBrainz / Libre.fm scrobbling",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/2217",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Users want open scrobbling services next to Last.fm, each enabled separately: ytmdesktop #257 (11), Limusic #113, RiMusic #4754, OuterTune #1250. ArchiveTune syncs ListenBrainz history.",
+   "reactions": 18,
+   "state": "open"
+  },
+  {
+   "title": "Discord Rich Presence",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/33",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Show the current track on the user's Discord profile. Metrolist ('safe' RPC), SimpMusic, InnerTune, ArchiveTune, Velune and Limusic all ship it. Users also want the status to read 'title – artist' (Metrolist #3757).",
+   "reactions": 10,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Lyrics translation shown under the original line",
+   "url": "https://github.com/rukamori/ArchiveTune/issues/741",
+   "source": "rukamori/ArchiveTune",
+   "kind": "feature",
+   "area": "lyrics",
+   "summary": "InnerTune, Metrolist, ArchiveTune and Echo translate lyrics, either through Google or through AI with the user's own key, and users want the original line kept. ViTune has a providers/translate module that nothing calls.",
+   "reactions": 4,
+   "state": "closed (duplicate)"
+  },
+  {
+   "title": "Lyrics romanization (Japanese, Korean, Chinese, Thai…)",
+   "url": "https://github.com/OuterTune/OuterTune/issues/649",
+   "source": "OuterTune/OuterTune",
+   "kind": "feature",
+   "area": "lyrics",
+   "summary": "Romanized lyrics for non-Latin scripts: OuterTune #880, Limusic #202, Metrolist #3371/#3867. SimpMusic romanizes 12 languages, and SpMp adds furigana over kanji.",
+   "reactions": 7,
+   "state": "open"
+  },
+  {
+   "title": "Word-by-word (karaoke) synced lyrics",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1275",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "lyrics",
+   "summary": "Per-word highlighting in the Apple Music style, fed by TTML or enhanced-LRC providers such as LyricsPlus (Metrolist #2969 (5), #1916 (4), OuterTune #1229). SimpMusic, vivi, Echo and Velune ship it. ViTune's LRC parser works line by line.",
+   "reactions": 6,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "More lyrics providers (Spotify, Musixmatch, YT transcript)",
+   "url": "https://github.com/z-huang/InnerTune/issues/1002",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "lyrics",
+   "summary": "Users want additional sources for better coverage: InnerTune #1158 Musixmatch (5), Metrolist #3927, ArchiveTune #1276. SimpMusic combines its own lyrics database with LRCLIB, Spotify and YouTube transcripts. One caution: Pear #4684 (23) reports that Musixmatch returns gibberish.",
+   "reactions": 11,
+   "state": "closed (not_planned)"
+  },
+  {
+   "title": "Prefer time-synced lyrics over provider order",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/3528",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "lyrics",
+   "summary": "The fallback chain should return any synced result before an unsynced one. Users also want to pick among alternative LRCLIB matches (Pear #3330, 9).",
+   "reactions": 14,
+   "state": "open"
+  },
+  {
+   "title": "Smoother lyrics animations and custom lyrics fonts",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1052",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "ux",
+   "area": "lyrics",
+   "summary": "Users want nicer scrolling and animation in the lyrics view and a choice of font. Echo offers several lyric animation styles, and Metrolist #1239 (6) asks to open lyrics by tapping the cover.",
+   "reactions": 13,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Lyrics on Android Auto",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/2159",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "android-auto",
+   "summary": "Show the current lyric line on the car display.",
+   "reactions": 8,
+   "state": "open"
+  },
+  {
+   "title": "Android Auto: online content (home, quick picks, search, radio)",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1713",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "android-auto",
+   "summary": "Users want a Home tab and online browsing in the car: OuterTune #585 search (5), Metrolist #687 radio. SimpMusic advertises Android Auto with online content. ViTune's browse tree only offers local library nodes (Songs, Playlists, Albums, Favorites, Offline, Top, Local).",
+   "reactions": 8,
+   "state": "open"
+  },
+  {
+   "title": "YouTube Music account login and library sync",
+   "url": "https://github.com/z-huang/InnerTune/issues/1409",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "sync/import",
+   "summary": "An umbrella request to sync liked songs, playlists, albums, artists and history with a YTM account, with personalized suggestions and multiple channels (InnerTune #88 (12), SimpMusic #626 (8) on matching favorites to Liked Music). Metrolist, SimpMusic and ArchiveTune ship it. ViTune has no Google login.",
+   "reactions": 37,
+   "state": "open"
+  },
+  {
+   "title": "Multiple YouTube accounts with quick switching",
+   "url": "https://github.com/rukamori/ArchiveTune",
+   "source": "rukamori/ArchiveTune",
+   "kind": "feature",
+   "area": "sync/import",
+   "summary": "ArchiveTune, SimpMusic and Limusic let users sign in to several accounts and switch between them quickly.",
+   "reactions": 6306,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Playback blocked for anonymous clients (403 / 2000 / 'confirm you're not a bot')",
+   "url": "https://github.com/OuterTune/OuterTune/issues/735",
+   "source": "OuterTune/OuterTune",
+   "kind": "compat",
+   "area": "playback/streaming",
+   "summary": "These are the largest threads in the ecosystem (149 comments here). InnerTune #1653 (12) says YouTube aggressively blocks users who are not logged in, and Kreate #1932 (11) reports 'Video unavailable'. Clients respond with login, PoToken and rotating clients, so reliable stream extraction matters more than any single feature.",
+   "reactions": 22,
+   "state": "closed (not_planned)"
+  },
+  {
+   "title": "YouTube Music Premium high-quality streams (256 kbps Opus/AAC)",
+   "url": "https://github.com/maxrave-dev/SimpMusic",
+   "source": "maxrave-dev/SimpMusic",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "SimpMusic and N-Zik unlock Premium-quality streams when a Premium account is connected.",
+   "reactions": 11417,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Stream/download quality selector and data-saver mode",
+   "url": "https://github.com/EchoMusicApp/Echo-Music",
+   "source": "EchoMusicApp/Echo-Music",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "Echo has a data-saver mode, and Harmony and Namida have quality controls. Users complain about low quality (InnerTune #1294 (4), OuterTune #750) and ask to choose download bitrate (Metrolist #2231, Pear #226 (8)). ViTune shows the itag only in Stats for Nerds.",
+   "reactions": 1326,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Built-in multi-band equalizer with presets / AutoEq",
+   "url": "https://github.com/maxrave-dev/SimpMusic",
+   "source": "maxrave-dev/SimpMusic",
+   "kind": "feature",
+   "area": "player",
+   "summary": "SimpMusic has a 10-band EQ with presets, AutoEq headphone profiles, delay and reverb. Metrolist #975 (5), Pear #867 (18, shipped) and N-Zik #622 ask for the same, and Kaset has a 6-band EQ. ViTune only opens the system equalizer, plus its bass boost and reverb.",
+   "reactions": 11417,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Gapless playback",
+   "url": "https://github.com/rukamori/ArchiveTune/issues/719",
+   "source": "rukamori/ArchiveTune",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Users want no gap between album tracks: Metrolist #2057 (4), SimpMusic #2321, RiMusic #4859. Velune and Limusic advertise gapless playback. Resolving the stream URL per track tends to create gaps.",
+   "reactions": 5,
+   "state": "closed (not_planned)"
+  },
+  {
+   "title": "Pre-resolve / pre-cache the next song in the queue",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/3728",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "performance",
+   "area": "playback/streaming",
+   "summary": "Start fetching the next track early so it plays instantly. This matters especially for ViTune, where yt-dlp stream extraction is slow.",
+   "reactions": 11,
+   "state": "open"
+  },
+  {
+   "title": "Spotify playlist import and sync",
+   "url": "https://github.com/z-huang/InnerTune/issues/1700",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "sync/import",
+   "summary": "Import Spotify playlists and liked songs, and keep them in sync. ArchiveTune #458 (6) shipped it; see also SimpMusic #277/#828 (7/8), RiMusic #5049 (6) and ArchiveTune #1065. Echo has one-tap 'Fast Sync', and N-Zik imports Exportify CSV and M3U (#621).",
+   "reactions": 10,
+   "state": "open"
+  },
+  {
+   "title": "Import library from Google Takeout",
+   "url": "https://github.com/z-huang/InnerTune/issues/516",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "sync/import",
+   "summary": "Import YT Music playlists and likes from a Takeout export without logging in. InnerTune shipped this.",
+   "reactions": 7,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Share playlists with friends",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/523",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "playlists",
+   "summary": "Users want to share local playlists with others. RiMusic and Kreate handle this through import and export of shareable playlists. Melogold's server could offer share links instead.",
+   "reactions": 15,
+   "state": "open"
+  },
+  {
+   "title": "Collaborative playlists",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/484",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "playlists",
+   "summary": "Several users edit the same playlist. This fits a sync server naturally.",
+   "reactions": 7,
+   "state": "open"
+  },
+  {
+   "title": "Listen Together (real-time synced listening rooms)",
+   "url": "https://github.com/MetrolistGroup/Metrolist",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Metrolist has shared rooms that play in sync, SimpMusic's rooms are compatible with Metrolist's, and Echo, Muzza and Limusic (self-hosted relay) have them too. Users ask for guests to join from a browser via link or QR (#3325, 4) and for a second host (#2703, 5).",
+   "reactions": 12941,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Multi-select and batch actions",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/161",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "library",
+   "summary": "Select several songs to enqueue, add to a playlist, download or delete them. InnerTune #695 (13) and SpMp shipped this, and Limusic #141 asks for it. ViTune has no multi-select.",
+   "reactions": 11,
+   "state": "open"
+  },
+  {
+   "title": "Duplicate warning / remover in playlists",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/635",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "playlists",
+   "summary": "Warn when a song is already in the playlist and offer to remove duplicates: InnerTune #156 (9), Metrolist #4002 (7), Limusic #233.",
+   "reactions": 10,
+   "state": "open"
+  },
+  {
+   "title": "Autoplay radio when a playlist or album ends",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/288",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Keep playing related songs after the queue runs out: OuterTune #528, SimpMusic #2496, and N-Zik's 'Auto-fill Queue'. ViTune continues only when the user started a radio explicitly.",
+   "reactions": 12,
+   "state": "open"
+  },
+  {
+   "title": "Pin and reorder playlists and home sections",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/494",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "playlists",
+   "summary": "Let users pin favorite playlists to the top and reorder sections: InnerTune #1502 (6). SpMp can pin any song, album, artist or playlist.",
+   "reactions": 16,
+   "state": "open"
+  },
+  {
+   "title": "Search within a playlist or album",
+   "url": "https://github.com/OuterTune/OuterTune/issues/79",
+   "source": "OuterTune/OuterTune",
+   "kind": "feature",
+   "area": "search",
+   "summary": "A filter inside long playlists: InnerTune #721 (7) shipped it. ViTune has a filter only on the Home Songs tab.",
+   "reactions": 11,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Custom playlist cover image",
+   "url": "https://github.com/z-huang/InnerTune/issues/1114",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "playlists",
+   "summary": "Let users set their own playlist artwork: OuterTune #190 (4), Kreate #557 (2).",
+   "reactions": 6,
+   "state": "open"
+  },
+  {
+   "title": "Playlist folders / tags",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1907",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "library",
+   "summary": "Group playlists, albums and artists into folders or tags: Kreate #192, ArchiveTune #1189.",
+   "reactions": 6,
+   "state": "open"
+  },
+  {
+   "title": "Listening statistics and yearly 'Wrapped'",
+   "url": "https://github.com/fast4x/RiMusic/issues/497",
+   "source": "fast4x/RiMusic",
+   "kind": "feature",
+   "area": "other",
+   "summary": "A year-in-review built on-device: Metrolist #1973 (6), SimpMusic #1494 (6), RiMusic #4682 (5). SimpMusic ships Wrapped, monthly recaps and a listening clock, and Velune has a Year in Review. RiMusic users also complained that its statistics were wrong (#1449, 7).",
+   "reactions": 10,
+   "state": "open"
+  },
+  {
+   "title": "Song recognition (Shazam-like)",
+   "url": "https://github.com/rukamori/ArchiveTune",
+   "source": "rukamori/ArchiveTune",
+   "kind": "feature",
+   "area": "search",
+   "summary": "Identify music playing nearby and open it in the app. ArchiveTune, Echo ('Echo Find') and N-Zik ship this.",
+   "reactions": 6306,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Podcasts",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/265",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "library",
+   "summary": "Browse, subscribe to and play YT Music podcasts, with new-episode tracking (Metrolist #1104 (6), #1417 (6)). SimpMusic, Echo and Kaset ship podcast support.",
+   "reactions": 6,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Charts / Explore page",
+   "url": "https://github.com/vfsfitvnm/ViMusic/issues/36",
+   "source": "vfsfitvnm/ViMusic",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Users want charts and top lists by country alongside moods and genres. SimpMusic, Echo and Kaset have charts, and SimpMusic runs its own chart site. ViTune has moods and new albums but no charts.",
+   "reactions": 7,
+   "state": "open"
+  },
+  {
+   "title": "New releases from followed artists, with notifications",
+   "url": "https://github.com/z-huang/InnerTune/issues/1447",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "notifications",
+   "summary": "Notify users about new albums and singles from bookmarked artists: Metrolist #1383 (10), RiMusic #2288. SimpMusic ships followed-artist notifications.",
+   "reactions": 5,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Animated artwork / Spotify Canvas",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/814",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "UI/theme",
+   "summary": "Looping video backgrounds or animated covers in the player. vivi, SimpMusic and Echo ship this, and it is requested at ArchiveTune #1054/#1147 (WebM covers) and Kreate #1157.",
+   "reactions": 8,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Multiple Now Playing layouts (Apple Music style, etc.)",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/493",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "ux",
+   "area": "UI/theme",
+   "summary": "Users want a more modern player UI with a choice of styles. SimpMusic has three (Classic, M3 Expressive, Apple Music), and ArchiveTune has 9 player styles and 8 background styles.",
+   "reactions": 16,
+   "state": "open"
+  },
+  {
+   "title": "Always-visible shuffle button in the player",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1431",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "ux",
+   "area": "player",
+   "summary": "Show a shuffle toggle directly on the player screen instead of only in the queue (Metrolist #1175 (8) shipped this, #1256).",
+   "reactions": 6,
+   "state": "open"
+  },
+  {
+   "title": "Option to dismiss or close the persistent notification",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1589",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "ux",
+   "area": "notifications",
+   "summary": "Users want to swipe away the paused-player notification, or get a close (X) button that stops the service (Metrolist #1419, 5).",
+   "reactions": 8,
+   "state": "open"
+  },
+  {
+   "title": "Android TV with D-pad/remote navigation",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/572",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "UI/theme",
+   "summary": "A remote-friendly TV UI (Metrolist shipped it). ArchiveTune #583 calls its TV interface unusable, and N-Zik #453 asks for better TV support. ViTune only declares a LEANBACK launcher entry.",
+   "reactions": 12,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Tablet and landscape layouts",
+   "url": "https://github.com/z-huang/InnerTune/issues/1083",
+   "source": "z-huang/InnerTune",
+   "kind": "ux",
+   "area": "UI/theme",
+   "summary": "Proper large-screen and landscape layouts: SimpMusic #183 (6) and #1104 (the player looks bad on tablets), ArchiveTune #1125 (landscape breaks controls).",
+   "reactions": 5,
+   "state": "open"
+  },
+  {
+   "title": "Wear OS companion / watch controls",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/700",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "other",
+   "summary": "A watch UI for control and browsing. vivi #749 asks to pass album art as a bitmap in media metadata so it shows on watches.",
+   "reactions": 6,
+   "state": "open"
+  },
+  {
+   "title": "Multiple queues",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/277",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Keep several saved queues and switch between them. OuterTune ships this.",
+   "reactions": 5,
+   "state": "open"
+  },
+  {
+   "title": "Scheduled automatic backups (database + settings)",
+   "url": "https://github.com/z-huang/InnerTune/issues/1516",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "settings",
+   "summary": "Periodic backups to a chosen folder with retention: Kreate #219, RiMusic #1914 and #2684 (settings export, 5). ArchiveTune #954 and N-Zik ship it. ViTune only has manual database export.",
+   "reactions": 7,
+   "state": "open"
+  },
+  {
+   "title": "Proxy / alternative frontends for blocked regions",
+   "url": "https://github.com/maxrave-dev/SimpMusic/issues/382",
+   "source": "maxrave-dev/SimpMusic",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "summary": "Every README warns that YouTube Music needs a VPN in unsupported regions. N-Zik adds a configurable proxy and Invidious streaming, and proxy support is also requested at ytmdesktop #178 (4) and OuterTune #122.",
+   "reactions": 4,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "On-device recommendation engine",
+   "url": "https://github.com/A-EDev/Flow",
+   "source": "A-EDev/Flow",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Flow's FlowNeuro and Echo Brain learn from skips, likes and listening time entirely on the device, and let users inspect or export the profile (Flow #372, 7). ArchiveTune #165 asks for the same.",
+   "reactions": 2298,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Smart playlists",
+   "url": "https://github.com/fast4x/RiMusic/issues/79",
+   "source": "fast4x/RiMusic",
+   "kind": "feature",
+   "area": "playlists",
+   "summary": "Auto-updating playlists built from rules such as most played, recently added or never played. RiMusic implemented this.",
+   "reactions": 10,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Metadata / tag editor",
+   "url": "https://github.com/N-Zik-Group/N-Zik",
+   "source": "N-Zik-Group/N-Zik",
+   "kind": "feature",
+   "area": "library",
+   "summary": "Edit title, artist, album, year and cover in the app. N-Zik embeds these into AAC and Opus files, and PixelPlayer, Namida and SpMp have similar editors. OuterTune #512 asks to rename artists.",
+   "reactions": 230,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Local files: albums, folders, proper tag parsing",
+   "url": "https://github.com/rukamori/ArchiveTune/issues/928",
+   "source": "rukamori/ArchiveTune",
+   "kind": "feature",
+   "area": "library",
+   "summary": "Group local songs into albums, order them by track metadata (#1258), browse folders, and split multi-artist tags. OuterTune uses its own tag extractor, and PixelPlayer has folder and genre views. ViTune's Local tab is a flat MediaStore list refreshed every 5 seconds.",
+   "reactions": 3,
+   "state": "open"
+  },
+  {
+   "title": "Swipe between tabs",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1401",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "ux",
+   "area": "UI/theme",
+   "summary": "Swipe left or right to switch the Home and Library tab pages.",
+   "reactions": 8,
+   "state": "open"
+  },
+  {
+   "title": "Audio visualizer",
+   "url": "https://github.com/knighthat/Kreate",
+   "source": "knighthat/Kreate",
+   "kind": "feature",
+   "area": "UI/theme",
+   "summary": "A real-time visualizer with several effects in the player. It is opt-in because it needs the microphone permission. RiMusic, Kreate and N-Zik ship it.",
+   "reactions": 1152,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Official F-Droid listing and published signing fingerprint",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/295",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "other",
+   "area": "updates",
+   "summary": "Users want the app in the main F-Droid repo (ArchiveTune #484 (6)) and the APK signing certificate fingerprint in the README (ArchiveTune #1082). Metrolist, Kreate and ArchiveTune also publish on IzzyOnDroid and Obtainium.",
+   "reactions": 14,
+   "state": "open"
+  },
+  {
+   "title": "Desktop version requested by Android users",
+   "url": "https://github.com/MetrolistGroup/Metrolist/issues/1100",
+   "source": "MetrolistGroup/Metrolist",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Users repeatedly ask for Windows, Linux or web versions: OuterTune #34 (12) and #1118 (8), InnerTune #1181 (12), ArchiveTune #584 (9) and #900 (7), RiMusic #3250. SimpMusic, Harmony and Limusic answered with cross-platform builds. This supports Melogold's native desktop clients.",
+   "reactions": 20,
+   "state": "closed (duplicate)"
+  },
+  {
+   "title": "iOS app requested",
+   "url": "https://github.com/z-huang/InnerTune/issues/1720",
+   "source": "z-huang/InnerTune",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Android-client users ask for an iOS version. None of the open-source clients offers one.",
+   "reactions": 7,
+   "state": "open"
+  },
+  {
+   "title": "Linux packaging: Flatpak / Flathub",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/737",
+   "source": "pear-devs/pear-desktop",
+   "kind": "compat",
+   "area": "updates",
+   "summary": "This is the most-upvoted open request for the most popular desktop client. ytmdesktop #306 (18) and Pear #3476 (8) ask for the same. Limusic ships AppImage, deb and rpm, with community AUR, COPR and OBS packages.",
+   "reactions": 46,
+   "state": "open"
+  },
+  {
+   "title": "macOS distribution: Homebrew cask and unsigned-app 'damaged' error",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/4004",
+   "source": "pear-devs/pear-desktop",
+   "kind": "compat",
+   "area": "updates",
+   "summary": "Users complain about a missing or broken Homebrew cask (Pear #4130) and about Gatekeeper reporting unsigned apps as damaged (ytmdesktop #1192). Kaset and Limusic document an xattr workaround. Signing and notarization plus a cask would avoid this.",
+   "reactions": 21,
+   "state": "open"
+  },
+  {
+   "title": "In-app self-update on desktop",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/1347",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "updates",
+   "summary": "Update from inside the app. Limusic self-updates as an AppImage, setup.exe and .app, while its msi, deb and rpm packages do not. Kreate and vivi have in-app OTA on Android.",
+   "reactions": 13,
+   "state": "open"
+  },
+  {
+   "title": "Remember playback state across restarts (desktop)",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/3004",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Restore the queue, position, volume, shuffle and repeat after relaunch (Pear #858, 7). Limusic restores the queue.",
+   "reactions": 15,
+   "state": "open"
+  },
+  {
+   "title": "Floating / compact mini player (desktop)",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/214",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "UI/theme",
+   "summary": "An always-on-top mini player window. Limusic has a mini player strip and a theater mode, and Pear #1312 (7) asks to force the minimized player.",
+   "reactions": 11,
+   "state": "open"
+  },
+  {
+   "title": "Audio output device selection (desktop)",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/164",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Choose the output device inside the app. Pear shipped this as its custom-output-device plugin.",
+   "reactions": 9,
+   "state": "closed (completed)"
+  },
+  {
+   "title": "Volume normalization on desktop",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/3032",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Loudness normalization across tracks on desktop, with an on/off toggle (Limusic #298).",
+   "reactions": 12,
+   "state": "open"
+  },
+  {
+   "title": "OS media integration: MPRIS, SMTC, Now Playing, media keys, tray",
+   "url": "https://github.com/SimoHypers/limusic",
+   "source": "SimoHypers/limusic",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Limusic supports MPRIS on Linux, SMTC and taskbar buttons on Windows, a system tray and start-on-login (also #220, #222). Kaset integrates with Control Center, media keys and the Dock menu. Native desktop clients are expected to have all of this.",
+   "reactions": 554,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Keyboard shortcuts, URL scheme and scripting (desktop)",
+   "url": "https://github.com/sozercan/kaset",
+   "source": "sozercan/kaset",
+   "kind": "feature",
+   "area": "other",
+   "summary": "Kaset has full keyboard control, a kaset://play URL scheme and AppleScript (Raycast, Alfred, Shortcuts), and #52 asks for global shortcuts. Limusic has Ctrl+K search from anywhere.",
+   "reactions": 2293,
+   "state": "implemented (README)"
+  },
+  {
+   "title": "Offline music on desktop",
+   "url": "https://github.com/sozercan/kaset/issues/243",
+   "source": "sozercan/kaset",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "summary": "Users of the native macOS client want downloads for offline listening, as on mobile.",
+   "reactions": 6,
+   "state": "open"
+  },
+  {
+   "title": "Sleep timer on desktop",
+   "url": "https://github.com/pear-devs/pear-desktop/issues/2484",
+   "source": "pear-devs/pear-desktop",
+   "kind": "feature",
+   "area": "player",
+   "summary": "Desktop users want the same sleep timer they have on mobile.",
+   "reactions": 8,
+   "state": "open"
+  }
+ ]
+}

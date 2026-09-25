@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "app.vitune.core.data"
+    namespace = "app.melogold.core.data"
     compileSdk = 37
 
     defaultConfig {

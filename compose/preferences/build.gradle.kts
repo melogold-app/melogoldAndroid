@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "app.vitune.compose.preferences"
+    namespace = "app.melogold.compose.preferences"
     compileSdk = 37
 
     defaultConfig {

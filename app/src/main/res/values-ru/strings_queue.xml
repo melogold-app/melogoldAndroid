@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="queue_up_next">Далее</string>
+    <plurals name="queue_tracks">
+        <item quantity="one">%1$d трек</item>
+        <item quantity="few">%1$d трека</item>
+        <item quantity="many">%1$d треков</item>
+        <item quantity="other">%1$d трека</item>
+    </plurals>
+    <string name="queue_duration_hours">%1$d ч %2$d мин</string>
+    <string name="queue_duration_minutes">%1$d мин</string>
+    <string name="queue_shuffle">Перемешать</string>
+    <string name="queue_save_as_playlist">Сохранить как плейлист</string>
+    <string name="queue_clear">Очистить</string>
+    <string name="queue_collapse">Скрыть очередь</string>
+    <string name="queue_now_playing">Сейчас играет</string>
+    <string name="queue_reorder">Перетащить</string>
+    <string name="queue_move_up">Переместить выше</string>
+    <string name="queue_move_down">Переместить ниже</string>
+    <string name="queue_removed">Убрано из очереди</string>
+    <string name="queue_cleared">Очередь очищена</string>
+    <string name="queue_saved">Сохранено как „%1$s“</string>
+    <string name="queue_similar">Похожие треки</string>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kit_error_offline">Нет соединения с YouTube. Проверьте сеть или VPN.</string>
+    <string name="kit_error_blocked">YouTube не ответил: проверка на бота или блокировка. Попробуйте позже или смените сеть.</string>
+    <string name="kit_error_parser">YouTube изменил страницу. Исправление придёт с обновлением.</string>
+    <string name="kit_error_unknown">Что-то пошло не так.</string>
+    <string name="kit_retry">Повторить</string>
+    <string name="kit_open_library">Открыть Библиотеку</string>
+    <string name="kit_stale_offline">Нет сети — данные от %1$s</string>
+    <string name="kit_stale">Не обновилось — данные от %1$s</string>
+    <string name="kit_play">Воспроизвести</string>
+    <string name="kit_menu">Меню</string>
+    <string name="kit_explicit">Откровенный текст</string>
+    <string name="kit_show_all">Все</string>
+    <string name="kit_back">Назад</string>
+</resources>

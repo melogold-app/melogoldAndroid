@@ -107,16 +107,14 @@
     <string name="error_piped_link">Произошла ошибка при привязке вашей учетной записи Piped. Попробуйте еще раз.</string>
     <string name="error_piped_instances_unavailable">Список экземпляров Piped в данный момент недоступен</string>
     <string name="error_bassboost_init">Произошла ошибка инициализации Bass Boost. Возможно, ваше устройство не поддерживает его. Попробуйте изменить уровень усиления басов или повторите попытку.</string>
-    <string name="error_pre_cache">Произошла ошибка при предварительном кэшировании. Попробуйте еще раз.</string>
     <string name="error_url">Не удается открыть URL %1$s</string>
     <string name="media_permission_declined">Доступ к медиа отклонен, предоставьте разрешения в настройках вашего устройства.</string>
     <string name="open_settings">Открыть настройки</string>
     <string name="no_items_found">Элементы не найдены</string>
     <string name="no_search_results">Результаты не найдены. Попробуйте другой запрос или категорию</string>
-    <string name="no_browser_installed">Не удалось найти приложение для просмотра интернета</string>
     <string name="no_equalizer_installed">Не удалось найти приложение для настройки эквалайзера</string>
     <string name="no_file_chooser_installed">Не удалось найти приложение для создания документов</string>
-    <string name="no_battery_optimization_settings_found">Не удалось найти настройки оптимизации батареи, добавьте ViTune в белый список вручную</string>
+    <string name="no_battery_optimization_settings_found">Не удалось найти настройки оптимизации батареи, добавьте Melogold в белый список вручную</string>
     <string name="related_albums">Похожие альбомы</string>
     <string name="similar_artists">Похожие исполнители</string>
     <string name="recommended_playlists">Рекомендуемые плейлисты</string>
@@ -131,9 +129,7 @@
     <string name="show_synchronized_lyrics">Показать синхронизированные тексты</string>
     <string name="provided_lyrics_by">Тексты предоставлены lrclib.net и kugou.com</string>
     <string name="edit_lyrics">Редактировать тексты</string>
-    <string name="search_lyrics_online">Искать тексты онлайн</string>
     <string name="refetch_lyrics">Повторно получить тексты</string>
-    <string name="pick_from_lrclib">Выбрать текст из lrclib.net</string>
     <string name="set_lyrics_start_offset">Установить смещение начала текста</string>
     <string name="set_lyrics_start_offset_description">Смещение синхронизированных текстов на текущую позицию воспроизведения</string>
     <string name="playback_speed">Скорость воспроизведения</string>
@@ -152,7 +148,7 @@
     <string name="view_album">Просмотр альбома</string>
     <string name="view_playlist">Просмотр плейлиста</string>
     <string name="search_placeholder">Введите имя</string>
-    <string name="format_version_credits">v%1$s от Huizengek &amp; vfsfitvnm</string>
+    <string name="format_version_credits">v%1$s</string>
     <string name="social">Социальные сети</string>
     <string name="contact">Контакты</string>
     <string name="github">GitHub</string>
@@ -205,8 +201,6 @@
     <string name="lyrics_show_system_bars_description">Отключение этого параметра включает полноэкранный режим на уровне системы</string>
     <string name="pip">PIP</string>
     <string name="pip_description">Автоматически переходит в режим "Картинка в картинке" при переключении в фоновый режим</string>
-    <string name="cache">Кэш</string>
-    <string name="cache_description">Когда кэш заканчивается, ресурсы, которые не использовались дольше всего, очищаются</string>
     <string name="image_cache">Кэш изображений</string>
     <string name="max_size">Максимальный размер</string>
     <string name="format_cache_space_used">%1$s использовано</string>
@@ -227,7 +221,7 @@
     <string name="backup_description">Персональные настройки (например, тема) и кэш исключаются.</string>
     <string name="backup_action_description">Экспортировать базу данных на внешнее хранилище</string>
     <string name="restore">Восстановить</string>
-    <string name="restore_warning">Существующие данные будут перезаписаны.\nViTune автоматически закроется после восстановления базы данных.</string>
+    <string name="restore_warning">Существующие данные будут перезаписаны.\nMelogold автоматически закроется после восстановления базы данных.</string>
     <string name="restore_description">Импортировать базу данных с внешнего хранилища</string>
     <string name="other">Прочее</string>
     <string name="android_auto">Android Auto</string>
@@ -303,7 +297,7 @@
     <string name="username">Имя пользователя</string>
     <string name="password">Пароль</string>
     <string name="login">Войти</string>
-    <string name="sync_description">Вы можете размещать плейлисты где угодно и синхронизировать их с ViTune. В данный момент поддерживается только Piped.</string>
+    <string name="sync_description">Вы можете размещать плейлисты где угодно и синхронизировать их с Melogold. В данный момент поддерживается только Piped.</string>
     <string name="add_account">Добавить учетную запись</string>
     <string name="add_account_description">Привязать учетную запись Piped к вашему экземпляру, имени пользователя и паролю.</string>
     <string name="learn_more">Узнать больше</string>
@@ -326,7 +320,6 @@
     <string name="add_to_blacklist">Добавить в черный список</string>
     <string name="reset_blacklist">Сбросить черный список</string>
     <string name="blacklist_empty">Черный список пуст</string>
-    <string name="pre_cache">Предварительное кэширование</string>
     <string name="swipe_to_hide_song">Проведите, чтобы скрыть песню</string>
     <string name="swipe_to_hide_song_description">Когда вы проводите по песне влево, она удаляется из базы данных и кэша</string>
     <string name="swipe_to_hide_song_confirm">Подтвердить скрытие песни</string>
@@ -334,12 +327,6 @@
     <string name="hide_explicit">Скрыть откровенные песни</string>
     <string name="hide_explicit_description">Скрывает все откровенные песни по всему приложению. Плеер также будет пропускать такие песни при их обнаружении, если эта настройка включена.</string>
     <string name="version">Версия</string>
-    <string name="check_new_version">Проверить обновления</string>
-    <string name="current_version">Вы используете версию v%1$s</string>
-    <string name="error_github">Произошла ошибка при получении данных с GitHub</string>
-    <string name="new_version_available">Доступна новая версия</string>
-    <string name="more_information">Подробнее</string>
-    <string name="up_to_date">Вы используете актуальную версию: обновлений нет</string>
     <string name="dynamic_thumbnails">Динамические миниатюры</string>
     <string name="max_dynamic_thumbnail_size">Максимальный размер динамической миниатюры</string>
     <string name="max_dynamic_thumbnail_size_description">Максимальный размер миниатюры при использовании динамической миниатюры</string>
@@ -357,6 +344,33 @@
     <string name="reverb_medium_hall">Средний зал</string>
     <string name="reverb_large_hall">Большой зал</string>
     <string name="reverb_plate">Пластина</string>
+    <!-- Apple-style player -->
+    <string name="player_lyrics">Текст</string>
+    <string name="player_queue">Очередь</string>
+    <string name="player_output">Устройство вывода</string>
+    <string name="player_repeat">Повтор</string>
+    <string name="repeat_off">Выкл</string>
+    <string name="repeat_all">Все</string>
+    <string name="repeat_one">Один трек</string>
+    <string name="unlike">Убрать из избранного</string>
+    <string name="collapse_player">Свернуть плеер</string>
+    <string name="more_options">Ещё</string>
+    <string name="volume">Громкость</string>
+    <string name="state_on">Вкл</string>
+    <string name="state_off">Выкл</string>
+    <string name="seek_position_format">%1$s из %2$s</string>
+    <string name="seek_back_10">Назад на 10 с</string>
+    <string name="seek_forward_10">Вперёд на 10 с</string>
+    <string name="lyrics_loading">Загрузка текста</string>
+    <string name="lyrics_unavailable_title">Текст песни недоступен</string>
+    <string name="lyrics_load_failed">Не удалось загрузить текст</string>
+    <string name="retry">Повторить</string>
+    <string name="lyrics_enter_manually">Ввести вручную</string>
+    <string name="lyrics_jump_to_line">Перейти к строке</string>
+    <string name="lyrics_copy_line">Копировать строку</string>
+    <string name="copied">Скопировано</string>
+    <string name="lyrics_instrumental">Проигрыш</string>
+    <string name="no_output_switcher">Не удалось открыть настройки вывода</string>
     <plurals name="format_reset_blacklist_description">
         <item quantity="one">Удалить %1$s песню из черного списка</item>
         <item quantity="few">Удалить все %1$s песен из черного списка</item>
@@ -366,10 +380,5 @@
         <item quantity="one">Удалить %1$s событие воспроизведения</item>
         <item quantity="few">Удалить %1$s событий воспроизведения</item>
         <item quantity="many">Удалить %1$s событий воспроизведения</item>
-    </plurals>
-    <plurals name="song_count_plural">
-        <item quantity="one">%1$d песня</item>
-        <item quantity="few">%1$d песни</item>
-        <item quantity="many">%1$d песен</item>
     </plurals>
 </resources>

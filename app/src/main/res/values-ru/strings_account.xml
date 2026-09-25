@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The account on the Melogold server and the sync (REWRITE §3.5.12, §3.5.13) -->
+<resources>
+    <!-- The card in Settings -->
+    <string name="account_signed_in_as">Вы вошли как %1$s</string>
+    <string name="account_auth_required_title">Нужно войти снова</string>
+    <string name="account_auth_required_text">Сервер завершил сеанс. Библиотека осталась на устройстве</string>
+    <string name="sync_status_syncing">Синхронизация…</string>
+    <string name="sync_status_done">Синхронизировано · %1$s</string>
+    <string name="sync_status_never">Ещё не синхронизировано</string>
+    <string name="sync_status_offline">Нет связи с сервером</string>
+    <string name="sync_status_failed">Не удалось синхронизировать</string>
+    <string name="sync_just_now">только что</string>
+
+    <!-- Sign-in and sign-up -->
+    <string name="account_sign_in_title">Вход</string>
+    <string name="account_sign_in_text">Войдите, чтобы Избранное, плейлисты и сохранённые альбомы были одинаковыми на всех ваших устройствах</string>
+    <string name="account_register_title">Новый аккаунт</string>
+    <string name="account_register_text">Нужны только логин и пароль. Почту и телефон сервер не спрашивает</string>
+    <string name="account_login">Логин</string>
+    <string name="account_login_hint">3–32 символа: латиница, цифры, точка, _ и -</string>
+    <string name="account_password">Пароль</string>
+    <string name="account_password_hint">Не короче 8 символов</string>
+    <string name="account_password_repeat">Пароль ещё раз</string>
+    <string name="account_password_show">Показать пароль</string>
+    <string name="account_password_hide">Скрыть пароль</string>
+    <string name="account_sign_in">Войти</string>
+    <string name="account_register">Создать аккаунт</string>
+    <string name="account_no_account">Нет аккаунта? Создать</string>
+    <string name="account_on_server">Сервер: %1$s</string>
+
+    <!-- Errors -->
+    <string name="account_error_credentials">Неверный логин или пароль</string>
+    <string name="account_error_throttled">Слишком много попыток. Попробуйте через несколько минут</string>
+    <string name="account_error_device_limit">На аккаунте уже максимум устройств. Отвяжите одно из них на другом устройстве</string>
+    <string name="account_error_login_taken">Этот логин уже занят</string>
+    <string name="account_error_login_format">Логин: 3–32 символа, латиница, цифры, точка, _ и -</string>
+    <string name="account_error_password_short">Пароль короче 8 символов</string>
+    <string name="account_error_password_weak">Пароль слишком простой. Возьмите длиннее или фразу из нескольких слов</string>
+    <string name="account_error_password_mismatch">Пароли не совпадают</string>
+    <string name="account_error_registration_closed">Регистрация на этом сервере закрыта</string>
+    <string name="account_error_network">Нет связи с сервером</string>
+    <string name="account_error_password_needed">Это устройство новое на аккаунте: подтвердите паролем</string>
+    <string name="account_error_invalid_password">Неверный пароль</string>
+    <string name="account_error_unknown">Не получилось. Попробуйте ещё раз</string>
+
+    <!-- The recovery code -->
+    <string name="account_recovery_title">Код восстановления</string>
+    <string name="account_recovery_text">Если забудете пароль, этот код вернёт доступ к аккаунту. Он показывается один раз: сохраните его в менеджере паролей или запишите</string>
+    <string name="account_recovery_copy">Копировать</string>
+    <string name="account_recovery_copied">Код скопирован</string>
+    <string name="account_recovery_saved">Я сохранил код</string>
+    <string name="account_recovery_done">Готово</string>
+
+    <!-- The account page -->
+    <string name="account_title">Аккаунт</string>
+    <string name="account_sync_group">Синхронизация</string>
+    <string name="account_sync_now">Синхронизировать сейчас</string>
+    <string name="account_sync_what">Избранное, плейлисты, сохранённые альбомы и исполнители</string>
+    <string name="account_devices_group">Устройства</string>
+    <string name="account_device_current">Это устройство</string>
+    <string name="account_device_seen">Был в сети %1$s</string>
+    <string name="account_device_revoke">Отвязать</string>
+    <string name="account_device_revoke_title">Отвязать «%1$s»?</string>
+    <string name="account_device_revoke_text">На нём выйдет из аккаунта, библиотека на нём останется</string>
+    <string name="account_revoke_others">Выйти на других устройствах</string>
+    <string name="account_revoke_others_title">Выйти на других устройствах?</string>
+    <string name="account_revoke_others_text">Все устройства, кроме этого, выйдут из аккаунта</string>
+    <string name="account_revoked_others">Устройств отвязано: %1$d</string>
+    <string name="account_sign_out">Выйти</string>
+    <string name="account_sign_out_title">Выйти из аккаунта?</string>
+    <string name="account_sign_out_text">Библиотека останется на этом устройстве, но перестанет синхронизироваться</string>
+    <string name="account_password_confirm">Подтвердить</string>
+
+    <!-- The server page -->
+    <string name="server_title">Сервер Melogold</string>
+    <string name="server_text">Библиотека синхронизируется через этот сервер. Можно указать свой — сервер открытый и ставится одной командой</string>
+    <string name="server_address">Адрес сервера</string>
+    <string name="server_check">Проверить</string>
+    <string name="server_connect">Подключить</string>
+    <string name="server_default">Сервер по умолчанию</string>
+    <string name="server_info">%1$s · версия %2$s</string>
+    <string name="server_registration_open">Регистрация открыта</string>
+    <string name="server_registration_closed">Регистрация закрыта</string>
+    <string name="server_registration_first">Регистрация открыта для первого аккаунта</string>
+    <string name="server_not_melogold">Это не сервер Melogold</string>
+    <string name="server_unreachable">Сервер не отвечает</string>
+    <string name="server_https_needed">Адрес в интернете должен начинаться с https://</string>
+    <string name="server_switch_signs_out">После смены сервера нужно будет войти заново</string>
+    <string name="server_error_malformed">Это не похоже на адрес сервера</string>
+    <string name="server_error_scheme">Адрес начинается с https:// или http://</string>
+    <string name="server_error_params">Адрес не должен содержать логин, параметры или #</string>
+    <string name="server_insecure">Незащищённое соединение: только для домашней сети</string>
+    <string name="server_current">Используется</string>
+</resources>

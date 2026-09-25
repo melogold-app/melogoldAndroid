@@ -1,1 +1,1 @@
-Seamlessly stream music from YouTube Music
+YouTube Music player with your library synced across all your devices

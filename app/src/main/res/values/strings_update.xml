@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The self-update from GitHub Releases (REWRITE §4.14) -->
+<resources>
+    <plurals name="nav_badge">
+        <item quantity="one">%d notification</item>
+        <item quantity="other">%d notifications</item>
+    </plurals>
+
+    <!-- The card at the top of Settings -->
+    <string name="update_available_title">Version %1$s is out</string>
+    <string name="update_available_text">%1$s · installs in a minute, everything stays in place</string>
+    <string name="update_action">Update</string>
+    <string name="update_downloading">Downloading the update · %1$d%%</string>
+    <string name="update_ready">The update is downloaded</string>
+    <string name="update_install">Install</string>
+    <string name="update_installing">Installing…</string>
+    <string name="update_failed_download">Couldn\'t download the update</string>
+    <string name="update_failed_install">Couldn\'t install the update</string>
+    <string name="update_retry">Try again</string>
+    <string name="update_whats_new">What\'s new</string>
+    <string name="update_whats_new_title">What\'s new in %1$s</string>
+    <string name="update_close">Close</string>
+    <string name="update_permission_title">Allow updates</string>
+    <string name="update_permission_text">To update itself Melogold needs the “Install unknown apps” permission. Turn it on for Melogold and come back</string>
+    <string name="update_permission_action">Open settings</string>
+
+    <!-- About -->
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_version">Version %1$s</string>
+    <string name="update_up_to_date">Version %1$s · the latest</string>
+    <string name="update_version_new">Version %1$s · %2$s is out</string>
+    <string name="update_offline">Version %1$s · can\'t reach GitHub</string>
+    <string name="update_disabled">Version %1$s · this build doesn\'t update itself</string>
+</resources>

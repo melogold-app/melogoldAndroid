@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Player (REWRITE §3.10) -->
+<resources>
+    <string name="player_output_short">Device</string>
+    <string name="player_stopped">Playback stopped</string>
+
+    <!-- The error card (REWRITE §3.10.9) -->
+    <string name="player_error_network">No connection. Check your network or VPN</string>
+    <string name="player_error_geo">Unavailable in your region</string>
+    <string name="player_error_unavailable">The video was removed or made private</string>
+    <string name="player_error_age">Age verification is needed — not supported yet</string>
+    <string name="player_error_timeout">YouTube takes too long to answer</string>
+    <string name="player_error_extractor">Couldn\'t get the stream. The extraction component may need an update</string>
+    <string name="player_skip">Skip</string>
+
+    <!-- Stream info (REWRITE §3.10.10) -->
+    <string name="stream_info_format">Format</string>
+    <string name="stream_info_copy">Copy</string>
+</resources>

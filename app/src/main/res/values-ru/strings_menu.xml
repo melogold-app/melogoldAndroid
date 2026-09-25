@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_favorite_add">В Избранное</string>
+    <string name="menu_favorite_remove">Убрать из Избранного</string>
+    <string name="menu_play_next">Играть следующим</string>
+    <string name="menu_add_to_queue">В конец очереди</string>
+    <string name="menu_add_to_playlist">Добавить в плейлист…</string>
+    <string name="menu_download">Скачать</string>
+    <string name="menu_start_radio">Включить радио</string>
+    <string name="menu_start_track_radio">Включить радио по треку</string>
+    <string name="menu_track_hidden">Трек скрыт</string>
+    <string name="menu_go_to_album">Открыть альбом</string>
+    <string name="menu_go_to_artist">Открыть исполнителя</string>
+    <string name="menu_go_to_channel">Открыть канал</string>
+    <string name="menu_share">Поделиться</string>
+    <string name="menu_dont_show">Не показывать этот трек</string>
+    <string name="menu_show_again">Снова показывать этот трек</string>
+    <string name="menu_remove_from_playlist">Убрать из плейлиста</string>
+    <string name="menu_remove_from_history">Убрать из истории</string>
+    <string name="menu_remove_from_queue">Убрать из очереди</string>
+    <string name="menu_not_interested">Не интересно</string>
+    <string name="menu_sleep_timer">Таймер сна</string>
+    <string name="menu_sleep_timer_minutes">%1$d мин</string>
+    <string name="menu_sleep_timer_end_of_track">До конца трека</string>
+    <string name="menu_sleep_timer_left">Осталось %1$d мин</string>
+    <string name="menu_sleep_timer_stop">Выключить таймер</string>
+    <string name="menu_speed_value">%1$s×</string>
+    <string name="menu_stream_info">Сведения о потоке</string>
+
+    <string name="add_to_playlist_title">Добавить в плейлист</string>
+    <string name="add_to_playlist_find">Найти плейлист</string>
+    <string name="add_to_playlist_empty">Плейлистов пока нет</string>
+    <string name="add_to_playlist_added">Добавлено в „%1$s“</string>
+    <string name="add_to_playlist_removed">Убрано из „%1$s“</string>
+    <plurals name="add_to_playlist_changed">
+        <item quantity="one">Изменено в %1$d плейлисте</item>
+        <item quantity="few">Изменено в %1$d плейлистах</item>
+        <item quantity="many">Изменено в %1$d плейлистах</item>
+        <item quantity="other">Изменено в %1$d плейлиста</item>
+    </plurals>
+    <string name="player_speed">Скорость воспроизведения</string>
+    <string name="player_speed_description">Для всех треков</string>
+    <string name="player_nothing_playing">Сейчас ничего не играет</string>
+</resources>

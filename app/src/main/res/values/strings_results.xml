@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Search results (REWRITE §3.1.3) -->
+<resources>
+    <string name="results_all">All</string>
+    <string name="results_music">Music</string>
+    <string name="results_youtube">YouTube</string>
+    <string name="results_ytm">YouTube Music</string>
+    <string name="results_more">More</string>
+    <string name="results_songs">Songs</string>
+    <string name="results_albums">Albums</string>
+    <string name="results_artists">Artists</string>
+    <string name="results_music_videos">Music videos</string>
+    <string name="results_playlists">Playlists</string>
+    <string name="results_videos">Videos</string>
+    <string name="results_channels">Channels</string>
+    <string name="results_live">Live</string>
+    <string name="results_nothing_in_catalog">Nothing in the YouTube Music catalog — here is what YouTube has</string>
+    <string name="results_nothing">Nothing found. Check the spelling or look on YouTube</string>
+    <string name="results_search_youtube">Search YouTube</string>
+    <string name="results_not_here">Not what you need? Search YouTube</string>
+    <string name="results_song">Song</string>
+    <string name="results_album">Album</string>
+    <string name="results_artist">Artist</string>
+    <string name="results_playlist">Playlist</string>
+    <string name="results_music_video">Music video</string>
+    <string name="results_edit_query">Change the search</string>
+</resources>

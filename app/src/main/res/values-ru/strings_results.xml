@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="results_all">Всё</string>
+    <string name="results_music">Музыка</string>
+    <string name="results_youtube">YouTube</string>
+    <string name="results_ytm">YouTube Music</string>
+    <string name="results_more">Ещё</string>
+    <string name="results_songs">Песни</string>
+    <string name="results_albums">Альбомы</string>
+    <string name="results_artists">Исполнители</string>
+    <string name="results_music_videos">Клипы</string>
+    <string name="results_playlists">Плейлисты</string>
+    <string name="results_videos">Видео</string>
+    <string name="results_channels">Каналы</string>
+    <string name="results_live">Трансляции</string>
+    <string name="results_nothing_in_catalog">В каталоге YouTube Music ничего не нашлось — вот что есть на YouTube</string>
+    <string name="results_nothing">Ничего не нашлось. Проверьте написание или посмотрите на YouTube</string>
+    <string name="results_search_youtube">Искать на YouTube</string>
+    <string name="results_not_here">Нет нужного? Искать на YouTube</string>
+    <string name="results_song">Песня</string>
+    <string name="results_album">Альбом</string>
+    <string name="results_artist">Исполнитель</string>
+    <string name="results_playlist">Плейлист</string>
+    <string name="results_music_video">Клип</string>
+    <string name="results_edit_query">Изменить запрос</string>
+</resources>

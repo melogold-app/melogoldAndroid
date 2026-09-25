@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Album, playlist and artist screens (REWRITE §3.6–3.8, §3.11.5) -->
+<resources>
+    <string name="detail_save">Save to library</string>
+    <string name="detail_saved">In library</string>
+    <string name="detail_saved_message">Saved to library</string>
+    <string name="detail_removed_message">Removed from library</string>
+
+    <string name="album_about">About the album</string>
+    <string name="album_radio">Album radio</string>
+
+    <plurals name="add_to_playlist_added_tracks">
+        <item quantity="one">%1$d track added to “%2$s”</item>
+        <item quantity="other">%1$d tracks added to “%2$s”</item>
+    </plurals>
+    <string name="add_to_playlist_all_present">All tracks are already in “%1$s”</string>
+
+    <string name="artist_radio">Radio</string>
+    <string name="artist_subscribe">Subscribe</string>
+    <string name="artist_subscribed">Subscribed</string>
+    <string name="artist_subscribed_message">Subscribed</string>
+    <string name="artist_unsubscribed_message">Unsubscribed</string>
+    <string name="artist_popular">Popular</string>
+    <string name="artist_albums">Albums</string>
+    <string name="artist_singles">Singles &amp; EPs</string>
+    <string name="artist_videos">Videos</string>
+    <string name="artist_in_library">In your library</string>
+    <string name="artist_in_library_note">Their tracks in Favorites</string>
+    <string name="artist_related">Fans also like</string>
+    <string name="artist_about">About</string>
+    <string name="artist_all">All</string>
+    <string name="artist_all_count">All (%1$d)</string>
+
+    <string name="channel_shuffle">Shuffle videos</string>
+    <string name="channel_videos">Videos</string>
+    <string name="channel_playlists">Channel playlists</string>
+    <string name="channel_about">About the channel</string>
+
+    <string name="playlist_save_title">Save to library</string>
+    <string name="playlist_link_append">Link: add new tracks</string>
+    <string name="playlist_link_append_hint">New YouTube tracks are added at the end, your edits stay. Recommended</string>
+    <string name="playlist_link_mirror">Link: mirror</string>
+    <string name="playlist_link_mirror_hint">Always the same as on YouTube, your edits get overwritten</string>
+    <string name="playlist_link_off">Save a copy without a link</string>
+    <string name="playlist_link_off_hint">Not updated from YouTube</string>
+    <string name="playlist_saving">Saving the playlist…</string>
+    <string name="playlist_saved">Saved to Library</string>
+    <string name="playlist_open">Open</string>
+    <string name="playlist_incomplete">YouTube returned an incomplete list — the playlist was not saved</string>
+    <string name="playlist_save_failed">Couldn’t save the playlist</string>
+    <string name="playlist_loaded">Loaded %1$d</string>
+
+    <string name="local_playlist_sort_custom">Own order</string>
+    <string name="local_playlist_removed_track">Removed from the playlist</string>
+    <string name="local_playlist_deleted">Playlist deleted</string>
+    <string name="local_playlist_rename">Rename</string>
+    <string name="local_playlist_rename_confirm">Save</string>
+    <string name="local_playlist_link">Link with YouTube</string>
+    <string name="local_playlist_refresh">Refresh from YouTube</string>
+    <string name="local_playlist_delete">Delete playlist</string>
+    <string name="local_playlist_empty">No tracks in the playlist. Add them with ⋮ › Add to playlist</string>
+    <string name="local_playlist_move_up">Move up</string>
+    <string name="local_playlist_move_down">Move down</string>
+    <string name="local_playlist_refreshing">Refreshing from YouTube…</string>
+    <string name="local_playlist_synced">refreshed %1$s</string>
+    <string name="local_playlist_unlink">Unlink</string>
+    <string name="local_playlist_unlink_hint">No longer updated from YouTube</string>
+    <string name="local_playlist_mode_mirror">Mirror</string>
+    <string name="local_playlist_mode_append">Add new tracks</string>
+    <string name="local_playlist_mode_off">Not linked</string>
+    <string name="local_playlist_incomplete">YouTube returned an incomplete list — the playlist was not changed</string>
+    <string name="local_playlist_snapshot">Remembered the YouTube list — new tracks will be added from the next refresh</string>
+    <string name="local_playlist_refresh_failed">Couldn’t refresh from YouTube</string>
+    <string name="local_playlist_up_to_date">The playlist is up to date</string>
+    <plurals name="local_playlist_added">
+        <item quantity="one">%1$d new track from YouTube</item>
+        <item quantity="other">%1$d new tracks from YouTube</item>
+    </plurals>
+    <plurals name="local_playlist_mirrored">
+        <item quantity="one">Updated from YouTube: %1$d track gone</item>
+        <item quantity="other">Updated from YouTube: %1$d tracks gone</item>
+    </plurals>
+    <string name="local_playlist_synced_now">just now</string>
+    <string name="new_releases_title">New albums and singles</string>
+    <string name="settings_cache_unlimited">Unlimited</string>
+    <string name="size_mb">%1$s MB</string>
+    <string name="size_gb">%1$s GB</string>
+</resources>

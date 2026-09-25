@@ -1,11 +1,11 @@
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 
--keepclassmembers class app.vitune.android.utils.ActionReceiver$* {
+-keepclassmembers class app.melogold.android.utils.ActionReceiver$* {
     <fields>;
     <methods>;
 }
 
--if @app.vitune.android.utils.ActionReceiver class **
+-if @app.melogold.android.utils.ActionReceiver class **
 -keepclassmembers class <1> {
     <fields>;
     <methods>;
@@ -32,11 +32,6 @@
     public static <1> INSTANCE;
     #noinspection ShrinkerUnresolvedReference
     kotlinx.serialization.KSerializer serializer(...);
-}
-
--if class androidx.credentials.CredentialManager
--keep class androidx.credentials.playservices.** {
-  *;
 }
 
 -keepattributes RuntimeVisibleAnnotations,AnnotationDefault

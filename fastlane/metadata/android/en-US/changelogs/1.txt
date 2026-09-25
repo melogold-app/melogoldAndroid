@@ -1,1 +1,2 @@
-* Rebranded to ViTune
+* First Melogold build: new name and icon
+* Fixed the Gradle wrapper so the project builds with ./gradlew

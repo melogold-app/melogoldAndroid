@@ -1,0 +1,1423 @@
+{
+ "clusters": [
+  {
+   "id": "innertube-parser-breakage",
+   "theme": "Album, playlist and artist pages break when YouTube changes its responses",
+   "kind": "bug",
+   "area": "library",
+   "description": "This is the largest cluster: about 300 ViMusic reports (Jun-Oct 2024) of albums and public playlists opening as \"Unknown\", empty, or loading forever. A YouTube browse-response change broke them and nobody shipped a fix. The same failures show up in ViTune: artist pages miss new albums and all singles (#962), an album's \"Other versions\" spins forever (2024 #305, still in 2026 #1347), Moods & Genres playlists don't load (#28), and search and the player show the artist as \"null\" (ViMusic #1392 theme). Failed loads are stored permanently with no refresh (ViMusic #1007). Users need parser fixes shipped quickly through self-update, graceful fallbacks, and a visible error and retry state instead of an endless shimmer.",
+   "popularity": 351,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/1660",
+    "https://github.com/bartoostveen/ViTune/issues/962",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/962",
+    "https://github.com/bartoostveen/ViTune/issues/305",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1347",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1392",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/28",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1007"
+   ],
+   "code_hint": "providers/innertube requests/AlbumPage.kt, ArtistPage.kt, PlaylistPage.kt, RelatedPage.kt parse by position and by English section titles. ItemsPage.kt:97-99 leaves the shimmer up forever with no retry, and innertube utils/Utils.kt:34-39 keeps a stale continuation. AlbumScreen.kt:72-124 loops between network and DB. The Album and Artist screens write network data into Room and read it back from Room, with no refresh. models/Context.kt:118-175 uses 2022-2024 client versions and a fixed visitorData."
+  },
+  {
+   "id": "navigation-redesign",
+   "theme": "Replace the side navigation rail with a bottom bar and customizable tabs",
+   "kind": "ux",
+   "area": "UI/theme",
+   "description": "This is the most-engaged thread across the ViMusic family (ViMusic #496 with 142 comments; #390; #172, a community redesign proposal). Users dislike the always-visible vertical left rail. They want a conventional bottom or top bar that hides on scroll, controls within thumb reach, a choice of which tabs appear (#350, #566), swiping between tabs (ViMusic #398), and a one-handed or right-side option (ViMusic #394). ViTune users still asked for it in 2026 (#1371, #1275: a Harmony Music-style bottom bar).",
+   "popularity": 346,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/496",
+    "https://github.com/vfsfitvnm/ViMusic/issues/390",
+    "https://github.com/vfsfitvnm/ViMusic/issues/172",
+    "https://github.com/bartoostveen/ViTune/issues/1371",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1371",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/350",
+    "https://github.com/vfsfitvnm/ViMusic/issues/394",
+    "https://github.com/vfsfitvnm/ViMusic/issues/398"
+   ],
+   "code_hint": "ui/components/themed/NavigationRail.kt and Scaffold.kt; tabs at ui/screens/home/HomeScreen.kt:69-77. UIStatePreferences.visibleTabs (json) already stores tab visibility and could back a customizable bottom bar."
+  },
+  {
+   "id": "explicit-downloads",
+   "theme": "A real Download button for songs, albums and playlists, with a download manager",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "description": "This is the most-requested feature in the ecosystem: ViMusic #83 has 55 reactions, 81 comments and about 20 duplicates, and ViTune has about 36 similar requests. Users want to download a song, album or playlist in one tap without listening to it first. Downloads should be stored apart from the auto LRU playback cache and managed in a download manager with per-playlist removal (SimpMusic #186, #1208). Rows and playlists should show downloaded or percent-cached indicators (#594, ViMusic #33). Liked songs and new additions to downloaded playlists could be auto-downloaded (#988, #1051, InnerTune #763). \"Pre-cache\" should be renamed \"Download\": many bug reports came from users who didn't understand the cache model (ViMusic #645).",
+   "popularity": 216,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/920",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/16",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/844",
+    "https://github.com/vfsfitvnm/ViMusic/issues/83",
+    "https://github.com/maxrave-dev/SimpMusic/issues/186",
+    "https://github.com/vfsfitvnm/ViMusic/issues/645",
+    "https://github.com/bartoostveen/ViTune/issues/988",
+    "https://github.com/z-huang/InnerTune/issues/763",
+    "https://github.com/bartoostveen/ViTune/issues/594",
+    "https://github.com/vfsfitvnm/ViMusic/issues/33"
+   ],
+   "code_hint": "service/PrecacheService.kt (Media3 DownloadService) writes into the same evictable SimpleCache the player streams through (:141-204, :278-322). The menu entries are in ui/components/themed/MediaItemMenu.kt, the Offline built-in playlist is in ui/screens/builtinplaylist/, and cache state is in utils/CacheState.kt. Real downloads need a separate pinned store (filesDir) with its own index."
+  },
+  {
+   "id": "stream-extraction-failures",
+   "theme": "Uncached songs fail to play: YouTube 403s, bot checks, \"video ID doesn't match\", \"no playable format\"",
+   "kind": "bug",
+   "area": "playback/streaming",
+   "description": "This is the top ViTune complaint. Every YouTube-side change breaks uncached playback in waves: the Oct 2024 anti-bot enforcement (#499); \"returned video ID doesn't match\" (canonical #555, about 53 reports running to Sep 2026); the Jan 2025 \"original video source deleted\" wave (about 50 reports); about 80 reports against v1.1.6 in Oct-Nov 2025; and yt-dlp 403s (#1138). Failures depend on the network (VPN, proxy, mobile data vs Wi-Fi, #1244), which points to IP rate limiting. The error messages mislead: any extractor failure shows up as \"ID mismatch\" or \"source deleted\", and users can't tell when YouTube is blocking the app (#534). Users need an extractor with several strategies (yt-dlp plus InnerTube clients, PoToken or visitorData, an optional logged-in session) and errors that name the real cause. A Russian user noted that YouTube is blocked in Russia, so nothing works there without a proxy.",
+   "popularity": 211,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/555",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/555",
+    "https://github.com/bartoostveen/ViTune/issues/499",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/499",
+    "https://github.com/bartoostveen/ViTune/issues/768",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/767",
+    "https://github.com/bartoostveen/ViTune/issues/1138",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1138",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1258",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1316",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/534",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/799",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1183",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1244",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1759"
+   ],
+   "code_hint": "service/PlayerService.kt:1357-1469 is the resolver; :1408-1416 maps any yt-dlp failure to VideoIdMismatchException. utils/YouTubeDLResponse.kt:14-15 has a required fileSize, so a null filesize fails decoding. app/src/main/python/download.py:5-10 holds the yt-dlp options (format, player_client). providers/innertube requests/Player.kt:60-72 sets the client order, and models/Context.kt:118-175 has stale clients, a fixed visitorData and no PoToken. Error texts are in service/PlaybackExceptions.kt and ui/screens/player/PlaybackError.kt / Thumbnail.kt:248-264."
+  },
+  {
+   "id": "home-widget-shortcuts",
+   "theme": "Home-screen player widget and launcher shortcuts",
+   "kind": "feature",
+   "area": "widgets",
+   "description": "There are about 15 ViTune requests (#27, #348, #547, #1103 and others) and ViMusic #234 (37 reactions) for a now-playing home-screen widget with controls, in Material You or YT Music turntable style. The ViTune maintainer declined. Metrolist (#649), ArchiveTune (#263) and SimpMusic have shipped widgets. Users also want long-press launcher shortcuts for Search, Quick picks, Favorites and Offline (ViMusic #545).",
+   "popularity": 120,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/348",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/348",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/27",
+    "https://github.com/vfsfitvnm/ViMusic/issues/234",
+    "https://github.com/MetrolistGroup/Metrolist/issues/649",
+    "https://github.com/vfsfitvnm/ViMusic/issues/545"
+   ],
+   "code_hint": "The code has no AppWidget. Add a Glance AppWidgetProvider fed by PlayerService state and binder commands. Launcher shortcuts go in res/xml/shortcuts.xml plus AndroidManifest.xml, routed through handleUrl/globalRouteFlow in MainApplication.kt."
+  },
+  {
+   "id": "casting",
+   "theme": "Cast to Chromecast, DLNA/UPnP, FCast and Sonos (mobile and desktop)",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "description": "Casting is Metrolist's most-reacted issue (#1115, shipped there). There are 11 ViMusic issues (#597 and others), and it is the joint top request for Pear Desktop (#113, 46; duplicate #289). Users on de-Googled phones want FCast, DLNA/UPnP and Sonos (Metrolist #1160, OuterTune #519). Users frame it as matching what standard streaming apps offer.",
+   "popularity": 107,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/597",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1115",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1160",
+    "https://github.com/pear-devs/pear-desktop/issues/113"
+   ],
+   "code_hint": "There is no cast support. The ExoPlayer is created in PlayerService.kt:299-300; casting would need media3-cast CastPlayer or a DLNA renderer. Stream URLs come from the in-app resolver (PlayerService.kt:1357-1469), which a receiver cannot run, so the app must hand over the resolved googlevideo URL or proxy the stream through the phone or desktop client."
+  },
+  {
+   "id": "now-playing-ux",
+   "theme": "Now Playing screen: quick actions, remaining time, reliable controls",
+   "kind": "ux",
+   "area": "player",
+   "description": "Users want Download and Add-to-playlist buttons on the player itself (#408, asked again in #1468 in Aug 2026) and a remaining-time label (#180, 18). Reported problems: the play/pause shape animation runs opposite to Android's media notification (#94, 27 comments); favorite, previous and next buttons flicker during playback (#64, 17); tapping a song doesn't open the player sheet (#309). Users also want a setting for whether the player expands on play (ViMusic #109, #446, #101, #1343), and long titles should scroll instead of being cut off (ViMusic #278).",
+   "popularity": 99,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/408",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/408",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/180",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/94",
+    "https://github.com/vfsfitvnm/ViMusic/issues/109",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/309",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/64",
+    "https://github.com/vfsfitvnm/ViMusic/issues/278"
+   ],
+   "code_hint": "ui/screens/player/Player.kt, Controls.kt, AnimatedPlayPauseIcon.kt, Thumbnail.kt; ui/components/BottomSheet.kt. PlayerPreferences.showRemaining, showLike and AppearancePreferences.openPlayer already exist; check their defaults and whether users can find them."
+  },
+  {
+   "id": "ytm-account-sync",
+   "theme": "Optional YouTube Music account login with two-way library sync",
+   "kind": "feature",
+   "area": "sync/import",
+   "description": "Users want to sign in to YouTube Music to import and keep in sync their liked songs, playlists, albums, artists, history and uploads (ArchiveTune #434), and to get personal recommendations. The heart button should write to YTM's \"Liked Music\" (SimpMusic #626). They also want multiple and brand accounts (Metrolist #3194) and opt-in reporting of plays back to YouTube. This is InnerTune's top request (#1409, 37) and has many ViTune duplicates (#199, #565, #563, #289). Commenters note that a logged-in session is one of the few reliable ways past bot checks. Metrolist, SimpMusic, ArchiveTune and OuterTune have shipped it. It complements Melogold's own accounts, whose server stores only metadata.",
+   "popularity": 95,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/199",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/565",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/563",
+    "https://github.com/bartoostveen/ViTune/issues/289",
+    "https://github.com/z-huang/InnerTune/issues/1409",
+    "https://github.com/maxrave-dev/SimpMusic/issues/626",
+    "https://github.com/MetrolistGroup/Metrolist/issues/3194",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://github.com/rukamori/ArchiveTune/issues/434"
+   ],
+   "code_hint": "providers/innertube has no auth: add cookie and SAPISIDHASH headers to the Innertube.kt client and the body context (models/Context.kt). The Credentials library is already a dependency (utils/Credentials.kt). YT playlist sync uses Playlist.browseId in LocalPlaylistSongs.kt:342. ui/screens/settings/SyncSettings.kt is currently Piped-only."
+  },
+  {
+   "id": "import-other-services",
+   "theme": "Import playlists and liked songs from Spotify, Apple Music, Yandex Music and CSV/Takeout",
+   "kind": "feature",
+   "area": "sync/import",
+   "description": "Users want to bring large libraries in by link, account or file instead of adding songs one by one. Requests cover Spotify (ViMusic #112, 47; ViTune #172; InnerTune #1700; duplicates in SimpMusic #828, RiMusic #5049 and ArchiveTune #458), Apple Music (#926), Google Takeout and CSV (InnerTune #516) and linking other accounts (#1365). Converting through TuneMyMusic is too hard (#598). Echo, ArchiveTune, Muzza and Musify have shipped this. For Melogold this is a stated priority: users whose Russian tracks were removed from Apple Music need Apple Music and Yandex Music import. The matcher must also search regular YouTube (re-uploads, covers, live), not only the YTM catalogue, and show a review screen for unmatched or low-confidence tracks.",
+   "popularity": 95,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/172",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/172",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1365",
+    "https://github.com/vfsfitvnm/ViMusic/issues/112",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1598",
+    "https://github.com/z-huang/InnerTune/issues/1700",
+    "https://github.com/z-huang/InnerTune/issues/516"
+   ],
+   "code_hint": "None of this exists: ViTune imports only from YouTube links and Piped, and there is no CSV import in the code. Add new provider modules (for example providers/spotify, providers/applemusic, providers/yandex) using the providers/lrclib template. Match through Innertube.searchPage (SearchResultScreen.kt filters) plus a YouTube WEB search, then write with Database.insert and SongPlaylistMap. The UI fits in HomePlaylists.kt or a new settings tab (SettingsScreen.kt:77-96)."
+  },
+  {
+   "id": "session-persistence",
+   "theme": "Keep the player alive and restore queue and position after a pause, kill or restart",
+   "kind": "bug",
+   "area": "player",
+   "description": "After about 10 minutes paused, or after 2-3 songs with the screen off, the notification and mini-player disappear, playback stops, and the in-app player UI stays broken until restart (#469, #596, ViMusic #727 with about 17 issues). Users want the last song, queue and position restored after a restart (ViMusic #35, 28 comments). That was implemented, but later reports say it is unreliable (#997, #1161). On desktop, users want shuffle, repeat, volume and the last track remembered (Pear #3004, #858).",
+   "popularity": 82,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/469",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/469",
+    "https://github.com/bartoostveen/ViTune/issues/596",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/596",
+    "https://github.com/vfsfitvnm/ViMusic/issues/727",
+    "https://github.com/vfsfitvnm/ViMusic/issues/35",
+    "https://github.com/pear-devs/pear-desktop/issues/3004"
+   ],
+   "code_hint": "utils/InvincibleService.kt is a fragile foreground-service hack. Queue persistence is in PlayerService.kt:587-649 (QueuedMediaItem as a Parcel BLOB, Database.kt:1098-1123, restored without runCatching). PlayerService.kt:626-628 gives restored local tracks a local:<id> URI, so they don't play. Because of PreferencesHolders.kt:43-58, saved speed, pitch and invincibility aren't applied after a cold start. Consider moving to Media3 MediaSessionService."
+  },
+  {
+   "id": "offline-eviction",
+   "theme": "Downloaded or offline songs disappear on their own",
+   "kind": "bug",
+   "area": "downloads/offline",
+   "description": "About 44 ViTune reports and 26+ ViMusic reports: pre-cached or offline songs vanish after hours or days, or after the app is closed. Causes include OEM cleaners (Samsung, MIUI), Android's low-storage cleanup wiping cacheDir, and the LRU limit evicting them. One user lost 9 GB (#1057), and it still happens in Sep 2026 (#1476). The ViMusic maintainer acknowledged that moving to filesDir would fix it.",
+   "popularity": 73,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/329",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/329",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/541",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/447",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1354",
+    "https://github.com/bartoostveen/ViTune/issues/1476",
+    "https://github.com/vfsfitvnm/ViMusic/issues/289"
+   ],
+   "code_hint": "PlayerService.kt:1339-1354 createCache puts the SimpleCache in cacheDir/exoplayer with an LRU evictor (2 GB default, DataPreferences.exoPlayerDiskCacheMaxSize). PrecacheService writes into the same cache. The fix is a separate non-evicting store in filesDir or a user-chosen directory."
+  },
+  {
+   "id": "backup-restore",
+   "theme": "Reliable backup restore plus scheduled automatic backups",
+   "kind": "bug",
+   "area": "sync/import",
+   "description": "Restoring a DB backup crashes the app, silently does nothing, or wipes the library: #268 (15 comments), #554, #1283 (cross-device), #1300 (2026). In ViMusic, libraries were lost after a crash (#984) and a restore crash drew 40 comments (#340). A restored backup brings back \"local\" songs from the old phone (#373), and a shared backup exposed Piped credentials in plain text. Users want scheduled automatic backups to a chosen folder or the cloud (#58, InnerTune #1516, ArchiveTune #954) that include settings (RiMusic #2684). Melogold's server sync covers the cloud part, but local restore still has to validate the schema.",
+   "popularity": 71,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/268",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/268",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/554",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1283",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1300",
+    "https://github.com/bartoostveen/ViTune/issues/373",
+    "https://github.com/vfsfitvnm/ViMusic/issues/984",
+    "https://github.com/bartoostveen/ViTune/issues/58",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/58",
+    "https://github.com/z-huang/InnerTune/issues/1516",
+    "https://github.com/fast4x/RiMusic/issues/2684"
+   ],
+   "code_hint": "ui/screens/settings/DatabaseSettings.kt:45-81 copies the raw SQLite file, doesn't check the schema version, then calls exitProcess(0). Migrations are at Database.kt:76-102 and the AutoMigrations at :829-855, with no tests. PipedSession stores its token in plain text. Settings live in the SharedPreferences file \"preferences\" (MainApplication.kt:601) and aren't in the backup. WorkManager is available for scheduling."
+  },
+  {
+   "id": "notification-controls",
+   "theme": "Configurable notification and lock-screen controls (like, shuffle, repeat, close, live alerts)",
+   "kind": "feature",
+   "area": "notifications",
+   "description": "Users want a Like button in the mini-player, notification and lock screen (#10, 18) and configurable actions: shuffle, repeat, seek, and an X to stop playback (ViMusic #131, 21). Music also keeps playing after the app is swiped from recents (ViMusic #483). On Android 11 the collapsed notification shows no buttons (#821). OnePlus and Realme users want \"live alerts\" / Dynamic Island-style playback pills (#617, #914, #1369).",
+   "popularity": 70,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/131",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/10",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/821",
+    "https://github.com/vfsfitvnm/ViMusic/issues/483",
+    "https://github.com/bartoostveen/ViTune/issues/617",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/617"
+   ],
+   "code_hint": "Notification: PlayerService.kt notification() :978+; stateBuilder and SessionCallback at :198-221 and :1276-1303; NotificationActionReceiver at :1305-1325 is exported but is an inner class, so any external broadcast crashes the process (AndroidManifest.xml:190-193). The isLikedState flatMapMerge at :252-260 makes the Like state stale. PlayerMediaBrowserService.kt:61 replaces the callback, so custom actions stop working after Android Auto connects."
+  },
+  {
+   "id": "desktop-packaging",
+   "theme": "Linux Flatpak/Flathub and package-manager installs (Homebrew, winget, Scoop, AUR)",
+   "kind": "feature",
+   "area": "updates",
+   "description": "The joint top-reacted Pear Desktop issue asks for a Flatpak on Flathub (#737, 46; #3476). Users also expect a Homebrew cask (#4004, 21), winget, Scoop, AUR and AppImage packages (SimpMusic #1566, ArchiveTune #584). This matters for Melogold's Windows, macOS and Linux clients: the GitHub Releases self-updater has to coexist with package-manager installs.",
+   "popularity": 69,
+   "urls": [
+    "https://github.com/pear-devs/pear-desktop/issues/737",
+    "https://github.com/pear-devs/pear-desktop/issues/4004"
+   ],
+   "code_hint": "This is in the desktop clients and release pipeline, not melogoldAndroid. The self-updater should detect package-manager installs and step aside for them."
+  },
+  {
+   "id": "lyrics-display",
+   "theme": "Better lyrics view: large or full-screen, tap to seek, word-by-word, and lyrics outside the player",
+   "kind": "ux",
+   "area": "lyrics",
+   "description": "Users want a bigger or adjustable font and full-screen, smoothly scrolling lyrics like Spotify or Apple Music (#1069, ViMusic #441). They want to tap a line to seek (#694), synced-first behavior where scrolling pauses the sync (ViMusic #212, 21), animations and font choices (Metrolist #1052), and word-by-word karaoke highlighting (shipped in Metrolist, SimpMusic, OuterTune). They also want lyrics outside the player: on the lock screen, floating over other apps, and in PiP (#544, #1074, #433), on Android Auto (Metrolist #2159), and shared as an image card (SimpMusic).",
+   "popularity": 68,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1069",
+    "https://github.com/bartoostveen/ViTune/issues/694",
+    "https://github.com/vfsfitvnm/ViMusic/issues/441",
+    "https://github.com/vfsfitvnm/ViMusic/issues/212",
+    "https://github.com/MetrolistGroup/Metrolist#readme",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1052",
+    "https://github.com/bartoostveen/ViTune/issues/544",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/544",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://github.com/MetrolistGroup/Metrolist/issues/2159"
+   ],
+   "code_hint": "ui/screens/player/Lyrics.kt and utils/SynchronizedLyrics.kt. LrcParser in providers/lrclib (LrcLib.kt:116-217) is line-level only. The PiP layout is in AppWrapper in MainApplication.kt (isInPip) plus utils/PIP.kt. PlayerPreferences.lyricsKeepScreenAwake already exists."
+  },
+  {
+   "id": "playlist-reorder-bugs",
+   "theme": "Playlist reordering doesn't stick or scrambles large playlists",
+   "kind": "bug",
+   "area": "playlists",
+   "description": "Drag-reorder snaps back or isn't saved (#68, 20). In playlists of 20+ songs, songs vanish mid-drag or land in the wrong place (#127, with duplicates #740, #722, #958, #679, #200, #88). The reorder animation breaks past 64 items (#1462, 2026). In 200+ song playlists, new songs land mid-list instead of at the end or top (#601, #1468). ViMusic has about 24 issues of the same kind. The Playlists page also crashes when scrolled to the end, and the sort arrow is invisible (#1393).",
+   "popularity": 67,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/127",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/127",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/68",
+    "https://github.com/bartoostveen/ViTune/issues/1462",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/601",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1637",
+    "https://github.com/bartoostveen/ViTune/issues/1393"
+   ],
+   "code_hint": "compose/reordering (ReorderingState.kt, AnimatablesPool.kt); ui/modifiers/Swiping.kt:54-64 mutates the Animatable pool from Main and IO without synchronization. Database.kt:610-619 move() shifts positions, and the SortedSongPlaylistMap view orders them. Screens: LocalPlaylistSongs.kt, HomePlaylists.kt."
+  },
+  {
+   "id": "dislike-block-filters",
+   "theme": "Dislike or block songs and artists; filter AI music and explicit content",
+   "kind": "feature",
+   "area": "library",
+   "description": "This is the most duplicated request in the ecosystem: Metrolist #1553, #871, #1098, #1822; OuterTune #80; SimpMusic #400; InnerTune #1487; ViMusic #277; ViTune #32. Users want a \"not interested\" action that keeps songs and whole artists out of radio, autoplay and quick picks. They also want AI-generated tracks filtered out (Metrolist #4336), an explicit badge, a hide-explicit filter and restricted mode (ViMusic #239, #1121).",
+   "popularity": 66,
+   "urls": [
+    "https://git.bartoostveen.nl/bart/ViTune/issues/32",
+    "https://github.com/vfsfitvnm/ViMusic/issues/277",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1553",
+    "https://github.com/MetrolistGroup/Metrolist/issues/4336",
+    "https://github.com/vfsfitvnm/ViMusic/issues/239"
+   ],
+   "code_hint": "Song.blacklisted and Song.explicit exist (models/Song.kt), and AppearancePreferences.hideExplicit exists. There is no artist-level block: add it to the Artist entity and filter in utils/YouTubeRadio.kt, PlayerService.setupRadio (:1190-1222) and HomeQuickPicks.kt. utils/Player.kt:73-84 forceSeekToPrevious loops forever (ANR) when the whole queue is explicit."
+  },
+  {
+   "id": "official-distribution",
+   "theme": "Trusted official distribution: F-Droid, signed releases, protection from clones",
+   "kind": "feature",
+   "area": "updates",
+   "description": "An ad-filled ViTune clone (\"Just Play\") with the same package name sat on the Play Store (#1021). Someone sold a paid ViMusic copy on Google Play (ViMusic #894, 12 reactions), and Huawei flagged the APK as malware (#1625). Users ask for F-Droid and IzzyOnDroid listings that stay current (ViMusic #32, #240; Metrolist #295; ArchiveTune #484). Melogold needs a clearly signed, verifiable channel and its own applicationId.",
+   "popularity": 63,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1021",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1021",
+    "https://github.com/vfsfitvnm/ViMusic/issues/32",
+    "https://github.com/vfsfitvnm/ViMusic/issues/894",
+    "https://github.com/MetrolistGroup/Metrolist/issues/295"
+   ],
+   "code_hint": "Set applicationId at app/build.gradle.kts:23. Signing is at :54-61 and there is no release signingConfig. REPO_OWNER in About.kt:63-64 is hardcoded to upstream, so a fork would offer upstream updates. F-Droid metadata is in fastlane/metadata; also update README.md."
+  },
+  {
+   "id": "midtrack-stream-failures",
+   "theme": "Songs stop mid-track (~30 s or 1 MB), stall or skip: stream URLs expire with no retry",
+   "kind": "bug",
+   "area": "playback/streaming",
+   "description": "Uncached songs stop at fixed points (about 30 s / 524 KB or 59 s / 1 MB) with \"unknown playback error\" (#1073, about 35 reports). An Aug 2026 wave brought about 50 more (#1433), and pre-cache now sticks at 1.0 MB (#1417, #1424). Other reports: pauses every 10-15 s (#1301), a silent freeze at about 30 s (#1310), random skips to the next track (#587), 416 Range errors about two-thirds of the way in (#427), cached audio corrupted by 403s on partial chunks (#661), and failures with \"Pause cache\" on (#606). A contributor offered a fix upstream (several candidate URLs with a real TTL, plus mid-track recovery, #1483), and it was rejected.",
+   "popularity": 62,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1073",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1073",
+    "https://github.com/bartoostveen/ViTune/issues/869",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/869",
+    "https://github.com/bartoostveen/ViTune/issues/1433",
+    "https://github.com/bartoostveen/ViTune/issues/1417",
+    "https://github.com/bartoostveen/ViTune/issues/1483",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/427",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1301",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1310",
+    "https://github.com/bartoostveen/ViTune/issues/587",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/587",
+    "https://github.com/bartoostveen/ViTune/issues/661",
+    "https://github.com/bartoostveen/ViTune/issues/606",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/606"
+   ],
+   "code_hint": "UriCache (core/data RingBuffer.kt:24) has 16 slots and no TTL. PlayerService.kt:1398-1401 reuses cached URLs; :1455-1463 reads in 512 KiB chunks and re-resolves on each; :1466-1468 clears the cache only on unknown errors, with no retry. ranged() at :1373-1382 is off by one, hence the 416 hack at :529-536. utils/ExoPlayer.kt:22-181 holds dead retry and fallback factories (\"TODO: fix this mess\"). Also check the PlayerPreferences.pauseCache path."
+  },
+  {
+   "id": "piped-integration",
+   "theme": "Piped/Invidious accounts: crashes, stuck playlists, read-only import",
+   "kind": "feature",
+   "area": "sync/import",
+   "description": "Users wanted Piped or Invidious accounts, including custom instances, as a cross-device playlist store they could edit (#2, 22). ViTune's Piped provider only imports read-only: logging in crashed the app (#39, 15), some synced playlists spin forever (#366), and two-way editing was marked wontfix (#55, #322). Melogold's own sync server now covers the underlying need, so Piped could be kept as an import source or dropped, and its tokens should not be stored in plain text.",
+   "popularity": 61,
+   "urls": [
+    "https://git.bartoostveen.nl/bart/ViTune/issues/2",
+    "https://github.com/bartoostveen/ViTune/issues/55",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/39",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/366"
+   ],
+   "code_hint": "providers/piped/Piped.kt:43-164: create/rename/delete/add/remove are written but never called, and the add/remove body at :136-158 is a Map<String, Any> that likely won't serialize. UI: ui/screens/settings/SyncSettings.kt and ui/screens/pipedplaylist/. models/PipedSession.kt stores the token in plain text."
+  },
+  {
+   "id": "playlist-sharing",
+   "theme": "Share playlists by link and edit them together",
+   "kind": "feature",
+   "area": "playlists",
+   "description": "Users want to share local playlists through a link or code that opens in the app (ViMusic #523, 15 reactions; ViTune #476 with 14 comments, #480; again #1353 in 2026). For people without the app, generating a YouTube playlist link would help. They also want collaborative playlists that several users edit (Metrolist #484) and cross-platform song links via song.link/Odesli (Echo). This fits Melogold's server and accounts directly.",
+   "popularity": 59,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/476",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/476",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/480",
+    "https://github.com/vfsfitvnm/ViMusic/issues/523",
+    "https://github.com/MetrolistGroup/Metrolist/issues/484",
+    "https://github.com/EchoMusicApp/Echo-Music#readme"
+   ],
+   "code_hint": "models/Playlist.kt, ui/screens/localplaylist/LocalPlaylistScreen.kt. Share links need a new intent filter in AndroidManifest.xml:90-167 and a branch in handleUrl (MainApplication.kt:452-510), plus a server endpoint that stores playlist snapshots."
+  },
+  {
+   "id": "scrobbling-presence",
+   "theme": "Last.fm/ListenBrainz scrobbling and Discord Rich Presence",
+   "kind": "feature",
+   "area": "other",
+   "description": "Users want built-in Last.fm scrobbling with an offline queue and batch submission (#1390/#1391, #654, ViMusic #138; shipped in Metrolist as #296), ListenBrainz and Libre.fm (Metrolist #2217, 18; Pear #4129), and proper media metadata so external scrobblers can detect songs (#389). Discord Rich Presence for the current track is also requested (#393, #698, #947) and ships in Metrolist, SimpMusic and InnerTune, and on desktop in Pear and limusic. Melogold's desktop clients can do Discord RPC natively.",
+   "popularity": 58,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1391",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1391",
+    "https://github.com/vfsfitvnm/ViMusic/issues/138",
+    "https://github.com/MetrolistGroup/Metrolist/issues/296",
+    "https://github.com/MetrolistGroup/Metrolist/issues/2217",
+    "https://github.com/bartoostveen/ViTune/issues/393",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/393",
+    "https://github.com/MetrolistGroup/Metrolist#readme"
+   ],
+   "code_hint": "Hook into onPlaybackStatsReady in PlayerService.kt:461-491, where the Event is inserted, and submit scrobbles from a new providers/lastfm module (WorkManager for the offline queue). Media metadata is published at PlayerService.kt:884-933."
+  },
+  {
+   "id": "predictable-queue",
+   "theme": "Predictable queue: play lists in order, don't wipe the queue, shuffle that works",
+   "kind": "ux",
+   "area": "player",
+   "description": "Tapping a song in an artist's song list starts a radio, or builds the queue 3→2→3→4, instead of playing the list in order (#887). Tapping a search result replaces the queue with an auto radio; users want a toggle (Metrolist #1092). Tapping a library song wipes a carefully built queue (ViMusic #1125), and swiping the mini-player away clears the queue too easily, so users want undo or a confirmation (#177, #69). Starting a radio restarts the current song (ViMusic #118). Shuffle plays the same order every session and ignores the start position (ViMusic #1456).",
+   "popularity": 58,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/887",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/887",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1092",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1125",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/177",
+    "https://github.com/vfsfitvnm/ViMusic/issues/118",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1456"
+   ],
+   "code_hint": "utils/Player.kt forcePlay, forcePlayAtIndex, enqueue, addNext (:47, :53); PlayerService.setupRadio (:1190-1222); utils/YouTubeRadio.kt; the song-click handlers in ArtistOverview.kt and ArtistScreen.kt; swipe-to-close in Player.kt:200 (horizontalSwipeToClose)."
+  },
+  {
+   "id": "listening-stats",
+   "theme": "Listening statistics and yearly Wrapped or monthly recaps",
+   "kind": "feature",
+   "area": "library",
+   "description": "Users want top songs and artists per week, month, 6 months and year (#19). They want total and daily listening time, with a toggle for local music and play counts that aren't doubled after a restore (#110, #961, #1277). They also want a Spotify Wrapped-style year in review (#530, #615, #637, #1286, RiMusic #497). SimpMusic, Kreate, ArchiveTune, Musify and Velune have shipped this. Melogold's server could compute stats across devices.",
+   "popularity": 56,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/530",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/530",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/19",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/110",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://github.com/fast4x/RiMusic/issues/497"
+   ],
+   "code_hint": "The Event table and Song.totalPlayTimeMs (models/Event.kt, Song.kt) are written in PlayerService.kt:461-491. The built-in Top playlist uses DataPreferences.topListPeriod. Add a new stats route in ui/screens/Routes.kt."
+  },
+  {
+   "id": "crossfade-gapless",
+   "theme": "Crossfade, gapless playback and fade on pause",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "description": "Crossfade is Metrolist's second most-reacted request (#345, 28, now shipped) and is requested again across the ecosystem. ViTune #294 had five duplicates and was declined as an ExoPlayer limitation; ViMusic has #40. Users want gapless playback for live albums and DJ mixes (ArchiveTune #719, #926), a fade out and in on pause and resume (Metrolist #3166), and DJ-style Automix (BitChord, SimpMusic).",
+   "popularity": 53,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/294",
+    "https://github.com/MetrolistGroup/Metrolist/issues/345",
+    "https://github.com/kushagrasinghx/BitChord#readme",
+    "https://github.com/rukamori/ArchiveTune/issues/719",
+    "https://github.com/MetrolistGroup/Metrolist/issues/3166",
+    "https://github.com/vfsfitvnm/ViMusic/issues/40"
+   ],
+   "code_hint": "PlayerService.kt createRendersFactory :1081-1120 builds the DefaultAudioSink; crossfade needs two players or a custom AudioProcessor. Gapless depends on ExoPlayer preloading the next item, which the synchronous resolver blocks (:1403-1421)."
+  },
+  {
+   "id": "android-tv",
+   "theme": "A usable Android TV / Fire TV UI with D-pad navigation",
+   "kind": "compat",
+   "area": "UI/theme",
+   "description": "The app installs on TV but can't be navigated with a remote (#219, #238, #298, #614; ViMusic #379 with 27 comments). Users want D-pad focus handling, working remote media buttons, a TV banner, backup import on TV, and no screensaver over the player. Metrolist has shipped a TV UI (#572).",
+   "popularity": 53,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/219",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/238",
+    "https://github.com/vfsfitvnm/ViMusic/issues/379",
+    "https://github.com/MetrolistGroup/Metrolist/issues/572"
+   ],
+   "code_hint": "AndroidManifest.xml:77 only declares LEANBACK_LAUNCHER. The Compose screens have no focus handling, and the custom router (compose/routing) would need to restore focus."
+  },
+  {
+   "id": "autoplay-endless-radio",
+   "theme": "Keep playing when the queue ends: autoplay similar songs and endless radio",
+   "kind": "feature",
+   "area": "player",
+   "description": "Many users don't want playback to stop at the end of the queue (ViMusic #276, 31 comments) and want Spotify-style autoplay of similar songs (ViMusic #288). Radio generates only 25-30 tracks instead of extending itself (#95, ViMusic #1173), and playback stops at the end of a playlist (#1822, #1823). One user asks for an endless personal stream button like Yandex Music's \"My Wave\" or Deezer Flow (#1080).",
+   "popularity": 52,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/95",
+    "https://github.com/vfsfitvnm/ViMusic/issues/288",
+    "https://github.com/vfsfitvnm/ViMusic/issues/276",
+    "https://github.com/bartoostveen/ViTune/issues/1080"
+   ],
+   "code_hint": "utils/YouTubeRadio.kt and PlayerService.setupRadio (:1190-1222); queue nextPage suggestions in ui/screens/player/Queue.kt; queueLoopEnabled and trackLoopEnabled in PlayerPreferences."
+  },
+  {
+   "id": "recommendations",
+   "theme": "Better, adaptive recommendations and less repetitive radio",
+   "kind": "feature",
+   "area": "library",
+   "description": "Quick Picks has two modes: \"trending\" isn't personal and \"last played\" swings with every song. Users want adaptive, taste-based picks (#223, 12), suggested songs under playlists (#63, #97), smart shuffle that mixes in similar songs (#1284, #165), and a visible \"similar to this\" action (ViMusic #502). Radio repeats the same songs or drifts into the wrong language (ViMusic #89, #1544, #1899). Flow and Echo ship on-device engines that learn from skips and likes.",
+   "popularity": 51,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/223",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/223",
+    "https://github.com/bartoostveen/ViTune/issues/97",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/63",
+    "https://github.com/bartoostveen/ViTune/issues/1284",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1284",
+    "https://github.com/vfsfitvnm/ViMusic/issues/502",
+    "https://github.com/vfsfitvnm/ViMusic/issues/89",
+    "https://github.com/A-EDev/Flow#readme"
+   ],
+   "code_hint": "ui/screens/home/HomeQuickPicks.kt and DataPreferences.quickPicksSource (Trending or LastPlayed); Innertube.relatedPage (requests/RelatedPage.kt); the Event history can supply seeds; utils/YouTubeRadio.kt."
+  },
+  {
+   "id": "youtube-playlist-import",
+   "theme": "Imported YouTube playlists: cut off at 100 songs, silent drops, sync behavior",
+   "kind": "bug",
+   "area": "sync/import",
+   "description": "YouTube and YT Music playlists show or import only their first 100 songs because continuation broke: a 4,000-song playlist in #841, a 1,955-song one in Jun 2026 (#1380), and albums that stop at 99 (#669). In ViMusic, playlists stop at about 500-560 songs and artist song queues at 50 (#1351). Importing a 1k+ song Liked playlist silently drops region-unavailable songs with no report of what was skipped (#30). Imported playlists should pick up songs added upstream (ViMusic #196), but auto-sync overwrote users' own edits, so they want an unlink option (#604). The maintainer had a local fix for the 100-song limit that never shipped.",
+   "popularity": 49,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/841",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/841",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1380",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/30",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1351",
+    "https://github.com/vfsfitvnm/ViMusic/issues/196",
+    "https://github.com/bartoostveen/ViTune/issues/604"
+   ],
+   "code_hint": "Continuation parsing is in providers/innertube requests/PlaylistPage.kt. utils/Utils.kt:166-195 completed() stops as soon as a continuation page parses empty. Also PlaylistSongList.kt:83-88, the sync at LocalPlaylistSongs.kt:342, DataPreferences.autoSyncPlaylists and Playlist.browseId."
+  },
+  {
+   "id": "translations",
+   "theme": "App translations: quality Russian, Weblate, more languages",
+   "kind": "feature",
+   "area": "i18n",
+   "description": "Users want a hosted translation platform such as Weblate for community contributions (#556, 20 comments; French, Turkish, Chinese and Spanish requests; ViMusic #100). The Russian translation shipped in 1.1.0 read like machine translation and native speakers had to fix it (#493, 15). The app language also changes by itself (#966), and the language setting isn't applied (ViMusic #930). Russian quality matters for Melogold's audience.",
+   "popularity": 49,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/556",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/556",
+    "https://github.com/bartoostveen/ViTune/issues/493",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/493",
+    "https://github.com/vfsfitvnm/ViMusic/issues/100",
+    "https://github.com/bartoostveen/ViTune/issues/966"
+   ],
+   "code_hint": "app/src/main/res/values-*/strings.xml and utils/Language.kt; add Weblate config to the repo."
+  },
+  {
+   "id": "local-music",
+   "theme": "Local music: folder selection, album view, stale entries, wrong titles",
+   "kind": "bug",
+   "area": "library",
+   "description": "Bugs: files deleted from the device still show as ghost entries (#462, #231, #163, #72); a local song fails with \"file does not exist anymore\" after a restart (#1072, #690); the file name shows instead of the title tag (#913, #253); the storage permission can't be granted (#11). Feature requests: include and exclude folders so call recordings and WhatsApp audio stay out (#1288, #264, #1441), an album view for local music (#1289), and local songs alongside streamed ones (ViMusic #57).",
+   "popularity": 48,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/462",
+    "https://github.com/bartoostveen/ViTune/issues/1072",
+    "https://github.com/bartoostveen/ViTune/issues/913",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/913",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/11",
+    "https://github.com/bartoostveen/ViTune/issues/1288",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1288",
+    "https://github.com/bartoostveen/ViTune/issues/1289",
+    "https://github.com/vfsfitvnm/ViMusic/issues/57"
+   ],
+   "code_hint": "ui/screens/home/HomeLocalSongs.kt polls MediaStore every 5 s, and stateIn(mediaScope, Eagerly) leaves another polling loop running after every visit (:79, :124-157). Local media items (local:<id>) are built in utils/Utils.kt:114-137. PlayerService.kt:626-628 drops the content:// URI of local tracks in a restored queue."
+  },
+  {
+   "id": "android-auto",
+   "theme": "Android Auto: search, voice, a richer browse tree and working actions",
+   "kind": "feature",
+   "area": "android-auto",
+   "description": "Android Auto support exists and was a top early request (ViMusic #47). Users now want to search from the car (#945, #368, #1482 in Sep 2026), \"Hey Google, play X\", a Home tab with online content (Metrolist #1713, OuterTune #585, SimpMusic #1509), and liking and shuffling from AA. The app also goes missing from AA or shows a black screen (ViMusic #1414, #1997).",
+   "popularity": 48,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/47",
+    "https://github.com/bartoostveen/ViTune/issues/945",
+    "https://github.com/bartoostveen/ViTune/issues/1482",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1713"
+   ],
+   "code_hint": "In service/PlayerMediaBrowserService.kt:61, setCallback replaces PlayerService's SessionCallback, which breaks LIKE, LOOP, speed and stop for every controller. The browse service implements neither onSearch nor onPlayFromSearch. core/data CallValidator.kt:130-131 uses first{} and throws in onGetRoot."
+  },
+  {
+   "id": "content-region-language",
+   "theme": "Correct content language and region (hl/gl), plus a country selector",
+   "kind": "bug",
+   "area": "i18n",
+   "description": "Sync and search broke for device locales YouTube doesn't support (#90, 36 comments). The fix falls back to English, which turns off localized results. ru-RU isn't in the supported list, so Russian users get \"en\". Users want to choose the country for Discover and charts (#186) and a preferred song language for radio (ViMusic #1451).",
+   "popularity": 47,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/90",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/90",
+    "https://github.com/bartoostveen/ViTune/issues/186"
+   ],
+   "code_hint": "providers/innertube models/Context.kt:106-111: the hl list lacks ru-RU, so it falls back to en. ArtistPage.kt and RelatedPage.kt match English section titles, so parsing must stop depending on titles before results can be localized. Add hl/gl settings to DataPreferences."
+  },
+  {
+   "id": "audio-focus-bluetooth",
+   "theme": "Audio focus, pause at zero volume, and Bluetooth, headset and car controls",
+   "kind": "bug",
+   "area": "player",
+   "description": "Music pauses when the volume hits 0 or a notification arrives, and doesn't resume (#551, #642, ViMusic #722). Some users want this behavior (Metrolist #822 shipped pause-on-mute); others want a toggle. Users want an option to ignore audio focus so navigation prompts don't stop music (#376), and resume after brief interruptions with a correct paused state (ViMusic #584). Bluetooth auto-resume is unreliable (#89). Car head-unit and headset buttons are ignored or mapped wrong: Uconnect (#994), headphone double-press to skip, previous, play/pause lowering the volume (ViMusic #633).",
+   "popularity": 47,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/994",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/89",
+    "https://github.com/vfsfitvnm/ViMusic/issues/633",
+    "https://github.com/bartoostveen/ViTune/issues/642",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/551",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/376",
+    "https://github.com/vfsfitvnm/ViMusic/issues/584",
+    "https://github.com/MetrolistGroup/Metrolist/issues/822"
+   ],
+   "code_hint": "PlayerPreferences.stopOnMinimumVolume, handleAudioFocus and resumePlaybackWhenDeviceConnected. The AudioDeviceCallback is registered twice and never unregistered (PlayerService.kt:354, :376-378, :843-876). Media buttons go through SessionCallback (:1276-1303), which PlayerMediaBrowserService.kt:61 overrides."
+  },
+  {
+   "id": "battery-drain",
+   "theme": "Battery and CPU drain during playback and when idle",
+   "kind": "performance",
+   "area": "player",
+   "description": "Users report high battery and CPU use, even when idle (#67, 45 comments). Causes found upstream: expensive snapshotFlow calls in PlayerService, wavy seek bar redraws, and the queue list. It was mostly fixed in 2024, but battery drain is a common complaint worth guarding against.",
+   "popularity": 46,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/67",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/67"
+   ],
+   "code_hint": "Current CPU burners: PlayerService.kt:747-772, where SponsorBlock busy-loops (yield/continue) after the last segment until the track ends; the AlbumScreen.kt:72-124 network/DB loop; the endless MediaStore polling in HomeLocalSongs.kt; the Wavy seekbar (PlayerPreferences.seekBarStyle, wavySeekBarQuality); and core/ui Appearance.kt:46, which rebuilds Appearance on every recomposition."
+  },
+  {
+   "id": "row-swipe-actions",
+   "theme": "Swipe a song row to queue, play next or favorite",
+   "kind": "feature",
+   "area": "UI/theme",
+   "description": "Users want Spotify-style swipes on song rows instead of the long-press menu: swipe right to add to the queue or play next, swipe left to favorite (ViTune #233, 18, and #397, #377, #584, #53, #1083; ViMusic #143; Metrolist #207 shipped, plus InnerTune #963 and SimpMusic #333).",
+   "popularity": 44,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/233",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/233",
+    "https://github.com/vfsfitvnm/ViMusic/issues/143",
+    "https://github.com/MetrolistGroup/Metrolist/issues/207"
+   ],
+   "code_hint": "ui/items/SongItem.kt. ui/modifiers/Swiping.kt already provides onSwipe, used by AppearancePreferences.swipeToHideSong. Actions: enqueue and addNext in utils/Player.kt."
+  },
+  {
+   "id": "player-gestures",
+   "theme": "Player gestures: swipe to change track, swipe down to dismiss",
+   "kind": "ux",
+   "area": "player",
+   "description": "Users want to swipe left or right on the artwork or the mini-player for next and previous, and long-press next or previous to fast-seek (ViMusic #250, 28; #166, #1418). They want YouTube Music-style swipe down on the mini-player to dismiss and stop (ViMusic #51, 14 comments), and a tap that doesn't always open the full player (#1343).",
+   "popularity": 44,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/250",
+    "https://github.com/vfsfitvnm/ViMusic/issues/51"
+   ],
+   "code_hint": "The artwork already has onSwipe (ui/screens/player/Thumbnail.kt:137-141). The mini-player swipe is in Player.kt:200 (horizontalSwipeToClose); ui/components/BottomSheet.kt."
+  },
+  {
+   "id": "library-structure",
+   "theme": "Library structure: a first-class Liked Songs list and history kept apart from the library",
+   "kind": "ux",
+   "area": "library",
+   "description": "Every played song lands in the Songs library, which fills up with songs the user dislikes (#196). Users want the heart button to feed a first-class Liked Songs playlist at the center of the library (ViMusic #11, 21 comments; #767, #136). One proposal (#183) renames \"Songs\" to History, merges Quick Picks and Discover into one Home, and adds a Library tab for liked songs, artists, albums and playlists. Users also want liked songs listed per artist (ViMusic #1044).",
+   "popularity": 44,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/11",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/196",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/183",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1044"
+   ],
+   "code_hint": "Every play calls Database.insert(MediaItem) (Database.kt:728-767, from the resolver at PlayerService.kt:1438-1453), so the Songs tab (HomeSongs.kt) is really a history. Favorites is a built-in playlist based on Song.likedAt. Tabs are in HomeScreen.kt."
+  },
+  {
+   "id": "library-organization",
+   "theme": "Organize the library: reorder and pin playlists, reorder Favorites, folders, merge",
+   "kind": "feature",
+   "area": "playlists",
+   "description": "Users want to order Favorites and Offline by hand like their own playlists (#473, #401, #987, ViMusic #813), reorder and pin playlists and rearrange home and library sections (Metrolist #494, 16; InnerTune #1502), group playlists into folders, sub-playlists or tags (#863, Metrolist #1907, Kreate #192), and merge playlists (#1102, ViMusic #149).",
+   "popularity": 44,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/473",
+    "https://github.com/vfsfitvnm/ViMusic/issues/813",
+    "https://github.com/MetrolistGroup/Metrolist/issues/494",
+    "https://github.com/bartoostveen/ViTune/issues/863",
+    "https://github.com/bartoostveen/ViTune/issues/1102",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1907"
+   ],
+   "code_hint": "BuiltInPlaylistSongs.kt has no reorder. HomePlaylists.kt uses OrderPreferences.playlistSortBy; compose/reordering can do the dragging. The Playlist entity needs position and folder columns (Room version bump in Database.kt)."
+  },
+  {
+   "id": "slow-song-start",
+   "theme": "Songs take 15 seconds to a minute to start since the switch to yt-dlp",
+   "kind": "performance",
+   "area": "playback/streaming",
+   "description": "Since v1.1.6 bundled yt-dlp, songs take 15-60 s to start (#1089, about 29 reports: #1341, #1355, #1086, #1273, #1285, #1290, #1387). Users compare this directly with Metrolist, OuterTune and OpenTune (#1268, #1270, #1090). The next song in order starts instantly, but a jump to any other song is slow (#1298). The maintainer called the delay intentional. Users want the next queue item resolved and buffered in advance (Metrolist #3728).",
+   "popularity": 43,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1089",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1089",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1090",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1355",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1268",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1298",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1341",
+    "https://github.com/MetrolistGroup/Metrolist/issues/3728"
+   ],
+   "code_hint": "PlayerService.kt:1403-1421 blocks twice: runBlocking on Innertube.player (up to 4 clients, only for metadata), then a synchronous yt-dlp call through Chaquopy (Dependencies.runDownload, MainApplication.kt:582-584; download.py). Neither has a timeout. Fixes: prefetch the next item's URL into UriCache, run InnerTune and yt-dlp concurrently, try InnerTune first with yt-dlp as fallback."
+  },
+  {
+   "id": "multi-select",
+   "theme": "Multi-select and bulk actions on songs",
+   "kind": "feature",
+   "area": "library",
+   "description": "Users want to long-press to select many songs, then add them to a playlist or the queue, download, hide or delete them in one go (#325, #1299, #1094, #834, ViMusic #161; shipped in InnerTune as #695). Related asks: select all on an artist page (#410), bulk-add to Favorites for Spotify migrants (#588), and add a whole album to a playlist (ViMusic #1580, #303, #802).",
+   "popularity": 43,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/325",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1299",
+    "https://github.com/vfsfitvnm/ViMusic/issues/161",
+    "https://github.com/z-huang/InnerTune/issues/695",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1580"
+   ],
+   "code_hint": "None of the list screens (HomeSongs.kt, LocalPlaylistSongs.kt, AlbumSongs.kt, ArtistLocalSongs.kt) keeps any selection state. The \"Add queue to playlist\" action in MediaItemMenu.kt is a starting point for bulk add."
+  },
+  {
+   "id": "media-session-discoverability",
+   "theme": "Show up in KWGT, Maps driving mode and smartwatches; a Wear OS app",
+   "kind": "compat",
+   "area": "notifications",
+   "description": "Since the rebrand, KWGT and KLWP no longer detect the app as a music player (#297, #13; ViMusic #285). Google Maps driving mode and other surfaces don't list it either (ViMusic #619, #1141). Users want to browse and pick queue items from a watch's media controller (ViMusic #499, 20 comments), and a Wear OS app or tile (#1039, Metrolist #700).",
+   "popularity": 43,
+   "urls": [
+    "https://git.bartoostveen.nl/bart/ViTune/issues/297",
+    "https://github.com/vfsfitvnm/ViMusic/issues/619",
+    "https://github.com/vfsfitvnm/ViMusic/issues/499",
+    "https://github.com/bartoostveen/ViTune/issues/1039",
+    "https://github.com/MetrolistGroup/Metrolist/issues/700"
+   ],
+   "code_hint": "The app uses the framework android.media.session.MediaSession (PlayerService.kt:330) and syncs it by hand (:884-933). Moving to Media3 MediaSessionService or MediaLibraryService would expose the queue and browse tree to external controllers; see also PlayerMediaBrowserService.kt."
+  },
+  {
+   "id": "add-to-playlist-dialog",
+   "theme": "Add-to-playlist dialog: checkboxes, duplicate warning, confirmation, no crashes",
+   "kind": "ux",
+   "area": "playlists",
+   "description": "The dialog should check the playlists that already contain the song, let users add it to several at once, and remove it when unchecked (#735, #677, #832, Metrolist #1367). Users want a warning before adding a duplicate and a way to remove duplicates from a playlist, including different videoIds of the same track (ViMusic #635, #1971; Metrolist #4002; InnerTune #156). They also want a confirmation toast so a mis-tap is obvious (ViMusic #634). Adding to a playlist crashes the app (#890, #967).",
+   "popularity": 42,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/735",
+    "https://github.com/MetrolistGroup/Metrolist/issues/1367",
+    "https://github.com/vfsfitvnm/ViMusic/issues/635",
+    "https://github.com/vfsfitvnm/ViMusic/issues/634",
+    "https://github.com/MetrolistGroup/Metrolist/issues/4002",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/890"
+   ],
+   "code_hint": "The add-to-playlist flow is in ui/components/themed/MediaItemMenu.kt. SongPlaylistMap's composite primary key blocks the same videoId twice, but not two different videoIds of the same track."
+  },
+  {
+   "id": "sort-search-lists",
+   "theme": "Sort and search inside playlists, Favorites and offline songs",
+   "kind": "feature",
+   "area": "playlists",
+   "description": "Users want to sort playlists by name, artist, album and date added (#102, 16), and to search inside large (500+) and imported YouTube playlists (#44, #623, #990, #1101, #894). They also want to search playlist titles and Favorites, with A-Z sort and a fast scrollbar (ViMusic #624, #769, #1986), and to search offline or downloaded songs (#1056).",
+   "popularity": 40,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/102",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/102",
+    "https://github.com/bartoostveen/ViTune/issues/623",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/44",
+    "https://github.com/vfsfitvnm/ViMusic/issues/624",
+    "https://github.com/bartoostveen/ViTune/issues/1056"
+   ],
+   "code_hint": "Sort orders are OrderPreferences plus the core/data sort enums. Screens: LocalPlaylistSongs.kt, BuiltInPlaylistSongs.kt, PlaylistSongList.kt. DatabaseAccessor has a separate @Query for every sort combination (Database.kt:109-808); a query builder or in-memory filter would scale better."
+  },
+  {
+   "id": "ui-performance",
+   "theme": "UI performance: slow screen loads, janky scrolling, memory, broken layout after idle",
+   "kind": "performance",
+   "area": "UI/theme",
+   "description": "Since 1.0.9, launch shows a blank or incomplete UI for several seconds (#561). Opening and scrolling the radio or queue view jitters (#169, 20 comments). Long browsing sessions make the app lag and then freeze (ViMusic #1011, #1948). After hours in the background, the layout renders broken until the app is force-closed (#1379, #582).",
+   "popularity": 39,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1379",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1379",
+    "https://github.com/bartoostveen/ViTune/issues/561",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/561",
+    "https://github.com/bartoostveen/ViTune/issues/169",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/169",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1011"
+   ],
+   "code_hint": "core/ui Appearance.kt:46 passes vararg keys as one array, so Appearance is rebuilt on every recomposition. Also check the compose/persist PersistMap; LayoutWithAdaptiveThumbnail.kt:33-34 (movableContentOf without a key); the back stack as nested composition (RootRouter.kt:132-203) with state restored through rememberSaveable arrayOfNulls(4), relevant after process death; ui/screens/player/Queue.kt."
+  },
+  {
+   "id": "theme-fonts",
+   "theme": "Theme customization (custom accent, AMOLED toggle) and font bugs",
+   "kind": "ux",
+   "area": "UI/theme",
+   "description": "Users want a custom accent color beyond Dynamic and Material You (#626, #881, ViMusic #486, #26). They want simpler theme settings, with a separate AMOLED-black toggle that keeps dynamic colors (#143, #116, #142). The \"use system font\" setting has no effect (#146, 11), and fonts other than Poppins don't render bold (#1001).",
+   "popularity": 39,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/626",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/143",
+    "https://github.com/vfsfitvnm/ViMusic/issues/486",
+    "https://github.com/bartoostveen/ViTune/issues/1001",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1001",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/146"
+   ],
+   "code_hint": "core/ui ColorPalette.kt:161-173 accentColorOf (fixed #3e44ce, Dynamic or MaterialYou); Enums.kt ColorSource and Darkness; Typography.kt (Google Fonts with a Poppins fallback); AppearancePreferences.fontFamily."
+  },
+  {
+   "id": "equalizer-effects",
+   "theme": "Built-in equalizer and audio effects; fix bass boost; save speed and pitch",
+   "kind": "feature",
+   "area": "player",
+   "description": "The equalizer button only launches the system MusicFX panel. That panel is missing on Android 15 on a Nothing Phone (#816) and has no effect on some ROMs (#646, ViMusic #73). Users want a built-in multi-band equalizer with presets (#703; SimpMusic ships a 10-band EQ with AutoEq profiles) and more effects: reverb, tempo, bass, echo (#569, #1366). Enabling bass boost crashed the app until its data was cleared (#31). Users also want speed and pitch saved per song and a pitch slider in semitones (#307, #950, #999).",
+   "popularity": 39,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/816",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/816",
+    "https://github.com/bartoostveen/ViTune/issues/703",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/646",
+    "https://github.com/bartoostveen/ViTune/issues/569",
+    "https://github.com/vfsfitvnm/ViMusic/issues/73",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/31",
+    "https://github.com/bartoostveen/ViTune/issues/307",
+    "https://github.com/bartoostveen/ViTune/issues/999"
+   ],
+   "code_hint": "rememberEqualizerLauncher is used in PlayerSettings.kt:35 and Player.kt:603. BassBoost and PresetReverb are set up at PlayerService.kt:780-817. PlayerSettings.kt:146-156 saves the bass boost level as only 0 or 1, while setStrength expects 0-1000. Speed and pitch aren't applied after a cold start (PreferencesHolders.kt:43-58 with PlayerService.kt:370-383). Sonic is set up in createRendersFactory (:1081-1120)."
+  },
+  {
+   "id": "download-location",
+   "theme": "Choose where downloads are stored, including an SD card",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "description": "Users want downloads stored on a microSD card or in a folder they choose (#921, #1092, #545, #1091; ViMusic #384; Metrolist #264; InnerTune #1220, 14; ArchiveTune shipped it). The ViTune maintainer noted that Android can't put cache storage on an SD card, so this needs real downloads to user storage.",
+   "popularity": 39,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/921",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1092",
+    "https://github.com/vfsfitvnm/ViMusic/issues/384",
+    "https://github.com/MetrolistGroup/Metrolist/issues/264"
+   ],
+   "code_hint": "The cache location is fixed at cacheDir/exoplayer (PlayerService.kt:1339-1354). Add a new download store with a SAF or StorageVolume picker in ui/screens/settings/CacheSettings.kt."
+  },
+  {
+   "id": "discovery-new-releases",
+   "theme": "Explore: charts, new releases, and alerts for followed artists",
+   "kind": "feature",
+   "area": "notifications",
+   "description": "Users want new singles and albums from followed or library artists shown in a feed or pushed as notifications (#14, 8 comments, #310, #858; ViMusic #117; Metrolist #344, #1383, #2787). They also want a YouTube Music-style Explore page with charts by country, new releases and genres (ViMusic #36). SimpMusic and Echo ship charts.",
+   "popularity": 39,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/36",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://github.com/bartoostveen/ViTune/issues/14",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/14",
+    "https://github.com/vfsfitvnm/ViMusic/issues/117",
+    "https://github.com/MetrolistGroup/Metrolist/issues/344"
+   ],
+   "code_hint": "HomeDiscovery.kt shows new releases and moods (requests/DiscoverPage.kt). Artist.bookmarkedAt can stand in for follows. A periodic WorkManager worker like VersionCheckWorker could send the notifications. Charts need an Innertube browse for FEmusic_charts."
+  },
+  {
+   "id": "player-visuals",
+   "theme": "Modern player visuals: styles, blurred or ambient backgrounds, canvas, visualizer",
+   "kind": "ux",
+   "area": "UI/theme",
+   "description": "A 2026 community plea asks to bring the UI up to Metrolist's level (#1358). Users want several now-playing styles, such as current YT Music or Apple Music (Metrolist #493, 16), and frosted-glass or blurred artwork backgrounds (#905, #903, #1062, #1322 \"liquid glass\"). Competitors ship Spotify Canvas and animated artwork (SimpMusic, Echo, BitChord) and audio visualizers (ViMusic #779; Kreate, RiMusic).",
+   "popularity": 38,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/905",
+    "https://github.com/vfsfitvnm/ViMusic/issues/779",
+    "https://github.com/knighthat/Kreate#readme",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://github.com/MetrolistGroup/Metrolist/issues/493",
+    "https://github.com/bartoostveen/ViTune/issues/1358",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1358"
+   ],
+   "code_hint": "PlayerPreferences.playerLayout (Classic or New) is used in ui/screens/player/Player.kt. The dynamic palette is in core/ui ColorPalette. ui/components/MusicBars.kt."
+  },
+  {
+   "id": "offline-assets",
+   "theme": "Keep artwork and lyrics available offline",
+   "kind": "bug",
+   "area": "downloads/offline",
+   "description": "Cached songs show no artwork when offline (ViMusic #59, 16 comments). Playlist covers disappear about a week after a playlist is added because the image URLs expire and are never cached (#324). Users want lyrics fetched and stored together with downloads so they work offline (Metrolist #2596, InnerTune #1495, RiMusic #1455).",
+   "popularity": 38,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/59",
+    "https://github.com/MetrolistGroup/Metrolist/issues/2596",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/324"
+   ],
+   "code_hint": "The Coil disk cache is evictable (DataPreferences.coilDiskCacheMaxSize, 128 MB). Playlist thumbnails are stored as remote URLs. Lyrics are cached in Room through the chain in Lyrics.kt:209-233; PrecacheService should prefetch them and pin artwork on download."
+  },
+  {
+   "id": "voice-assistant",
+   "theme": "Google Assistant / Gemini voice control (\"play X on Melogold\")",
+   "kind": "feature",
+   "area": "android-auto",
+   "description": "Google Assistant only offers YouTube Music and Spotify (#537). Users want voice commands and an in-app voice search button (ViMusic #788, 11 reactions; #245; earbud assistant #1183), and MEDIA_PLAY_FROM_SEARCH handled from both the phone and the car assistant (OuterTune #45).",
+   "popularity": 37,
+   "urls": [
+    "https://git.bartoostveen.nl/bart/ViTune/issues/537",
+    "https://github.com/vfsfitvnm/ViMusic/issues/788",
+    "https://github.com/OuterTune/OuterTune/issues/45"
+   ],
+   "code_hint": "PLAY_FROM_SEARCH intents are handled at MainApplication.kt:371-389; because intent.extras is a copy, the intent is processed again after recreate(). Also needs onPlayFromSearch in both session callbacks and the matching AndroidManifest intent filters."
+  },
+  {
+   "id": "quick-picks-loading",
+   "theme": "Home / Quick Picks fails to load or stays empty",
+   "kind": "bug",
+   "area": "library",
+   "description": "Quick Picks shows only one song, shows \"an error has occurred\", or lazy-loads forever. Reports run from 2024 (#241) to Aug-Sep 2026 (#1471, #1479), plus 14 ViMusic issues (#414, #403). Users want cached content and a retry button on flaky networks (#332).",
+   "popularity": 37,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1479",
+    "https://github.com/bartoostveen/ViTune/issues/332",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/241",
+    "https://github.com/vfsfitvnm/ViMusic/issues/414"
+   ],
+   "code_hint": "ui/screens/home/HomeQuickPicks.kt. Innertube.relatedPage (requests/RelatedPage.kt) parses by position. DataPreferences.shouldCacheQuickPicks and cachedQuickPicks exist. ItemsPage.kt shows an endless shimmer with no retry."
+  },
+  {
+   "id": "playlist-album-details",
+   "theme": "Playlist and album details: custom cover, description, duration, release year",
+   "kind": "feature",
+   "area": "playlists",
+   "description": "Users want a custom playlist cover from their own image, plus a description (#592, #207, #664, #1276; InnerTube #1114; OuterTune #190; Kreate #557). They want total runtime on album and playlist headers and for the queue (ViMusic #85, #1174, #1599, #459), the album release year back, and artist albums sorted newest first (ViMusic #530, #1191).",
+   "popularity": 37,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/592",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/207",
+    "https://github.com/z-huang/InnerTune/issues/1114",
+    "https://github.com/vfsfitvnm/ViMusic/issues/85",
+    "https://github.com/vfsfitvnm/ViMusic/issues/530"
+   ],
+   "code_hint": "models/Playlist.kt has no cover or description columns (needs a migration to v31). Headers: ui/components/themed/PlaylistInfo.kt, Header.kt; ui/screens/album/AlbumScreen.kt."
+  },
+  {
+   "id": "large-screens-system-bars",
+   "theme": "Tablet and landscape layouts, and edge-to-edge system bars",
+   "kind": "ux",
+   "area": "UI/theme",
+   "description": "Scrolled content overlaps the status bar and becomes unreadable (ViMusic #532). The layout breaks when the Samsung nav bar is hidden, and the status-bar icon color is wrong (#1373, #996). The artist page breaks in landscape, and quick picks stretch across wide screens (ViMusic #1117, #469; SimpMusic #183; InnerTune #1083). Users also want an immersive full-screen player option (ViMusic #400).",
+   "popularity": 36,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/532",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1117",
+    "https://github.com/maxrave-dev/SimpMusic/issues/183",
+    "https://github.com/vfsfitvnm/ViMusic/issues/400"
+   ],
+   "code_hint": "utils/SystemBars.kt. In LayoutWithAdaptiveThumbnail.kt, movableContentOf has no key, so landscape artwork gets stuck. Also ArtistScreen.kt and PlayerPreferences.lyricsShowSystemBars."
+  },
+  {
+   "id": "export-audio-files",
+   "theme": "Export downloads as tagged audio files other apps can play",
+   "kind": "feature",
+   "area": "downloads/offline",
+   "description": "Users want downloads saved as real audio files with tags and embedded cover art, visible to other players and to backups (InnerTune #1167, 28; Metrolist #119, #925, #259; OuterTune #665). They also want to export songs already in the cache: one user has 1,700 cached songs, some already deleted from YouTube (#524, #724). The maintainer refused; Kreate and LastWave do it.",
+   "popularity": 35,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/524",
+    "https://github.com/z-huang/InnerTune/issues/1167"
+   ],
+   "code_hint": "SimpleCache stores chunks keyed by videoId (utils/CacheState.kt, PlayerService.kt:1339-1354). Exporting means reading through CacheDataSource into an .m4a or .opus container and writing tags. The Format table has the mime type and itag."
+  },
+  {
+   "id": "audio-only-toggle",
+   "theme": "Optional audio-only mode: hide video uploads and Shorts, prefer official audio",
+   "kind": "feature",
+   "area": "search",
+   "description": "Music videos include skits and dialogue, so some users want official audio tracks preferred (ViMusic #88, 14 comments; #542). Others want a toggle that removes video uploads and Shorts from search, home and the queue (Metrolist #781 shipped, #948; ArchiveTune #172; Echo). For Melogold this must be opt-in and off by default, because regular YouTube uploads are the uncensored source.",
+   "popularity": 35,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/88",
+    "https://github.com/MetrolistGroup/Metrolist/issues/781"
+   ],
+   "code_hint": "Search tabs use Innertube.SearchFilter in SearchResultScreen.kt. Filtering would also go in HomeQuickPicks and related-page results and in utils/YouTubeRadio.kt, behind a new DataPreferences flag."
+  },
+  {
+   "id": "lyrics-bugs",
+   "theme": "Lyrics bugs: crashes, stuck scrolling, broken encoding, censored text",
+   "kind": "bug",
+   "area": "lyrics",
+   "description": "Opening lyrics while a song is still loading crashes the app (#70, 13), and so does online lyrics search (#1023). Synced lyrics stop scrolling after switching apps and back (Forgejo #274). ViMusic reports (#1156 theme): KuGou synced lyrics censored or badly formatted, stray spaces after accented letters, broken umlauts, and no way to re-fetch after a failed sync (#221).",
+   "popularity": 34,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1023",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/274",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/70",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1156"
+   ],
+   "code_hint": "ui/screens/player/Lyrics.kt, LyricsDialog.kt, utils/SynchronizedLyrics.kt. providers/lrclib LrcLib.kt:151 uses substringBefore('#'), which cuts off any lyric line containing '#'. providers/kugou/KuGou.kt. An empty string cached in the Lyrics table means \"not found\" and blocks any re-fetch."
+  },
+  {
+   "id": "context-menus",
+   "theme": "Simplify the song context menu; add a long-press menu for playlists",
+   "kind": "ux",
+   "area": "UI/theme",
+   "description": "The song context menu is overwhelming and covers nearly the whole screen (#210, 26 comments). The proposal: group and nest items, rename \"Pre-cache\" to \"Download\", and drop the external Equalizer entry. Users also want to hide actions they don't need (#566), a long-press menu on playlist tiles with play, enqueue, rename, delete and share (ViMusic #226), and a search box for settings (Echo).",
+   "popularity": 34,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/210",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/210",
+    "https://github.com/vfsfitvnm/ViMusic/issues/226",
+    "https://github.com/EchoMusicApp/Echo-Music#readme"
+   ],
+   "code_hint": "ui/components/themed/MediaItemMenu.kt (about 700 lines). ui/components/Menu.kt:34 defines LocalMenuState but nothing provides it, so it acts as a process-wide singleton. ui/items/PlaylistItem.kt. Settings screens are built from SettingsCategoryScreen and SettingsGroup."
+  },
+  {
+   "id": "lyrics-providers",
+   "theme": "More lyrics sources with fallback, preference for synced lyrics, local .lrc files",
+   "kind": "feature",
+   "area": "lyrics",
+   "description": "Plain lyrics come only from YouTube and are often missing (#242). When synced lyrics are missing, the screen doesn't fall back to plain lyrics (#888, #1046). Users want Genius or Musixmatch (#256) and competitor-style fallback chains: LRCLIB, YTM timed lyrics, Netease, QQ, KuGou, BetterLyrics, Paxsenix (limusic, SimpMusic, Metrolist). They want timed lyrics chosen automatically over provider priority (Metrolist #3528, 14), and .lrc files next to local songs used as synced lyrics (#182). Coverage of Russian songs matters for Melogold.",
+   "popularity": 33,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/888",
+    "https://github.com/bartoostveen/ViTune/issues/256",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/242",
+    "https://github.com/SimoHypers/limusic#readme",
+    "https://github.com/MetrolistGroup/Metrolist/issues/3528",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/182"
+   ],
+   "code_hint": "The chain is in ui/screens/player/Lyrics.kt:209-233: plain lyrics from Innertube then LrcLib; synced lyrics from LrcLib, then LrcLib with the title cut at \"(\", then KuGou. Add new provider modules using the providers/lrclib template."
+  },
+  {
+   "id": "audio-quality-data-saver",
+   "theme": "Audio quality selector (Wi-Fi vs mobile), data saver, Premium and lossless",
+   "kind": "feature",
+   "area": "settings",
+   "description": "Users see no quality setting or indicator (#931, #1344, #1376, #1319). They want \"always max\" or FLAC (#1282, #664), separate quality caps for Wi-Fi and mobile data (BitChord, Harmony, Gyawun, Pear), and a data and memory saver with the lowest bitrate and small thumbnails (#111, ViMusic #60; about 400 MB per hour reported in #1317; Echo has one). Competitors unlock 256 kbps for YouTube Premium accounts (SimpMusic) and add pluggable lossless sources (BitChord modules).",
+   "popularity": 33,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/931",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1282",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/111",
+    "https://github.com/vfsfitvnm/ViMusic/issues/60",
+    "https://github.com/kushagrasinghx/BitChord#readme",
+    "https://github.com/EchoMusicApp/Echo-Music#readme",
+    "https://github.com/maxrave-dev/SimpMusic#readme"
+   ],
+   "code_hint": "download.py:5-10 hardcodes format 'bestaudio'. The Format table's itag and bitrate are shown in ui/screens/player/StatsForNerds.kt. AppearancePreferences.maxThumbnailSize exists. The resolver would need a metered-network check."
+  },
+  {
+   "id": "artwork-quality",
+   "theme": "Artwork: blurry, missing, wrong or cropped 16:9 thumbnails, including notification and lock screen",
+   "kind": "bug",
+   "area": "UI/theme",
+   "description": "A 2026 cluster reports tiny, blurry covers for new songs (#1373 and about 10 reports through Sep 2026). Covers are missing while playing (#522, #936, #1472). Notification and lock-screen artwork is oversized, wrong, missing or has the wrong aspect ratio (ViMusic #985, about 20 reports). YouTube video thumbnails appear cropped or 16:9 next to square covers, and users want consistent square or ambient artwork (#877, #369, #371). This matters for Melogold because regular YouTube videos have 16:9 thumbnails.",
+   "popularity": 33,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/985",
+    "https://github.com/bartoostveen/ViTune/issues/1373",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1373",
+    "https://github.com/bartoostveen/ViTune/issues/522",
+    "https://github.com/bartoostveen/ViTune/issues/877"
+   ],
+   "code_hint": "utils/Utils.kt:148-161 String.thumbnail(size) rewrites thumbnail URLs and likely broke when YouTube changed them. Also service/BitmapProvider.kt, AppearancePreferences.maxThumbnailSize and thumbnailRoundness, ui/items/VideoItem.kt."
+  },
+  {
+   "id": "sleep-timer",
+   "theme": "Sleep timer: finish the current song, stop after N songs, fade out",
+   "kind": "feature",
+   "area": "player",
+   "description": "Users want the sleep timer to let the current song finish instead of cutting it off mid-track (#550; ViMusic #839, 18 reactions; #1606). They also want a stop after N songs (#1328), a gradual volume fade (ViMusic #637) and arbitrary durations (#156).",
+   "popularity": 31,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/550",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/550",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1328",
+    "https://github.com/vfsfitvnm/ViMusic/issues/839"
+   ],
+   "code_hint": "The sleep timer dialog is in ui/components/themed/MediaItemMenu.kt:548-682. The service side is binder.sleepTimerMillisLeft and utils/TimerJob.kt in PlayerService."
+  },
+  {
+   "id": "migration-export",
+   "theme": "Migrate from ViMusic/ViTune forks and export the library in open formats",
+   "kind": "feature",
+   "area": "sync/import",
+   "description": "ViMusic and ViTune are abandoned (ViMusic #1492: \"THIS APP IS DEAD, use a fork\"; ViTune issues are auto-closed), and users hesitate to switch because their library is locked in. Backups can't be restored across forks (#141, #193, #591, #185). One user documented opening the backup in DB Browser for SQLite and extracting the Song table to rebuild a YT Music playlist (#1199). Users also want to export and import playlists as JSON, CSV or M3U without a full DB restore (#889, #407, #870, Metrolist #870). Opportunity for Melogold: one-tap import of ViMusic, ViTune and RiMusic backups into a Melogold account.",
+   "popularity": 31,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/141",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/591",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1492",
+    "https://github.com/bartoostveen/ViTune/issues/1199",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1199",
+    "https://github.com/bartoostveen/ViTune/issues/889",
+    "https://github.com/MetrolistGroup/Metrolist/issues/870"
+   ],
+   "code_hint": "Database.kt schema v30 (Song, Playlist, SongPlaylistMap, Event). Restore lives in ui/screens/settings/DatabaseSettings.kt. A new importer should open the foreign SQLite file read-only and map its tables; export through SAF."
+  },
+  {
+   "id": "skip-on-error",
+   "theme": "Retry before skipping, and skip unavailable songs automatically",
+   "kind": "bug",
+   "area": "playback/streaming",
+   "description": "Skipping quickly triggers \"video ID doesn't match\" errors that the player can't recover from (#477, 16). Auto-skip on error then races through the whole queue, so users want a short delay or retry first (#507, #483). The opposite also happens: with the screen off, playback silently stops on a deleted or private song. Users want such songs skipped automatically and unavailable videos marked in imported playlists (ViMusic #577, #992, #1095).",
+   "popularity": 29,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/477",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/477",
+    "https://github.com/vfsfitvnm/ViMusic/issues/577"
+   ],
+   "code_hint": "PlayerPreferences.skipOnError and PlayerService's onPlayerError handling. service/PlaybackExceptions.kt should separate permanently unavailable from transient errors. Each skip does a runBlocking resolve (:1403-1421), so rapid skips pile up extractions; cancel the stale ones."
+  },
+  {
+   "id": "melogold-accounts-sync",
+   "theme": "Own account with cross-device sync of library, playlists, history and settings",
+   "kind": "feature",
+   "area": "sync/import",
+   "description": "Users want to sign up and sign in so settings, history, playlists and library survive reinstalls and follow them across devices (#1106, #478, #985 via Google Drive, #605; ViMusic #211 phone plus tablet, #1799). There is no way to move a self-made playlist to another phone except re-adding songs one by one (#1399, Aug 2026). Every maintainer declined. This is exactly Melogold's differentiator: accounts, metadata-only sync and QR device linking.",
+   "popularity": 28,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/985",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1106",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/478",
+    "https://github.com/bartoostveen/ViTune/issues/1399",
+    "https://github.com/vfsfitvnm/ViMusic/issues/211"
+   ],
+   "code_hint": "Needs a sync layer over Room: add updatedAt and tombstones to Song, Playlist, SongPlaylistMap and Event (Database.kt, Room v31+). Preferences live in the SharedPreferences file \"preferences\" (MainApplication.kt:601). Use WorkManager for background sync and add a settings tab in SettingsScreen.kt:77-96, replacing or extending SyncSettings.kt."
+  },
+  {
+   "id": "desktop-app",
+   "theme": "Desktop client (Linux, Windows) with the library synced to the phone",
+   "kind": "feature",
+   "area": "other",
+   "description": "Users asked for a desktop app, preferably for Linux, with the library synced to the phone (#190, 17 comments; #897 Windows; #282; ViMusic #268 desktop and UWP). The discussion noted that ViTune's code is too tied to its UI for Kotlin Multiplatform. Melogold already ships macOS, Windows and Linux clients (iOS is out of scope), so the task is parity: sync, and playback including regular YouTube videos.",
+   "popularity": 28,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/190",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/190",
+    "https://github.com/vfsfitvnm/ViMusic/issues/268"
+   ],
+   "code_hint": "The desktop clients live outside melogoldAndroid. providers/* (innertube, lrclib, kugou) are plain Kotlin/JVM modules that desktop code could reuse."
+  },
+  {
+   "id": "cache-control",
+   "theme": "Control automatic caching, cache size and clearing",
+   "kind": "feature",
+   "area": "settings",
+   "description": "Users want to play without caching everything automatically (#205, #453, #559; ViMusic #479, 10 comments), cache only on demand or only on Wi-Fi (#156, #264), keep only the last N tracks (#1546), and clear the song and image caches by hand (#175, #723 Murglar-style management). Low-storage phones need finer cache sizes between 32 MB and 512 MB (ViMusic #1206).",
+   "popularity": 28,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/205",
+    "https://github.com/vfsfitvnm/ViMusic/issues/479",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/175",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1206"
+   ],
+   "code_hint": "ui/screens/settings/CacheSettings.kt; cache size enums in core/data (ExoPlayerDiskCacheSize, CoilDiskCacheSize); PlayerPreferences.pauseCache; ConditionalCacheDataSourceFactory in utils/CacheState.kt."
+  },
+  {
+   "id": "offline-playback-network",
+   "theme": "Cached songs must play offline without touching the network; an offline mode switch",
+   "kind": "bug",
+   "area": "downloads/offline",
+   "description": "Songs that are 100% cached fail with playback errors on a poor connection (ViMusic #1053) or after a backup restore (#1114). Offline playback stops halfway (#1730), and fully played songs are missing from Offline (#1572, #1611). Users want an offline-mode switch that stops all network fetching on limited data and skips unavailable songs (#244, #276).",
+   "popularity": 26,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/1053",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/244"
+   ],
+   "code_hint": "The fast path at PlayerService.kt:1384-1396 requires the next full 512 KiB to be cached, so the tail of a cached track still hits the network, and a miss triggers runBlocking Innertube.player. An offline flag in DataPreferences should gate the resolver and all network calls."
+  },
+  {
+   "id": "desktop-os-integration",
+   "theme": "Desktop OS integration: media keys (MPRIS/SMTC), tray, mini-player, output device, shortcuts, remote control",
+   "kind": "feature",
+   "area": "other",
+   "description": "limusic and Pear set the expectations for desktop: MPRIS on Linux, SMTC on Windows, taskbar thumbnail buttons, a system tray with close-to-tray, and start on login. Users also want a floating, always-on-top mini-player (Pear #214, 11; #1312), a choice of audio output device (Pear #164, 9), keyboard shortcuts and global hotkeys, and a local API for remote control (Pear). One ViTune user asked for a VLC-style web UI to control playback from another device (#717).",
+   "popularity": 26,
+   "urls": [
+    "https://github.com/SimoHypers/limusic#readme",
+    "https://github.com/pear-devs/pear-desktop/issues/164",
+    "https://github.com/pear-devs/pear-desktop/issues/214",
+    "https://github.com/pear-devs/pear-desktop#readme",
+    "https://github.com/bartoostveen/ViTune/issues/717"
+   ],
+   "code_hint": "This belongs in the desktop clients. For controlling the phone from another device, PlayerService.Binder commands could be relayed through the Melogold server, reusing the existing device linking."
+  },
+  {
+   "id": "long-form-navigation",
+   "theme": "Navigate long videos, mixes and live sets: precise seek, ±10 s, chapters, A-B loop",
+   "kind": "feature",
+   "area": "player",
+   "description": "Seeking precisely in 1-2 hour live shows is impossible. Users want ±10 s buttons, finer seeking and rewind from media controls (#337), YouTube-style double-tap to seek (ViMusic #658, #70), chapters built from the timestamps in a video description for mixes, compilations and live sets (#273, declined upstream because the YTM API has no descriptions), and an A-B loop (ViMusic #622, #782). This is core to Melogold's regular-YouTube use: live recordings and full-album uploads.",
+   "popularity": 24,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/337",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/337",
+    "https://github.com/vfsfitvnm/ViMusic/issues/658",
+    "https://github.com/bartoostveen/ViTune/issues/273",
+    "https://github.com/vfsfitvnm/ViMusic/issues/622"
+   ],
+   "code_hint": "ui/components/SeekBar.kt and ui/screens/player/Controls.kt. Chapters need either the YouTube WEB next endpoint (description and macroMarkers) in providers/innertube (NextPage.kt) or yt-dlp's 'chapters' field (download.py into YouTubeDLResponse.kt)."
+  },
+  {
+   "id": "fast-updates-extractor",
+   "theme": "Ship fixes fast: self-update the app and the extractor, and show versions",
+   "kind": "feature",
+   "area": "updates",
+   "description": "The bundled yt-dlp doesn't update itself, so each YouTube change breaks playback until a new APK ships (#1204, #1156). The in-app \"Upgrade yt-dlp\" always reports success and the installed version isn't shown, so users can't tell whether it worked (#1215). Songs break some time after each update and work again after the next (#1296). Sideload users want in-app update checks and installs (ViMusic #589, #7, #48, #142, #282). Melogold's GitHub Releases self-update covers the app; the extractor needs its own update channel.",
+   "popularity": 24,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1204",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1204",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1215",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1296",
+    "https://github.com/vfsfitvnm/ViMusic/issues/589"
+   ],
+   "code_hint": "download.py:13-28 and MainApplication.kt:586-592: the upgrade swallows exceptions, and the f-string at :19 has a stray '$'. app/build.gradle.kts:171-180 leaves yt-dlp unpinned ('>='). Update checks: providers/github, About.kt:63-64 and :146-164 (REPO_OWNER hardcoded to upstream), VersionCheckWorker; DataPreferences.versionCheckPeriod defaults to Off."
+  },
+  {
+   "id": "bulk-download-reliability",
+   "theme": "Whole-playlist downloads stall; long tracks get stuck at 97-99%",
+   "kind": "bug",
+   "area": "downloads/offline",
+   "description": "Downloading a whole playlist stalls after a few songs (#901, #676, #570, #491). The download button sometimes does nothing until the app is force-closed (#128). Playlist downloads fail with errors, and the notification shows the previous song's artwork (#710). Long tracks (1 h+) pre-cache very slowly or stick at 97-99% because of throttling; the reporter suggests solving the n-parameter and downloading in proper chunks (#277, #80, #290).",
+   "popularity": 24,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/901",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/710",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/128",
+    "https://github.com/bartoostveen/ViTune/issues/277"
+   ],
+   "code_hint": "service/PrecacheService.kt calls toast() on a pool thread with no Looper, which throws (:155, :268), and shares the player's cache through the binder (:141-204). The resolver runs again for every 512 KiB chunk (PlayerService.kt:1455-1463). Notifications: service/ServiceNotifications.kt."
+  },
+  {
+   "id": "video-playback",
+   "theme": "Watch the video: audio/video toggle and background video",
+   "kind": "feature",
+   "area": "player",
+   "description": "Users want to watch music videos and regular YouTube videos in the app, switch between audio and video in place of the artwork, and keep video playing in the background or PiP (#240, #291, #1279, #827; ViMusic #558; InnerTube #1597). ViTune refused to stay music-only. SimpMusic (up to 1080p with subtitles), Echo, RiMusic, limusic and Metrolist (#1831) have video. Since regular YouTube videos are first-class in Melogold, a video surface follows naturally.",
+   "popularity": 23,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/240",
+    "https://github.com/vfsfitvnm/ViMusic/issues/558",
+    "https://github.com/z-huang/InnerTube/issues/1597"
+   ],
+   "code_hint": "download.py requests 'bestaudio' only; video needs a video+audio format or a DASH merge through MergingMediaSource. ExoPlayer already runs in PlayerService; add a PlayerView or SurfaceView in ui/screens/player/Thumbnail.kt. PiP already exists (utils/PIP.kt)."
+  },
+  {
+   "id": "youtube-links-share-target",
+   "theme": "Open any YouTube link and appear in the share sheet",
+   "kind": "feature",
+   "area": "other",
+   "description": "Users want the app in the Android share menu and able to open youtube.com, youtu.be, m.youtube.com and music.youtube.com links (ViMusic #553 with 18 comments, #433, #22, #1190, #1844, #897, #1734). Shazam's \"Open in YouTube Music\" uses search?q= links (ViMusic #372), and some want autoplay from intents or Tasker (#321). This matters for Melogold's regular-YouTube use: shared video, Shorts, live and @handle links should just play.",
+   "popularity": 22,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/553",
+    "https://github.com/vfsfitvnm/ViMusic/issues/372"
+   ],
+   "code_hint": "AndroidManifest.xml:90-167 handles watch, youtu.be, playlist, channel and search links, but not /shorts, /live, /@handle or /browse/MPRE…; see handleUrl in MainApplication.kt:452-510. The SEND intent is processed again after recreate() because extras is a copy (:371-389)."
+  },
+  {
+   "id": "search-improvements",
+   "theme": "Richer, reliable search, plus music recognition",
+   "kind": "feature",
+   "area": "search",
+   "description": "The second search does nothing until the app restarts (#681, #866, #899, #607). Users want song and artist results inside the suggestions and a Top results tab (ViMusic #685, #1605), trending searches (#693), featured and community playlists for genre queries like \"pop\" (#78), and a working Enter key on external keyboards (#1432). They also want Shazam-style recognition of music playing nearby (#957); Metrolist, Echo and ArchiveTune ship it.",
+   "popularity": 22,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/681",
+    "https://github.com/vfsfitvnm/ViMusic/issues/685",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/78",
+    "https://github.com/bartoostveen/ViTune/issues/957",
+    "https://github.com/MetrolistGroup/Metrolist#readme"
+   ],
+   "code_hint": "ui/screens/search/OnlineSearch.kt and SearchScreen.kt; SearchResultScreen.kt tabs; providers/innertube SearchSuggestions.kt and SearchPage.kt; the ItemsPage.kt pagination bugs."
+  },
+  {
+   "id": "queue-management",
+   "theme": "Queue management: play next, a user queue separate from autoplay, multiple saved queues",
+   "kind": "feature",
+   "area": "player",
+   "description": "Users want manually added songs kept in the order they were added and separate from the auto queue (ViMusic #796), \"play next\" for whole albums (#506, #539), a queue filter (#1058), one action to save the queue as a playlist (ViMusic #374), and multiple named queues (#1008; OuterTune ships this; Metrolist #277).",
+   "popularity": 22,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1008",
+    "https://github.com/OuterTune/OuterTune#readme",
+    "https://github.com/vfsfitvnm/ViMusic/issues/796",
+    "https://github.com/vfsfitvnm/ViMusic/issues/374"
+   ],
+   "code_hint": "ui/screens/player/Queue.kt; addNext and enqueue in utils/Player.kt. QueuedMediaItem persistence (PlayerService.kt:587-649) supports only one queue."
+  },
+  {
+   "id": "lyrics-translation",
+   "theme": "Lyrics translation and romanization",
+   "kind": "feature",
+   "area": "lyrics",
+   "description": "Users want lyrics translated in the app (#208, 8 comments; #92, #296; Russian users in #938/#939) and romanization for Japanese, Korean, Chinese, Cyrillic and other scripts (ViMusic #274; SimpMusic supports 12 languages; OuterTune #649). They want the original line kept under the translation (ArchiveTune #741). Metrolist #2934 proposes a server-side cache of shared translations to avoid repeated API calls, which fits Melogold's backend.",
+   "popularity": 22,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/208",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/208",
+    "https://github.com/vfsfitvnm/ViMusic/issues/274",
+    "https://github.com/MetrolistGroup/Metrolist#readme",
+    "https://github.com/maxrave-dev/SimpMusic#readme",
+    "https://github.com/MetrolistGroup/Metrolist/issues/2934"
+   ],
+   "code_hint": "providers/translate (a Google Translate client=gtx wrapper) is already a dependency (app/build.gradle.kts:236) but is never called. Render translations in ui/screens/player/Lyrics.kt."
+  },
+  {
+   "id": "device-compat",
+   "theme": "Device compatibility: Android 15 launch crash, 32-bit and old phones",
+   "kind": "compat",
+   "area": "other",
+   "description": "The app crashes on launch on Android 15, including custom ROMs, with \"cannot use a recycled source in createBitmap\" coming from MediaMetadata artwork (#655, #1027, #702, #751, #946; still present in 1.1.5). 32-bit armeabi-v7a phones are stuck on v1.1.5 because the bundled yt-dlp/Python has no 32-bit build (#1264). Older phones load songs and then fail with an unknown error (#1196).",
+   "popularity": 22,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1264",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1264",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1196",
+    "https://github.com/bartoostveen/ViTune/issues/655",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/655",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1027"
+   ],
+   "code_hint": "service/BitmapProvider.kt and the MediaMetadata code at PlayerService.kt:884-933 should pass bitmap copies, not recycled bitmaps. app/build.gradle.kts:18 limits ABIs to arm64-v8a and x86_64; 32-bit would need Chaquopy 32-bit support or an extractor fallback that doesn't use Python."
+  },
+  {
+   "id": "regular-youtube-content",
+   "theme": "First-class regular YouTube: video search, channels, age-restricted videos, podcasts",
+   "kind": "feature",
+   "area": "search",
+   "description": "The Videos search tab loads forever or shows nothing (ViMusic #1324, #1313, #1442, #1517, #1873, #1876, #1913). Users want to play a channel's uploads and an artist's videos (ViMusic #263, #590), YouTube podcasts (#576, #260, ViMusic #785; SimpMusic, Echo, Gyawun and Metrolist ship them), and a clear message for age-restricted videos instead of a generic error, ideally with working playback (#492). This is Melogold's core priority. Tracks removed from Apple Music after the 2026 censorship survive on YouTube as re-uploads, covers and live recordings. So full YouTube search, channel pages and non-music uploads must be first-class, not only the YTM catalogue's music videos.",
+   "popularity": 21,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/1324",
+    "https://github.com/vfsfitvnm/ViMusic/issues/590",
+    "https://github.com/bartoostveen/ViTune/issues/492",
+    "https://github.com/bartoostveen/ViTune/issues/576",
+    "https://github.com/maxrave-dev/SimpMusic#readme"
+   ],
+   "code_hint": "The Videos tab (SearchResultScreen.kt:83-87, :206) uses Innertube.SearchFilter.Video on the YTM (WEB_REMIX) endpoint, which only covers the YTM catalogue. Add a YouTube WEB client for search and channel browse (www.youtube.com/youtubei/v1/search) in providers/innertube models/Context.kt plus requests/. Also ui/items/VideoItem.kt, and handleUrl for /@handle channel links."
+  },
+  {
+   "id": "loudness-normalization",
+   "theme": "Loudness normalization compresses audio; volume jumps",
+   "kind": "bug",
+   "area": "player",
+   "description": "Loudness normalization via LoudnessEnhancer audibly compresses the dynamic range even at 0 gain, instead of applying a fixed gain per track (#444, 7 comments). ViMusic reports (#1618 theme): volume changes when the screen turns off, drops after each track change, levels even with the option off, jumps to maximum, or is quieter than other apps. Users want a custom normalization target and per-song volume (#568, #1386).",
+   "popularity": 21,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/444",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/444",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1618"
+   ],
+   "code_hint": "PlayerService.kt:651-701 drives LoudnessEnhancer from Format.loudnessDb plus the per-song loudnessBoost. Settings: PlayerPreferences.volumeNormalization and volumeNormalizationBaseGain. A gain AudioProcessor in createRendersFactory would avoid LoudnessEnhancer's compression."
+  },
+  {
+   "id": "metadata-editing",
+   "theme": "Edit title, artist, album and cover, especially for YouTube video tracks",
+   "kind": "feature",
+   "area": "library",
+   "description": "YouTube videos and local files often have messy names. Users want to rename tracks and to crop or replace the 16:9 thumbnail with a custom square cover stored locally (#533, #308, #616; ViMusic #761, #759, #41). This is essential for Melogold's regular-YouTube sourcing, where re-uploads carry titles like \"Artist - Song (live) [HD]\".",
+   "popularity": 20,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/533",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/533",
+    "https://github.com/vfsfitvnm/ViMusic/issues/761"
+   ],
+   "code_hint": "Database.insert(MediaItem) is INSERT OR IGNORE and never updates metadata (Database.kt:728-767), so edits need override columns on Song, synced through the Melogold server. Add the entry point in MediaItemMenu.kt."
+  },
+  {
+   "id": "smart-playlists",
+   "theme": "Smart and auto-generated playlists",
+   "kind": "feature",
+   "area": "playlists",
+   "description": "Users want rule-based smart playlists (#6, declined upstream because YT Music exposes too little metadata) and generated mixes such as most played, taste mixes and mood radios built from history (RiMusic #79, shipped; LastWave is built around a playlist generator).",
+   "popularity": 17,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/6",
+    "https://github.com/fast4x/RiMusic/issues/79"
+   ],
+   "code_hint": "The built-in playlists (Favorites, Offline, Top, History) in ui/screens/builtinplaylist/ are the pattern to follow, with queries over Event and Song in DatabaseAccessor."
+  },
+  {
+   "id": "proxy-geoblock",
+   "theme": "Built-in proxy and handling of region blocks (works alongside VPNs)",
+   "kind": "feature",
+   "area": "playback/streaming",
+   "description": "Users hit region-blocked songs (#1068; #1059 asks for a built-in proxy; the maintainer replied \"That's called using a proxy\"). Playback fails on VPN, and search returns nothing on mobile data (ViMusic #1003, #1880). In Bangladesh the app doesn't load at all without a VPN (#472). Users ask for HTTP/SOCKS proxy settings (SimpMusic #382, ViMusic #137, #329), Invidious or Piped backends (#16) and Tor (#248). A Russian user in #499 noted that YouTube is blocked in Russia, so nothing works without a proxy or VPN; competitor READMEs also say a VPN is required there. This is Melogold's core audience: the app needs an in-app proxy that covers InnerTube/Ktor, yt-dlp and ExoPlayer, and possibly a server-assisted relay.",
+   "popularity": 16,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1068",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1003",
+    "https://github.com/maxrave-dev/SimpMusic/issues/382"
+   ],
+   "code_hint": "Innertube.kt:53-93 uses a Ktor OkHttp engine where a proxy can be set; the other providers use CIO. ExoPlayer's upstream is Context.defaultDataSource in utils/ExoPlayer.kt:185. yt-dlp takes a 'proxy' option in download.py:5-10. Add a proxy setting to DataPreferences."
+  },
+  {
+   "id": "privacy-incognito",
+   "theme": "Privacy: incognito mode and history controls",
+   "kind": "feature",
+   "area": "settings",
+   "description": "Users want search history not saved or shown (ViMusic #324, 10 reactions; ViTune already has \"pause search history\"; a clear-history button #682). They also want an incognito mode where plays aren't recorded in history, stats or recommendations, for example when playing music for others (ViMusic #703). With Melogold sync, incognito plays must not sync either.",
+   "popularity": 15,
+   "urls": [
+    "https://github.com/vfsfitvnm/ViMusic/issues/324",
+    "https://github.com/vfsfitvnm/ViMusic/issues/703"
+   ],
+   "code_hint": "DataPreferences.pauseHistory, pausePlaytime and pauseSearchHistory already exist; expose them as one quick incognito toggle in the player. Plays are recorded as Events at PlayerService.kt:461-491."
+  },
+  {
+   "id": "listen-together",
+   "theme": "Listen together / Jam rooms",
+   "kind": "feature",
+   "area": "other",
+   "description": "Users want private listening sessions, joined by link or room code, so friends far apart hear the same music in sync (#1075 \"couple mode\", #1293 party mode, #666; ViMusic #1641, #434). Metrolist runs its own server for this (metroserver), and Echo, limusic, Muzza and Velune ship rooms. It builds naturally on Melogold's accounts and server.",
+   "popularity": 9,
+   "urls": [
+    "https://github.com/bartoostveen/ViTune/issues/1075",
+    "https://git.bartoostveen.nl/bart/ViTune/issues/1293",
+    "https://github.com/vfsfitvnm/ViMusic/issues/1641",
+    "https://github.com/MetrolistGroup/Metrolist#readme"
+   ],
+   "code_hint": "Needs room state on the server plus position and queue sync through PlayerService.Binder. The QR device-linking flow could reuse room codes."
+  }
+ ]
+}
