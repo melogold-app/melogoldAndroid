@@ -2,12 +2,15 @@ package app.melogold.android
 
 import android.app.Application
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.media3.datasource.cache.Cache
 import app.melogold.android.data.NetworkMonitor
+import app.melogold.android.data.cache.CachedTracks
 import app.melogold.android.data.downloads.Downloads
 import app.melogold.android.data.downloads.FileExport
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
+import app.melogold.android.service.PlayerService
 import app.melogold.android.sync.Account
 import app.melogold.android.sync.SyncEngine
 import app.melogold.android.update.AppUpdater
@@ -28,8 +31,17 @@ class AppContainer(private val application: Application) {
     /** Deletions waiting for "Undo" (REWRITE §3.11.9), written in [appScope]. */
     val pendingMutations by lazy { PendingMutationStore(scope = appScope) }
 
+    /**
+     * The cache of what plays (tasks/0001-audio-cache.md): every played track, the oldest go first. One for the app:
+     * the player writes it, downloads copy from it, screens count what it holds whole.
+     */
+    val playerCache: Cache by lazy { PlayerService.createCache(application) }
+
+    /** The tracks [playerCache] holds whole: "available offline". */
+    val cachedTracks by lazy { CachedTracks(cache = { playerCache }, scope = appScope) }
+
     /** Real downloads (REWRITE §4.7); first reached on the main thread (see [MainApplication]). */
-    val downloads by lazy { Downloads(application, appScope) }
+    val downloads by lazy { Downloads(application, appScope, playerCache = { playerCache }) }
 
     /** "Save as file" into Music/Melogold. */
     val fileExport by lazy { FileExport(application, downloads) }

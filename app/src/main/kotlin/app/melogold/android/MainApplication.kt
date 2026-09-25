@@ -425,6 +425,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
 
         // The library follows the account on the Melogold server while signed in
         container.sync.start()
+        // What the cache holds whole: "available offline" in the lists (tasks/0001-audio-cache.md)
+        container.cachedTracks.refresh()
 
         // Once: lyrics that were not found are searched again with the better chain (2026-09-25)
         val migrations = getSharedPreferences("melogold_migrations", MODE_PRIVATE)

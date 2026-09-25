@@ -19,6 +19,9 @@
     <string name="download_failure_storage">Нет места</string>
     <string name="download_failure_unknown">Не удалось скачать</string>
     <string name="download_completed">Скачано</string>
+    <string name="download_cached">Есть без сети (в кэше)</string>
+    <string name="downloads_cached">В кэше (%1$d)</string>
+    <string name="downloads_cached_note">Играют без сети, пока их не сменят новые треки. ⋮ › Скачать оставит трек насовсем — сразу и без сети.</string>
     <string name="download_removed">Загрузка удалена</string>
 
     <!-- Save as file -->

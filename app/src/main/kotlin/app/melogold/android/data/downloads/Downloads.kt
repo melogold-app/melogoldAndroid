@@ -69,7 +69,12 @@ private const val PROGRESS_INTERVAL_MS = 1_000L
  *
  * Created on the main thread: the manager lives on the thread that creates it.
  */
-class Downloads(private val context: Context, private val scope: CoroutineScope) {
+class Downloads(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    /** The player's cache, where a track played whole is copied from. */
+    playerCache: () -> Cache
+) {
     private val databaseProvider = StandaloneDatabaseProvider(context)
     private val main = Handler(Looper.getMainLooper())
     private var progressJob: Job? = null
@@ -85,7 +90,14 @@ class Downloads(private val context: Context, private val scope: CoroutineScope)
             CacheDataSource.Factory()
                 .setCache(cache)
                 .setUpstreamDataSourceFactory(
-                    PlayerService.createYouTubeDataSourceResolverFactory(context = context, cache = null, chunkLength = null)
+                    // What the player cached is copied from there, read only: a track played whole downloads at
+                    // once and without a network (tasks/0001-audio-cache.md)
+                    CacheDataSource.Factory()
+                        .setCache(playerCache())
+                        .setCacheWriteDataSinkFactory(null)
+                        .setUpstreamDataSourceFactory(
+                            PlayerService.createYouTubeDataSourceResolverFactory(context = context, cache = null, chunkLength = null)
+                        )
                 ),
             Executors.newFixedThreadPool(MAX_PARALLEL)
         )

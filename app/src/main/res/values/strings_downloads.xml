@@ -19,6 +19,9 @@
     <string name="download_failure_storage">No space left</string>
     <string name="download_failure_unknown">Couldn\'t download</string>
     <string name="download_completed">Downloaded</string>
+    <string name="download_cached">Available offline (in the cache)</string>
+    <string name="downloads_cached">In the cache (%1$d)</string>
+    <string name="downloads_cached_note">They play without a network until newer tracks replace them. ⋮ › Download keeps one for good, at once and without a network.</string>
     <string name="download_removed">Download removed</string>
 
     <!-- Save as file -->

@@ -1173,6 +1173,9 @@ interface DatabaseAccessor {
     @Query("SELECT contentLength FROM Format WHERE songId = :songId")
     fun contentLengthNow(songId: String): Long?
 
+    @Query("SELECT * FROM Song WHERE id IN (:ids)")
+    fun songsNow(ids: List<String>): List<Song>
+
     @Query("SELECT COUNT(*) FROM HistoryForget")
     fun historyForgetCount(): Flow<Int>
 

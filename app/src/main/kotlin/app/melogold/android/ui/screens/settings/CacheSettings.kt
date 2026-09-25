@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.utils.formatSize
@@ -45,7 +44,6 @@ import coil3.imageLoader
 @Composable
 fun CacheSettings() = with(DataPreferences) {
     val context = LocalContext.current
-    val binder = LocalPlayerServiceBinder.current
     val imageCache = remember(context) { context.imageLoader.diskCache }
     val unlimited = stringResource(R.string.settings_cache_unlimited)
 
@@ -81,7 +79,7 @@ fun CacheSettings() = with(DataPreferences) {
             }
         }
 
-        binder?.cache?.let { cache ->
+        LocalAppContainer.current.playerCache.let { cache ->
             val diskCacheSize by remember { derivedStateOf { cache.cacheSpace } }
             val limited = exoPlayerDiskCacheMaxSize != ExoPlayerDiskCacheSize.Unlimited
             val fraction = diskCacheSize.toFloat() / exoPlayerDiskCacheMaxSize.bytes.coerceAtLeast(1)

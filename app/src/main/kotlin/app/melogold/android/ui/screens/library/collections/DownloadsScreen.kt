@@ -2,6 +2,7 @@ package app.melogold.android.ui.screens.library.collections
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,15 +30,19 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.melogold.android.Database
+import app.melogold.android.Dependencies
 import app.melogold.android.LocalAppContainer
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.data.repo.applyingDownloads
 import app.melogold.android.data.repo.withPending
 import app.melogold.android.models.DownloadState
+import app.melogold.android.models.Song
 import app.melogold.android.models.SongWithDownload
 import app.melogold.android.preferences.ListSort
 import app.melogold.android.preferences.SortPreferences
@@ -62,9 +67,12 @@ import app.melogold.android.utils.formatSize
 import app.melogold.android.utils.playingSong
 import app.melogold.compose.routing.RouteHandler
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
 
 private const val KEEP_WHILE_HIDDEN_MS = 5_000L
 
@@ -78,12 +86,33 @@ enum class DownloadSort(@param:StringRes val label: Int) {
 
 private val DefaultDownloadSort = ListSort(DownloadSort.DateDownloaded, descending = true)
 
-/** Every track with a download; the screen splits them into going, failed and done. */
+/**
+ * Every track with a download; the screen splits them into going, failed and done. Then the tracks the player's
+ * cache holds whole (tasks/0001-audio-cache.md): they play without a network too, until newer tracks replace them.
+ */
 class DownloadsModel : ScreenModel() {
+    private val cachedTracks = Dependencies.application.container.cachedTracks
+
     val tracks: StateFlow<List<SongWithDownload>?> = Database.songsWithDownloads()
         .withPending { applyingDownloads(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
+
+    /** The tracks whole in the cache, most recently played first, with their bytes. */
+    val cached: StateFlow<List<Pair<Song, Long>>> = cachedTracks.tracks
+        .map { tracks ->
+            withContext(Dispatchers.IO) {
+                tracks.keys.chunked(SQL_IN_MAX).flatMap { Database.songsNow(it) }.map { it to (tracks[it.id] ?: 0L) }
+            }
+        }
+        .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), emptyList())
+
+    init {
+        cachedTracks.refresh()
+    }
 }
+
+/** Ids per `IN (…)` query, under SQLite's variable limit. */
+private const val SQL_IN_MAX = 900
 
 /**
  * Downloads (REWRITE §3.2.3): what plays without a network. On top what is still downloading, with
@@ -98,6 +127,7 @@ fun DownloadsScreen() = RouteHandler {
     Content {
         val model = rememberScreenModel("library/downloads") { DownloadsModel() }
         val tracks by model.tracks.collectAsState()
+        val cachedAll by model.cached.collectAsState()
         val downloads = LocalAppContainer.current.downloads
         val paused by downloads.paused.collectAsState()
         val binder = LocalPlayerServiceBinder.current
@@ -120,6 +150,11 @@ fun DownloadsScreen() = RouteHandler {
                 .filter { it.matches(filter) }
         }
         val doneCount = all.orEmpty().count { it.download?.state == DownloadState.Completed }
+        // Whole in the cache and not downloaded: downloaded ones show above
+        val cached = remember(cachedAll, all, filter) {
+            val downloaded = all.orEmpty().mapTo(HashSet()) { it.song.id }
+            cachedAll.filter { (song, _) -> song.id !in downloaded && SongWithDownload(song, null).matches(filter) }
+        }
         val bytes = all.orEmpty().sumOf { track ->
             track.download?.takeIf { it.state == DownloadState.Completed }?.let { it.contentLength ?: it.bytesDownloaded } ?: 0L
         }
@@ -159,7 +194,7 @@ fun DownloadsScreen() = RouteHandler {
                     DelayedLoadingIndicator()
                 }
 
-                all.isEmpty() -> EmptyCollection(
+                all.isEmpty() && cached.isEmpty() -> EmptyCollection(
                     text = R.string.downloads_empty,
                     onFindMusic = { nav.openSearch() },
                     modifier = Modifier.padding(padding)
@@ -250,9 +285,66 @@ fun DownloadsScreen() = RouteHandler {
                                 .animateItem()
                         )
                     }
+
+                    if (cached.isNotEmpty()) cachedSection(
+                        tracks = cached,
+                        playingId = playingId,
+                        onPlay = { index -> play(cached.map { SongWithDownload(it.first, null) }, index) },
+                        onMenu = { song -> showMenu(SongWithDownload(song, null)) }
+                    )
                 }
             }
         }
+    }
+}
+
+/**
+ * The tracks whole in the player's cache (tasks/0001-audio-cache.md): "In the cache (N) · size", what that means,
+ * then the tracks.
+ */
+private fun LazyListScope.cachedSection(
+    tracks: List<Pair<Song, Long>>,
+    playingId: String?,
+    onPlay: (Int) -> Unit,
+    onMenu: (Song) -> Unit
+) {
+    item(key = "cached_title") {
+        val context = LocalContext.current
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.downloads_cached, tracks.size) + " · " +
+                    context.formatSize(tracks.sumOf { it.second }),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.semantics { heading() }
+            )
+            Text(
+                text = stringResource(R.string.downloads_cached_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    itemsIndexed(items = tracks, key = { _, (song, _) -> "cached_${song.id}" }) { index, (song, _) ->
+        TrackRow(
+            title = song.title,
+            videoId = song.id,
+            subtitle = song.artistsText,
+            artworkUrl = song.thumbnailUrl,
+            onClick = { onPlay(index) },
+            onMenu = { onMenu(song) },
+            isPlaying = song.id == playingId,
+            explicit = song.explicit,
+            duration = song.durationText,
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .animateItem()
+        )
     }
 }
 

@@ -24,6 +24,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -285,7 +286,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             context = this
         )
 
-        cache = createCache(this)
+        // One cache for the app: downloads copy from it and screens count what it holds whole
+        cache = Dependencies.application.container.playerCache
         player = ExoPlayer.Builder(this, createRendersFactory(), createMediaSourceFactory())
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_LOCAL)
@@ -397,7 +399,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
             mediaSession.isActive = false
             mediaSession.release()
-            cache.release()
 
             loudnessEnhancer?.release()
             preferenceUpdaterJob?.cancel()
@@ -451,6 +452,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        // The track that ended may be whole in the cache now: "available offline"
+        Dependencies.application.container.cachedTracks.refresh()
+
         if (
             AppearancePreferences.hideExplicit &&
             mediaItem?.mediaMetadata?.extras?.songBundle?.explicit == true
@@ -1215,7 +1219,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     }
 
     companion object {
-        private const val DEFAULT_CACHE_DIRECTORY = "exoplayer"
+        private const val DEFAULT_CACHE_DIRECTORY = "audio-cache"
+
+        /** Where the cache was before: the system's cache directory, which cleaners wipe as junk. */
+        private const val OLD_CACHE_DIRECTORY = "exoplayer"
         private const val MAX_FAILED_IN_A_ROW = 3
         private const val DEFAULT_CHUNK_LENGTH = 512 * 1024L
 
@@ -1230,8 +1237,16 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                 else -> LeastRecentlyUsedCacheEvictor(size.bytes)
             }
 
-            val directory = cacheDir.resolve(directoryName).apply {
-                if (!exists()) mkdir()
+            // Android/data/<package>/files: not the system's cache, so "free up space" and cleaners do not wipe the
+            // music as junk (tasks/0001-audio-cache.md); the app's own files when there is no external storage
+            val directory = (getExternalFilesDir(null) ?: filesDir).resolve(directoryName).apply {
+                if (!exists()) mkdirs()
+            }
+
+            // The old place goes once: it is only a cache, and it would keep the space for nothing
+            cacheDir.resolve(OLD_CACHE_DIRECTORY).takeIf { it.exists() }?.let { old ->
+                runCatching { SimpleCache.delete(old, createDatabaseProvider(context)) }
+                    .onFailure { Log.w(TAG, "Could not delete the old cache", it) }
             }
 
             SimpleCache(directory, cacheEvictor, createDatabaseProvider(context))

@@ -28,14 +28,32 @@ fun rememberDownload(videoId: String): TrackDownload? {
     return flow.collectAsState(initial = downloads.visible.value[videoId]).value
 }
 
+/** Whether [videoId] is whole in the player's cache: "available offline" (tasks/0001-audio-cache.md). */
+@Composable
+fun rememberCached(videoId: String): Boolean {
+    val cached = LocalAppContainer.current.cachedTracks
+    val flow = remember(cached, videoId) { cached.tracks.map { videoId in it }.distinctUntilChanged() }
+    return flow.collectAsState(initial = videoId in cached.tracks.value).value
+}
+
 /**
  * The mark of a track row (REWRITE §3.11.11): downloaded, downloading (a ring with the progress),
- * waiting, paused or failed; nothing without a download.
+ * waiting, paused or failed; without a download, "available offline" when the cache holds it whole
+ * (the same pin, outlined: it may give way to newer tracks); nothing otherwise.
  */
 @Composable
 fun DownloadBadge(videoId: String, modifier: Modifier = Modifier) {
-    val download = rememberDownload(videoId) ?: return
     val iconModifier = modifier.size(16.dp)
+    val download = rememberDownload(videoId)
+    if (download == null) {
+        if (rememberCached(videoId)) Icon(
+            painter = painterResource(R.drawable.ms_offline_pin),
+            contentDescription = stringResource(R.string.download_cached),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = iconModifier
+        )
+        return
+    }
 
     when (download.state) {
         DownloadState.Completed -> Icon(
