@@ -6,7 +6,8 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.createBitmap
-import app.melogold.android.utils.thumbnail
+import app.melogold.android.utils.centerSquare
+import app.melogold.android.utils.squareThumbnail
 import coil3.imageLoader
 import coil3.request.Disposable
 import coil3.request.ImageRequest
@@ -82,7 +83,7 @@ class BitmapProvider(
         val oldTask = currentTask
         currentTask = context.applicationContext.imageLoader.enqueue(
             ImageRequest.Builder(context.applicationContext)
-                .data(uri.thumbnail(getBitmapSize()))
+                .data(uri.squareThumbnail(getBitmapSize()))
                 .allowHardware(false)
                 .listener(
                     onError = { _, _ ->
@@ -90,7 +91,8 @@ class BitmapProvider(
                         onDone(bitmap)
                     },
                     onSuccess = { _, result ->
-                        lastBitmap = result.image.run { toBitmap(width, height) }
+                        // The notification and the lock screen show a square: a video frame's middle
+                        lastBitmap = result.image.run { toBitmap(width, height) }.centerSquare()
                         onDone(bitmap)
                     }
                 )

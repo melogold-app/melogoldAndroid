@@ -414,7 +414,9 @@ fun ModernPlayer(
                         animateOffset = true,
                         onSwipeLeft = { binder.player.forceSeekToNext() },
                         onSwipeRight = { binder.player.forceSeekToPrevious(seekToStart = false) }
-                    )
+                    ),
+                // The error card needs a square's room, a video frame is too low for it
+                square = error != null
             ) {
                 PlaybackErrorCard(
                     isDisplayed = error != null,
@@ -750,6 +752,9 @@ private fun PortraitLayout(
                     val titleHeight = 56.dp
                     val artSize = min(maxWidth - 48.dp, maxHeight - titleHeight - 60.dp)
                         .coerceAtLeast(64.dp)
+                    // The gaps of a square artwork split 14 : 44 : 21. The title keeps its gap under a
+                    // lower video frame and moves up with it; what the frame leaves splits 14 : 21
+                    val titleGap = (maxHeight - artSize - titleHeight).coerceAtLeast(0.dp) * (44f / 79f)
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -757,7 +762,7 @@ private fun PortraitLayout(
                     ) {
                         Spacer(modifier = Modifier.weight(14f))
                         artwork(artSize, scopes)
-                        Spacer(modifier = Modifier.weight(44f))
+                        Spacer(modifier = Modifier.height(titleGap))
                         titleBlock(Modifier.height(titleHeight), scopes)
                         Spacer(modifier = Modifier.weight(21f))
                     }

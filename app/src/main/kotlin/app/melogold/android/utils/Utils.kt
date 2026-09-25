@@ -117,21 +117,42 @@ val Duration.formatted
 /** The largest artwork size requested from the thumbnail servers, in pixels. */
 const val MAX_THUMBNAIL_SIZE = 1920
 
-/** A YouTube video frame: `https://i.ytimg.com/vi/<id>/<name>.jpg`, often with signed crop parameters. */
-private val VIDEO_THUMBNAIL = Regex("""^https://i\.ytimg\.com/vi(?:_webp)?/([^/]+)/[^/?]+""")
+/**
+ * A YouTube video frame: `https://i.ytimg.com/vi/<id>/<name>.jpg`, often with signed crop
+ * parameters (`sqp`, `rs`) that only fit the name they were signed for.
+ */
+private val VIDEO_THUMBNAIL = Regex("""^(?:https?:)?//i\.ytimg\.com/vi(?:_webp)?/([A-Za-z0-9_-]{11})/""")
 
-/** Up to this size a video frame is fetched as `mqdefault` (320×180, 16:9, no black bars). */
+/** Up to this width a video frame is fetched as `mqdefault` (320×180, 16:9, no black bars). */
 private const val SMALL_VIDEO_THUMBNAIL = 360
 
+/** The id of the video whose frame [this] is, or null for any other image. */
+val String.videoFrameId: String? get() = VIDEO_THUMBNAIL.find(this)?.groupValues?.get(1)
+
+/**
+ * Whether [this] is a 16:9 video frame (REWRITE §4.8.2): squares take its middle, Now Playing
+ * shows it whole.
+ */
+val String.isVideoFrame: Boolean get() = videoFrameId != null
+
+/**
+ * [this] artwork at [size] px (the width of the place, REWRITE §4.8.2):
+ * - `lh3`/`yt3` covers are asked for at that size;
+ * - a video frame becomes `mqdefault` (320×180) up to 360 px and `hq720` (1280×720) above; both are
+ *   16:9 without the black bars of `hqdefault`/`sddefault`. A video without `hq720` falls back to
+ *   `hqdefault` with its bars cropped ([VideoFrameFallback]).
+ */
 fun String.thumbnail(
     size: Int,
     maxSize: Int = MAX_THUMBNAIL_SIZE
 ): String {
     val actualSize = size.coerceAtMost(maxSize)
+    val videoId = videoFrameId
     return when {
         // A list row needs a few kilobytes, not the 1280×720 frame of the video page
-        size <= SMALL_VIDEO_THUMBNAIL && VIDEO_THUMBNAIL.containsMatchIn(this) ->
-            VIDEO_THUMBNAIL.find(this)!!.groupValues[1].let { "https://i.ytimg.com/vi/$it/mqdefault.jpg" }
+        videoId != null ->
+            if (size <= SMALL_VIDEO_THUMBNAIL) "https://i.ytimg.com/vi/$videoId/mqdefault.jpg"
+            else "https://i.ytimg.com/vi/$videoId/hq720.jpg"
 
         this.startsWith("https://lh3.googleusercontent.com") ||
             this.startsWith("https://yt3.googleusercontent.com") -> "$this-w$actualSize-h$actualSize"
@@ -142,7 +163,15 @@ fun String.thumbnail(
     }
 }
 
+/**
+ * [this] artwork for a square of [side] px: a video frame is cropped to its middle there, so it is
+ * picked by its height, the short side.
+ */
+fun String.squareThumbnail(side: Int): String = thumbnail(if (isVideoFrame) side * 16 / 9 else side)
+
 fun Uri.thumbnail(size: Int) = toString().thumbnail(size).toUri()
+
+fun Uri.squareThumbnail(side: Int) = toString().squareThumbnail(side).toUri()
 
 fun formatAsDuration(millis: Long) = DateUtils.formatElapsedTime(millis / 1000).removePrefix("0")
 

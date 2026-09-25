@@ -17,11 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import app.melogold.android.utils.thumbnail
+import app.melogold.android.utils.centerSquare
+import app.melogold.android.utils.squareThumbnail
 import coil3.SingletonImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
+import coil3.size.Scale
 import coil3.toBitmap
 
 private const val SAMPLE_SIZE = 112
@@ -31,7 +33,7 @@ private const val TOP_TINT_ALPHA = 0.35f
 
 /**
  * A small software copy of the artwork at [uri], for picking its colors; null while loading or
- * when there is no artwork.
+ * when there is no artwork. A video frame gives its middle square, as everywhere it is square.
  */
 @Composable
 fun rememberArtworkBitmap(uri: Uri?): Bitmap? {
@@ -42,11 +44,13 @@ fun rememberArtworkBitmap(uri: Uri?): Bitmap? {
         bitmap = uri?.let {
             runCatching {
                 val request = ImageRequest.Builder(context)
-                    .data(it.toString().thumbnail(SAMPLE_SIZE))
+                    .data(it.toString().squareThumbnail(SAMPLE_SIZE))
                     .size(SAMPLE_SIZE)
+                    .scale(Scale.FILL)
                     .allowHardware(false)
                     .build()
-                (SingletonImageLoader.get(context).execute(request) as? SuccessResult)?.image?.toBitmap()
+                val result = SingletonImageLoader.get(context).execute(request) as? SuccessResult
+                result?.image?.toBitmap()?.centerSquare()
             }.getOrNull()
         }
     }

@@ -19,13 +19,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.melogold.android.R
-import app.melogold.android.utils.thumbnail
+import app.melogold.android.utils.squareThumbnail
 import app.melogold.core.ui.utils.px
 import coil3.compose.AsyncImage
 
 /**
  * A cover (REWRITE §3.11.12): requested at the size it is drawn at, on a tonal placeholder with a
- * note that also stays when the image fails.
+ * note that also stays when the image fails. A 16:9 video frame shows its middle square.
  */
 @Composable
 fun Artwork(
@@ -52,7 +52,7 @@ fun Artwork(
         )
 
         if (url != null) AsyncImage(
-            model = url.thumbnail(sizePx),
+            model = url.squareThumbnail(sizePx),
             contentDescription = contentDescription,
             contentScale = ContentScale.Crop,
             modifier = Modifier.matchParentSize()

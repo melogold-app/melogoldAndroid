@@ -75,6 +75,8 @@ import app.melogold.android.R
 import app.melogold.android.models.Info
 import app.melogold.android.ui.components.m3e.rememberHaptics
 import app.melogold.android.ui.screens.artistRoute
+import app.melogold.android.utils.isVideoFrame
+import app.melogold.android.utils.squareThumbnail
 import app.melogold.android.utils.thumbnail
 import app.melogold.core.ui.utils.px
 import coil3.compose.AsyncImage
@@ -224,8 +226,10 @@ fun RowScope.PlaybackIndicators(
 }
 
 /**
- * The big Now Playing artwork (28 dp corners). Shrinks a little while paused; the tap and the
- * horizontal swipe are handled by [onTap] and [modifier] (the stream info moved to the player menu).
+ * The big Now Playing artwork (28 dp corners), [size] wide: a cover is square, a video frame is
+ * shown whole, 9/16 of [size] high (REWRITE §4.8.2), unless [square] asks for room for the
+ * [overlay]. Shrinks a little while paused; the tap and the horizontal swipe are handled by [onTap]
+ * and [modifier] (the stream info moved to the player menu).
  */
 @Composable
 fun PlayerArtwork(
@@ -235,6 +239,7 @@ fun PlayerArtwork(
     reduceMotion: Boolean,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
+    square: Boolean = false,
     overlay: @Composable () -> Unit = {}
 ) {
     val scale = animateFloatAsState(
@@ -254,11 +259,13 @@ fun PlayerArtwork(
     val shape = MaterialTheme.shapes.extraLarge
     val context = LocalContext.current
     val sizePx = size.px
+    val artworkUri = mediaItem.mediaMetadata.artworkUri
+    val height = if (!square && artworkUri?.toString()?.isVideoFrame == true) size * 9 / 16 else size
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(size)
+            .size(width = size, height = height)
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
@@ -276,13 +283,13 @@ fun PlayerArtwork(
             painter = painterResource(R.drawable.ms_music_note),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(size * 0.3f)
+            modifier = Modifier.size(height * 0.3f)
         )
 
         AsyncImage(
-            model = remember(mediaItem.mediaMetadata.artworkUri, sizePx) {
+            model = remember(artworkUri, sizePx) {
                 ImageRequest.Builder(context)
-                    .data(mediaItem.mediaMetadata.artworkUri?.thumbnail(sizePx))
+                    .data(artworkUri?.thumbnail(sizePx))
                     .crossfade(300)
                     .build()
             },
@@ -295,7 +302,7 @@ fun PlayerArtwork(
     }
 }
 
-/** The thumbnail of the compact (Lyrics mode) header. */
+/** The thumbnail of the compact (Lyrics mode) header: square, a video frame's middle. */
 @Composable
 fun HeaderArtwork(
     mediaItem: MediaItem,
@@ -315,7 +322,7 @@ fun HeaderArtwork(
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
     ) {
         AsyncImage(
-            model = mediaItem.mediaMetadata.artworkUri?.thumbnail(sizePx * 2),
+            model = mediaItem.mediaMetadata.artworkUri?.squareThumbnail(sizePx * 2),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

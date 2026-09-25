@@ -34,7 +34,8 @@ import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import app.melogold.android.data.repo.trackLinks
 import app.melogold.android.service.PlayerService
-import app.melogold.android.utils.thumbnail
+import app.melogold.android.utils.centerSquare
+import app.melogold.android.utils.squareThumbnail
 import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
@@ -155,14 +156,12 @@ class FileExport(private val context: Context, private val downloads: Downloads)
 
     /** The artwork as a square JPEG: video frames are cropped to their middle. */
     private suspend fun cover(metadata: MediaMetadata): ByteArray? = runCatching {
-        val url = metadata.artworkUri?.toString()?.thumbnail(COVER_SIZE) ?: return@runCatching null
+        val url = metadata.artworkUri?.toString()?.squareThumbnail(COVER_SIZE) ?: return@runCatching null
         val result = context.imageLoader.execute(
             ImageRequest.Builder(context).data(url).allowHardware(false).build()
         ) as? SuccessResult ?: return@runCatching null
 
-        val bitmap = result.image.toBitmap()
-        val side = minOf(bitmap.width, bitmap.height)
-        val square = Bitmap.createBitmap(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side)
+        val square = result.image.toBitmap().centerSquare()
         ByteArrayOutputStream().also { square.compress(Bitmap.CompressFormat.JPEG, COVER_QUALITY, it) }.toByteArray()
     }.getOrNull()
 
