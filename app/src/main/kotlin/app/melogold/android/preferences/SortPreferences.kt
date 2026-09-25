@@ -10,6 +10,7 @@ import app.melogold.android.GlobalPreferencesHolder
 object SortPreferences : GlobalPreferencesHolder() {
     /** Favorites, and an artist's tracks in them. */
     var favorites by string(defaultValue = "", name = "sort.favorites")
+    var allTracks by string(defaultValue = "", name = "sort.allTracks")
     var downloads by string(defaultValue = "", name = "sort.downloads")
 
     /** The tracks of every own playlist. */

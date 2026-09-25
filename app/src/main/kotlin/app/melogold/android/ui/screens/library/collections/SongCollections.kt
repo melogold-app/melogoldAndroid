@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.data.repo.applyingHidden
+import app.melogold.android.data.repo.withPending
 import app.melogold.android.preferences.ListSort
 import app.melogold.android.preferences.SortPreferences
 import app.melogold.android.preferences.toListSort
@@ -57,6 +59,7 @@ import app.melogold.android.utils.playingSong
 import app.melogold.compose.routing.RouteHandler
 import app.melogold.core.data.enums.SongSortBy
 import app.melogold.core.data.enums.SortOrder
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -67,6 +70,8 @@ private const val KEEP_WHILE_HIDDEN_MS = 5_000L
 /** How a list of tracks is ordered (REWRITE §3.2.2): the date means liked or cached. */
 enum class TrackSort(@param:StringRes val label: Int) {
     DateAdded(R.string.sort_date_added),
+    Recent(R.string.sort_recently_played),
+    PlayTime(R.string.sort_play_time),
     Title(R.string.sort_title),
     Artist(R.string.sort_artist),
     Duration(R.string.sort_duration)
@@ -74,6 +79,11 @@ enum class TrackSort(@param:StringRes val label: Int) {
 
 /** What a list of tracks is sorted by until the user picks something else. */
 private val DefaultTrackSort = ListSort(TrackSort.DateAdded, descending = true)
+
+private val FavoritesSorts = persistentListOf(TrackSort.DateAdded, TrackSort.Title, TrackSort.Artist, TrackSort.Duration)
+private val AllTracksSorts =
+    persistentListOf(TrackSort.Recent, TrackSort.PlayTime, TrackSort.Title, TrackSort.Artist, TrackSort.Duration)
+private val DefaultAllTracksSort = ListSort(TrackSort.Recent, descending = true)
 
 /** Favorites, newest like first; the screen sorts and filters it. */
 class FavoritesModel : ScreenModel() {
@@ -98,6 +108,40 @@ fun FavoritesScreen() = RouteHandler {
             empty = R.string.favorites_empty,
             sort = SortPreferences.favorites.toListSort(DefaultTrackSort),
             onSort = { SortPreferences.favorites = it.encode() },
+            onBack = pop
+        )
+    }
+}
+
+/** Every track of the library, the last played first. */
+class AllTracksModel : ScreenModel() {
+    val songs: StateFlow<List<Song>?> = Database
+        .allTracks()
+        .withPending { applyingHidden(it) }
+        .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
+}
+
+/**
+ * "All tracks": everything played, liked, put in a playlist or downloaded, with the time listened. ViTune's "Songs";
+ * people coming from it asked for the button (2026-09-25), History alone was not enough to find their tracks.
+ */
+@Route
+@Composable
+fun AllTracksScreen() = RouteHandler {
+    GlobalRoutes()
+
+    Content {
+        val model = rememberScreenModel("library/all_tracks") { AllTracksModel() }
+        val songs by model.songs.collectAsState()
+
+        SongCollection(
+            title = stringResource(R.string.library_all_tracks),
+            songs = songs,
+            empty = R.string.all_tracks_empty,
+            sort = SortPreferences.allTracks.toListSort(DefaultAllTracksSort),
+            onSort = { SortPreferences.allTracks = it.encode() },
+            options = AllTracksSorts,
+            showPlayTime = true,
             onBack = pop
         )
     }
@@ -144,7 +188,9 @@ private fun SongCollection(
     sort: ListSort<TrackSort>,
     onSort: (ListSort<TrackSort>) -> Unit,
     onBack: () -> Unit,
-    @StringRes note: Int? = null
+    @StringRes note: Int? = null,
+    options: ImmutableList<TrackSort> = FavoritesSorts,
+    showPlayTime: Boolean = false
 ) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
@@ -154,8 +200,9 @@ private fun SongCollection(
     var filtering by rememberSaveable { mutableStateOf(false) }
     var filter by rememberSaveable { mutableStateOf("") }
 
-    val shown = remember(songs, sort, filter) {
-        songs?.let { list -> list.sortedAs(sort.field, sort.descending).filteredBy(filter) }
+    val field = sort.field.takeIf { it in options } ?: options.first()
+    val shown = remember(songs, field, sort.descending, filter) {
+        songs?.let { list -> list.sortedAs(field, sort.descending).filteredBy(filter) }
     }
     val subtitle = songs?.takeIf { it.isNotEmpty() }?.let { list ->
         val count = pluralStringResource(R.plurals.library_tracks_count, list.size, list.size)
@@ -222,12 +269,12 @@ private fun SongCollection(
 
                 item(key = "sort") {
                     SortChip(
-                        options = persistentListOf(*TrackSort.entries.toTypedArray()),
-                        selected = sort.field,
+                        options = options,
+                        selected = field,
                         descending = sort.descending,
                         label = { stringResource(it.label) },
                         onSelect = { option, down -> onSort(ListSort(option, down)) },
-                        startsDescending = { it == TrackSort.DateAdded },
+                        startsDescending = { it == TrackSort.DateAdded || it == TrackSort.Recent || it == TrackSort.PlayTime },
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
@@ -248,7 +295,9 @@ private fun SongCollection(
                     TrackRow(
                         title = song.title,
                         videoId = song.id,
-                        subtitle = song.artistsText,
+                        subtitle = if (showPlayTime && song.totalPlayTimeMs > 0) {
+                            listOfNotNull(song.artistsText, formatListeningTime(song.totalPlayTimeMs)).joinToString(" · ")
+                        } else song.artistsText,
                         artworkUrl = song.thumbnailUrl,
                         onClick = { play(shown, index) },
                         onMenu = {
@@ -297,7 +346,8 @@ internal fun EmptyCollection(
 private fun List<Song>.sortedAs(sort: TrackSort, descending: Boolean): List<Song> {
     // The source lists come newest first
     val ascending = when (sort) {
-        TrackSort.DateAdded -> asReversed()
+        TrackSort.DateAdded, TrackSort.Recent -> asReversed()
+        TrackSort.PlayTime -> sortedBy { it.totalPlayTimeMs }
         TrackSort.Title -> sortedBy { it.title.lowercase() }
         TrackSort.Artist -> sortedBy { it.artistsText.orEmpty().lowercase() }
         TrackSort.Duration -> sortedBy { parseDuration(it.durationText) ?: 0L }

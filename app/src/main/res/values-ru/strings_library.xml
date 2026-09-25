@@ -30,4 +30,6 @@
     <string name="playlist_new_title">Новый плейлист</string>
     <string name="playlist_name">Название</string>
     <string name="playlist_create">Создать</string>
+    <string name="library_all_tracks">Все треки</string>
+    <string name="all_tracks_empty">Здесь будут все треки, которые вы слушали, лайкали, добавляли в плейлисты или скачивали</string>
 </resources>

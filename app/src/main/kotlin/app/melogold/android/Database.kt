@@ -829,6 +829,36 @@ interface DatabaseAccessor {
     @Query("SELECT * FROM Song WHERE title LIKE :query OR artistsText LIKE :query")
     fun search(query: String): Flow<List<Song>>
 
+    // region "All tracks" of the Library: ViTune's "Songs", asked for by the people coming from it
+    /**
+     * Every track of the library: played, liked, in a playlist or downloaded, not hidden. The last played come first,
+     * then the liked by the time of the like.
+     */
+    @Query(
+        """
+        SELECT Song.* FROM Song
+        LEFT JOIN (SELECT songId, MAX(timestamp) AS lastPlayed FROM Event GROUP BY songId) AS played
+            ON played.songId = Song.id
+        WHERE Song.blacklisted = 0 AND (
+            played.lastPlayed IS NOT NULL OR Song.totalPlayTimeMs > 0 OR Song.likedAt IS NOT NULL
+            OR Song.id IN (SELECT songId FROM SongPlaylistMap) OR Song.id IN (SELECT videoId FROM Download)
+        )
+        ORDER BY COALESCE(played.lastPlayed, Song.likedAt, 0) DESC
+        """
+    )
+    fun allTracks(): Flow<List<Song>>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM Song WHERE blacklisted = 0 AND (
+            totalPlayTimeMs > 0 OR likedAt IS NOT NULL OR id IN (SELECT songId FROM Event)
+            OR id IN (SELECT songId FROM SongPlaylistMap) OR id IN (SELECT videoId FROM Download)
+        )
+        """
+    )
+    fun allTracksCount(): Flow<Int>
+    // endregion
+
     // region R3.2: counts of the Library hub (REWRITE §3.2.1)
     @Query("SELECT COUNT(*) FROM Song WHERE likedAt IS NOT NULL")
     fun favoritesCount(): Flow<Int>

@@ -1,5 +1,6 @@
 package app.melogold.android.ui.screens
 
+import app.melogold.android.ui.screens.library.collections.AllTracksScreen
 import app.melogold.android.ui.screens.library.collections.DownloadsScreen
 import app.melogold.android.ui.screens.library.collections.FavoritesScreen
 import app.melogold.android.ui.screens.library.collections.HistoryMode
@@ -51,6 +52,7 @@ val moreMoodsRoute = Route0("moreMoodsRoute")
 val moreAlbumsRoute = Route0("moreAlbumsRoute")
 val libraryPlaylistsRoute = Route0("libraryPlaylistsRoute")
 val libraryAlbumsRoute = Route0("libraryAlbumsRoute")
+val libraryTracksRoute = Route0("libraryTracksRoute")
 val libraryArtistsRoute = Route0("libraryArtistsRoute")
 val settingsPageRoute = Route1<SettingsPage>("settingsPageRoute")
 val searchResultRoute = Route2<String, SearchSource>("searchResultRoute")
@@ -93,6 +95,10 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     libraryAlbumsRoute {
         LibraryAlbumsScreen()
+    }
+
+    libraryTracksRoute {
+        AllTracksScreen()
     }
 
     libraryArtistsRoute {

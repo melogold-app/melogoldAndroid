@@ -61,6 +61,7 @@ import app.melogold.android.ui.screens.builtInPlaylistRoute
 import app.melogold.android.ui.screens.libraryAlbumsRoute
 import app.melogold.android.ui.screens.libraryArtistsRoute
 import app.melogold.android.ui.screens.libraryPlaylistsRoute
+import app.melogold.android.ui.screens.libraryTracksRoute
 import app.melogold.android.ui.screens.localPlaylistRoute
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
@@ -145,8 +146,10 @@ fun RouteHandlerScope.LibraryRoot() {
 
                 item(key = "saved") {
                     SavedGroup(
+                        tracks = current.tracks,
                         albums = current.albums,
                         artists = current.artists,
+                        onTracks = { libraryTracksRoute() },
                         onAlbums = { libraryAlbumsRoute() },
                         onArtists = { libraryArtistsRoute() },
                         modifier = Modifier.padding(top = 24.dp)
@@ -319,8 +322,10 @@ private fun PlaylistGroup(
  */
 @Composable
 private fun SavedGroup(
+    tracks: Int,
     albums: Int,
     artists: Int,
+    onTracks: () -> Unit,
     onAlbums: () -> Unit,
     onArtists: () -> Unit,
     modifier: Modifier = Modifier
@@ -328,9 +333,19 @@ private fun SavedGroup(
     modifier = modifier.padding(horizontal = 16.dp),
     verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
 ) {
+    // Everything played, liked, in playlists or downloaded: ViTune's "Songs", which people coming from it look for
+    SegmentedListItem(
+        onClick = onTracks,
+        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+        colors = SegmentedGroupDefaults.colors(),
+        leadingContent = { LeadingIcon(icon = R.drawable.ms_music_note) },
+        trailingContent = { CountAndChevron(tracks) }
+    ) {
+        Text(text = stringResource(R.string.library_all_tracks))
+    }
     SegmentedListItem(
         onClick = onAlbums,
-        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
         colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_album) },
         trailingContent = { CountAndChevron(albums) }
@@ -339,7 +354,7 @@ private fun SavedGroup(
     }
     SegmentedListItem(
         onClick = onArtists,
-        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+        shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
         colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_person) },
         trailingContent = { CountAndChevron(artists) }

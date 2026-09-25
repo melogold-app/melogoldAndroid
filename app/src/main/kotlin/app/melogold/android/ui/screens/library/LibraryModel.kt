@@ -31,20 +31,31 @@ data class LibraryCounts(
     val playlists: Int,
     val albums: Int,
     val artists: Int,
-    val historyTracks: Int
+    val historyTracks: Int,
+    val tracks: Int
 ) {
-    val isEmpty get() = favorites == 0 && playlists == 0 && albums == 0 && artists == 0 && historyTracks == 0
+    val isEmpty get() = favorites == 0 && playlists == 0 && albums == 0 && artists == 0 && historyTracks == 0 && tracks == 0
 }
 
 class LibraryModel : ScreenModel() {
     val counts: StateFlow<LibraryCounts?> = combine(
-        Database.favoritesCount(),
-        Database.playlistsCount().withPending { applyingPlaylists(it) },
-        Database.savedAlbumsCount(),
-        Database.savedArtistsCount(),
-        Database.historyTracksCount().withPending { applyingHistoryTracks(it) }
-    ) { favorites, playlists, albums, artists, historyTracks ->
-        LibraryCounts(favorites, playlists, albums, artists, historyTracks)
+        listOf(
+            Database.favoritesCount(),
+            Database.playlistsCount().withPending { applyingPlaylists(it) },
+            Database.savedAlbumsCount(),
+            Database.savedArtistsCount(),
+            Database.historyTracksCount().withPending { applyingHistoryTracks(it) },
+            Database.allTracksCount()
+        )
+    ) { counts ->
+        LibraryCounts(
+            favorites = counts[0],
+            playlists = counts[1],
+            albums = counts[2],
+            artists = counts[3],
+            historyTracks = counts[4],
+            tracks = counts[5]
+        )
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     /** The newest playlists shown in the hub. */

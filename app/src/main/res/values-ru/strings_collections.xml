@@ -37,4 +37,5 @@
     <string name="history_empty">Послушайте что-нибудь — история появится здесь</string>
     <string name="history_period_empty">За этот период прослушиваний нет</string>
 
+    <string name="sort_recently_played">Недавно слушали</string>
 </resources>

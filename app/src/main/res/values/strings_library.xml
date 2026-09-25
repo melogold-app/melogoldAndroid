@@ -27,4 +27,6 @@
     <string name="playlist_new_title">New playlist</string>
     <string name="playlist_name">Name</string>
     <string name="playlist_create">Create</string>
+    <string name="library_all_tracks">All tracks</string>
+    <string name="all_tracks_empty">Every track you play, like, put in a playlist or download will be here</string>
 </resources>
