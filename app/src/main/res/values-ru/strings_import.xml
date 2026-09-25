@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_import">Импорт из ViTune или ViMusic</string>
+    <string name="library_import_description">Треки, история, Избранное, плейлисты и тексты добавятся к библиотеке</string>
+    <string name="import_running">Импортируем библиотеку…</string>
+    <string name="import_done_title">Библиотека импортирована</string>
+    <string name="import_done_ok">Готово</string>
+    <string name="import_summary">Новых треков — %1$d, прослушиваний — %2$d, в Избранном — %3$d, текстов — %4$d, плейлистов — %5$d, сохранённых альбомов и исполнителей — %6$d.</string>
+    <string name="import_plays_known">Прослушивания, которые уже были, не повторяются: %1$d.</string>
+    <string name="import_local_skipped">Локальные файлы не перенесены: %1$d.</string>
+    <string name="import_dates_skipped">Прослушивания и лайки с невозможными датами пропущены: %1$d.</string>
+    <string name="import_sync_note">На другие устройства история уйдёт через сервер постепенно — до 2000 прослушиваний в час.</string>
+    <string name="import_failed_title">Не удалось импортировать</string>
+    <string name="import_not_backup">Это не копия ViTune, ViMusic или Melogold.</string>
+    <string name="import_too_old">Эта копия слишком старая.</string>
+    <string name="import_unsupported">Копии InnerTune, Metrolist и похожих приложений пока не поддерживаются.</string>
+    <string name="import_unreadable">Файл не читается. Возможно, он повреждён.</string>
+    <string name="import_settings_description">Копия ViTune, ViMusic или Melogold добавится к библиотеке: треки, история, Избранное, плейлисты и тексты. Ничего не удаляется.</string>
+</resources>

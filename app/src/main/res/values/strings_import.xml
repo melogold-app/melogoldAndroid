@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_import">Import from ViTune or ViMusic</string>
+    <string name="library_import_description">Tracks, history, favorites, playlists and lyrics join your library</string>
+    <string name="import_running">Importing the library…</string>
+    <string name="import_done_title">Library imported</string>
+    <string name="import_done_ok">OK</string>
+    <string name="import_summary">New tracks: %1$d. Plays: %2$d. Favorites: %3$d. Lyrics: %4$d. Playlists: %5$d. Saved albums and artists: %6$d.</string>
+    <string name="import_plays_known">Plays that were already here are not repeated: %1$d.</string>
+    <string name="import_local_skipped">Local files are not moved: %1$d.</string>
+    <string name="import_dates_skipped">Plays and likes with impossible dates are left out: %1$d.</string>
+    <string name="import_sync_note">The history goes to your other devices through the server bit by bit: up to 2000 plays an hour.</string>
+    <string name="import_failed_title">Could not import</string>
+    <string name="import_not_backup">This is not a ViTune, ViMusic or Melogold backup.</string>
+    <string name="import_too_old">This backup is too old to read.</string>
+    <string name="import_unsupported">Backups of InnerTune, Metrolist and similar apps are not supported yet.</string>
+    <string name="import_unreadable">The file could not be read. It may be damaged.</string>
+    <string name="import_settings_description">A ViTune, ViMusic or Melogold backup is added to your library: tracks, history, favorites, playlists and lyrics. Nothing here is deleted.</string>
+</resources>

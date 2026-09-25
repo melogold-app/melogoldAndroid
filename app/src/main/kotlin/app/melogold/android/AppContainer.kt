@@ -7,6 +7,7 @@ import app.melogold.android.data.NetworkMonitor
 import app.melogold.android.data.cache.CachedTracks
 import app.melogold.android.data.downloads.Downloads
 import app.melogold.android.data.downloads.FileExport
+import app.melogold.android.data.importer.LegacyImporter
 import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
@@ -49,6 +50,9 @@ class AppContainer(private val application: Application) {
     /** The account on the Melogold server and the sync of the library with it. */
     val account by lazy { Account(application) }
     val sync by lazy { SyncEngine(account, network, appScope) }
+
+    /** Import of ViTune, ViMusic and Melogold backups into the library (REWRITE §4.5). */
+    val importer by lazy { LegacyImporter(application, appScope, afterImport = { sync.afterImport() }) }
 
     /** The self-update from GitHub Releases (REWRITE §4.14). */
     val updates by lazy { AppUpdater(application, appScope) }

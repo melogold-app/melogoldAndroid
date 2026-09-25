@@ -208,6 +208,17 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
      */
     suspend fun serverLyrics(videoId: String) = lyrics.fromServer(videoId)
 
+    /**
+     * After an import (REWRITE §4.5.4): the time played in it goes to the server again with `play.baseline atLeast`,
+     * and its plays, likes and playlists with the next sync.
+     */
+    fun afterImport() {
+        scope.launch {
+            withContext(Dispatchers.IO) { Database.deleteSyncState(KEY_HISTORY_BASELINE) }
+            sync(force = false)
+        }
+    }
+
     /** The user's own lyrics of a track that came from another device before this one stored the track. */
     fun ownLyricsFromSync(videoId: String) = lyrics.ownFromSnapshot(videoId)
 

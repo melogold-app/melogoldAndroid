@@ -81,6 +81,7 @@ fun RouteHandlerScope.LibraryRoot() {
     val nav = LocalMainNav.current
     val listState = rememberLazyListState()
     var creating by rememberSaveable { mutableStateOf(false) }
+    val import = rememberImportAction()
 
     val subtitle = counts?.takeIf { it.favorites > 0 || it.playlists > 0 }?.let {
         listOfNotNull(
@@ -121,7 +122,8 @@ fun RouteHandlerScope.LibraryRoot() {
             if (current.isEmpty) item(key = "empty") {
                 EmptyLibrary(
                     onFindMusic = { nav.select(TopLevelDestination.Search) },
-                    onTrends = { nav.select(TopLevelDestination.Trends) }
+                    onTrends = { nav.select(TopLevelDestination.Trends) },
+                    onImport = import
                 )
             } else {
                 item(key = "playlists/header") {
@@ -149,11 +151,17 @@ fun RouteHandlerScope.LibraryRoot() {
                         modifier = Modifier.padding(top = 24.dp)
                     )
                 }
+
+                item(key = "import") {
+                    ImportRow(onClick = import, modifier = Modifier.padding(top = 24.dp))
+                }
             }
 
             item(key = "bottom") { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
+
+    ImportDialogHost()
 
     if (creating) NewPlaylistDialog(
         onDismiss = { creating = false },
@@ -337,6 +345,22 @@ private fun SavedGroup(
     }
 }
 
+/** "Import from ViTune or ViMusic" (REWRITE §4.5.5): the library of the app people come from. */
+@Composable
+private fun ImportRow(onClick: () -> Unit, modifier: Modifier = Modifier) = Column(
+    modifier = modifier.padding(horizontal = 16.dp)
+) {
+    SegmentedListItem(
+        onClick = onClick,
+        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+        colors = SegmentedGroupDefaults.colors(),
+        leadingContent = { LeadingIcon(icon = R.drawable.ms_input) },
+        supportingContent = { Text(text = stringResource(R.string.library_import_description)) }
+    ) {
+        Text(text = stringResource(R.string.library_import))
+    }
+}
+
 @Composable
 private fun LeadingIcon(@DrawableRes icon: Int) = Box(
     modifier = Modifier.size(48.dp),
@@ -372,7 +396,8 @@ private fun CountAndChevron(count: Int) = Row(verticalAlignment = Alignment.Cent
 @Composable
 private fun EmptyLibrary(
     onFindMusic: () -> Unit,
-    onTrends: () -> Unit
+    onTrends: () -> Unit,
+    onImport: () -> Unit
 ) = Column(
     modifier = Modifier
         .fillMaxWidth()
@@ -394,4 +419,6 @@ private fun EmptyLibrary(
     Spacer(modifier = Modifier.height(4.dp))
     Button(onClick = onFindMusic) { Text(text = stringResource(R.string.library_find_music)) }
     TextButton(onClick = onTrends) { Text(text = stringResource(R.string.whatsnew_whats_trending)) }
+    // Coming from ViTune or ViMusic: bring the library along
+    TextButton(onClick = onImport) { Text(text = stringResource(R.string.library_import)) }
 }

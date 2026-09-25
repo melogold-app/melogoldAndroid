@@ -14,22 +14,20 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import app.melogold.android.Database
 import app.melogold.android.R
+import app.melogold.android.ui.screens.library.ImportDialogHost
+import app.melogold.android.ui.screens.library.rememberImportAction
 import app.melogold.android.internal
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.query
-import app.melogold.android.service.PlayerService
 import app.melogold.android.transaction
 import app.melogold.android.ui.screens.Route
-import app.melogold.android.utils.intent
 import app.melogold.android.utils.toast
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlin.system.exitProcess
 
 @SuppressLint("RestrictedApi")
 @Route
@@ -54,29 +52,8 @@ fun DatabaseSettings() = with(DataPreferences) {
         }
     }
 
-    val restoreLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-
-        query {
-            Database.checkpoint()
-            Database.internal.close()
-
-            with(context) {
-                applicationContext.contentResolver.openInputStream(uri)
-                    ?.use { inputStream ->
-                        FileOutputStream(Database.internal.path).use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-
-                stopService(intent<PlayerService>())
-            }
-
-            exitProcess(0)
-        }
-    }
+    val import = rememberImportAction()
+    ImportDialogHost()
 
     SettingsCategoryScreen(title = stringResource(R.string.database)) {
         SettingsGroup(title = stringResource(R.string.cleanup)) {
@@ -140,28 +117,13 @@ fun DatabaseSettings() = with(DataPreferences) {
             )
         }
         SettingsGroup(
-            title = stringResource(R.string.restore),
-            description = stringResource(R.string.restore_warning),
-            important = true
+            title = stringResource(R.string.library_import),
+            description = stringResource(R.string.import_settings_description)
         ) {
-            val errorMsg = stringResource(R.string.no_file_chooser_installed)
-
             SettingsEntry(
-                title = stringResource(R.string.restore),
-                text = stringResource(R.string.restore_description),
-                onClick = {
-                    try {
-                        restoreLauncher.launch(
-                            arrayOf(
-                                "application/vnd.sqlite3",
-                                "application/x-sqlite3",
-                                "application/octet-stream"
-                            )
-                        )
-                    } catch (_: ActivityNotFoundException) {
-                        context.toast(errorMsg)
-                    }
-                }
+                title = stringResource(R.string.library_import),
+                text = stringResource(R.string.library_import_description),
+                onClick = import
             )
         }
     }

@@ -1176,6 +1176,23 @@ interface DatabaseAccessor {
     @Query("SELECT * FROM Song WHERE id IN (:ids)")
     fun songsNow(ids: List<String>): List<Song>
 
+    // Import of backups (REWRITE §4.5)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertSongAlbumMaps(maps: List<SongAlbumMap>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertSongArtistMaps(maps: List<SongArtistMap>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertSearchQueries(queries: List<SearchQuery>)
+
+    /** "songId:timestamp" of every play: an imported play at the same moment is the same play. */
+    @Query("SELECT songId || ':' || timestamp FROM Event")
+    fun eventKeysNow(): List<String>
+
+    @Query("DELETE FROM SyncState WHERE `key` = :key")
+    fun deleteSyncState(key: String)
+
     @Query("SELECT COUNT(*) FROM HistoryForget")
     fun historyForgetCount(): Flow<Int>
 
@@ -1281,8 +1298,9 @@ interface DatabaseAccessor {
     @RawQuery
     fun raw(supportSQLiteQuery: SupportSQLiteQuery): Int
 
+    /** Everything of the WAL into the database file, the WAL emptied: the file alone is the whole database. */
     fun checkpoint() {
-        raw(SimpleSQLiteQuery("PRAGMA wal_checkpoint(FULL)"))
+        raw(SimpleSQLiteQuery("PRAGMA wal_checkpoint(TRUNCATE)"))
     }
 }
 

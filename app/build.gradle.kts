@@ -147,6 +147,10 @@ android {
     testOptions {
         // Robolectric reads the merged resources and manifest (REWRITE §4.13)
         unitTests.isIncludeAndroidResources = true
+        // A real backup for LegacyImporterTest, never committed: ./gradlew … -Pmelogold.importSample=/path/to.db
+        unitTests.all { test ->
+            test.systemProperty("melogold.importSample", providers.gradleProperty("melogold.importSample").orNull.orEmpty())
+        }
     }
 
     packaging {
