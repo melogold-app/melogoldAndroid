@@ -115,6 +115,7 @@ fun RouteHandlerScope.LibraryRoot() {
             item(key = "collections") {
                 CollectionTiles(
                     favorites = current.favorites,
+                    historyTracks = current.historyTracks,
                     onOpen = { builtInPlaylistRoute(it) }
                 )
             }
@@ -178,6 +179,7 @@ fun RouteHandlerScope.LibraryRoot() {
 @Composable
 private fun CollectionTiles(
     favorites: Int,
+    historyTracks: Int,
     onOpen: (BuiltInPlaylist) -> Unit
 ) = Row(
     modifier = Modifier
@@ -211,7 +213,8 @@ private fun CollectionTiles(
     )
     CollectionTile(
         title = stringResource(R.string.library_history),
-        detail = null,
+        // Tracks ever played: after an import from ViTune, where its "Songs" went
+        detail = historyTracks.takeIf { it > 0 }?.toString(),
         icon = R.drawable.ms_history,
         shape = IconShape.Clover4Leaf,
         containerColor = MaterialTheme.colorScheme.secondaryContainer,

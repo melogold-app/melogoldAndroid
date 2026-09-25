@@ -23,7 +23,11 @@ import app.melogold.android.R
 import app.melogold.android.data.importer.ImportFailure
 import app.melogold.android.data.importer.ImportState
 import app.melogold.android.data.importer.ImportSummary
+import app.melogold.android.ui.screens.builtInPlaylistRoute
+import app.melogold.android.ui.shell.LocalMainNav
+import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.utils.toast
+import app.melogold.core.data.enums.BuiltInPlaylist
 
 /**
  * "Import from ViTune or ViMusic" (REWRITE §3.2.8, §4.5): picks the backup file; the import itself runs in the app
@@ -51,6 +55,7 @@ fun rememberImportAction(): () -> Unit {
 @Composable
 fun ImportDialogHost() {
     val importer = LocalAppContainer.current.importer
+    val nav = LocalMainNav.current
     val state by importer.state.collectAsState()
 
     when (val current = state) {
@@ -63,12 +68,28 @@ fun ImportDialogHost() {
             confirmButton = { }
         )
 
-        is ImportState.Done -> AlertDialog(
-            onDismissRequest = importer::dismiss,
-            title = { Text(text = stringResource(R.string.import_done_title)) },
-            text = { Summary(current.summary) },
-            confirmButton = { TextButton(onClick = importer::dismiss) { Text(text = stringResource(R.string.import_done_ok)) } }
-        )
+        is ImportState.Done -> {
+            // ViTune's "Songs" is History › "Most played" here: people coming from it look for their tracks
+            val hasHistory = current.summary.plays + current.summary.playsKnown > 0
+            val done = @Composable {
+                TextButton(onClick = importer::dismiss) { Text(text = stringResource(R.string.import_done_ok)) }
+            }
+            val openHistory = @Composable {
+                TextButton(
+                    onClick = {
+                        importer.dismiss()
+                        nav.navigate(TopLevelDestination.Library) { builtInPlaylistRoute.ensureGlobal(BuiltInPlaylist.History) }
+                    }
+                ) { Text(text = stringResource(R.string.import_open_history)) }
+            }
+            AlertDialog(
+                onDismissRequest = importer::dismiss,
+                title = { Text(text = stringResource(R.string.import_done_title)) },
+                text = { Summary(current.summary) },
+                confirmButton = if (hasHistory) openHistory else done,
+                dismissButton = done.takeIf { hasHistory }
+            )
+        }
 
         is ImportState.Failed -> AlertDialog(
             onDismissRequest = importer::dismiss,

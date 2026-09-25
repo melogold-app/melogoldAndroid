@@ -11,6 +11,7 @@ import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
 import app.melogold.android.models.Event
 import app.melogold.android.models.Lyrics
+import app.melogold.android.models.LyricsSource
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.SearchQuery
 import app.melogold.android.models.Song
@@ -153,7 +154,13 @@ private class LegacyEvent(
     val deviceId: String?
 )
 
-private class LegacyPlaylist(val name: String, val browseId: String?, val thumbnail: String?, val songIds: List<String>)
+private class LegacyPlaylist(
+    val name: String,
+    val browseId: String?,
+    val thumbnail: String?,
+    val syncId: String?,
+    val songIds: List<String>
+)
 
 private class LegacyBundle(
     val songs: List<Song>,
@@ -224,12 +231,17 @@ private class LegacyReader(private val db: SQLiteDatabase, private val tables: S
             )
         }
 
-        val lyrics = select("Lyrics", listOf("songId", "fixed", "synced", "startTime")) { row ->
+        val lyrics = select("Lyrics", listOf("songId", "fixed", "synced", "startTime", "fixedSource", "syncedSource")) { row ->
+            val fixed = row.string("fixed")?.takeIf { it.isNotEmpty() }
+            val synced = row.string("synced")?.takeIf { it.isNotEmpty() }
             Lyrics(
                 songId = row.string("songId") ?: return@select null,
-                fixed = row.string("fixed")?.takeIf { it.isNotEmpty() },
-                synced = row.string("synced")?.takeIf { it.isNotEmpty() },
-                startTime = row.long("startTime")
+                fixed = fixed,
+                synced = synced,
+                startTime = row.long("startTime"),
+                // Copies of Melogold say where each side came from (docs/spec/backup-format.md)
+                fixedSource = row.string("fixedSource").toLyricsSource().takeIf { fixed != null },
+                syncedSource = row.string("syncedSource").toLyricsSource().takeIf { synced != null }
             ).takeIf { it.fixed != null || it.synced != null }
         }
 
@@ -276,12 +288,13 @@ private class LegacyReader(private val db: SQLiteDatabase, private val tables: S
         val items = select(mapTable, listOf("songId", "playlistId", "position"), orderBy = "position, rowid") { row ->
             (row.long("playlistId") ?: return@select null) to (row.string("songId") ?: return@select null)
         }.groupBy({ it.first }, { it.second })
-        val playlists = select("Playlist", listOf("id", "name", "browseId", "thumbnail"), orderBy = "rowid") { row ->
+        val playlists = select("Playlist", listOf("id", "name", "browseId", "thumbnail", "syncId"), orderBy = "rowid") { row ->
             val id = row.long("id") ?: return@select null
             LegacyPlaylist(
                 name = row.string("name").orEmpty(),
                 browseId = row.string("browseId"),
                 thumbnail = row.string("thumbnail"),
+                syncId = row.string("syncId"),
                 songIds = items[id].orEmpty().distinct()
             )
         }
@@ -307,15 +320,23 @@ private fun LegacyBundle.write(version: Int): ImportSummary = Database.internal.
     var favorites = 0
     var datesSkipped = 0
     val known = HashSet<String>()
+    // Tracks the library shows: played, liked or in a playlist. ViTune also keeps the tracks of every album it opened;
+    // those come as well (album pages, lyrics) but the summary does not count them: nobody would find them
+    val shown = HashSet<String>().apply {
+        events.mapTo(this) { it.songId }
+        playlists.forEach { addAll(it.songIds) }
+    }
+    val visible = HashSet<String>()
 
     songs.forEach { imported ->
         val likedAt = imported.likedAt?.takeIf { it in SANE_DATES }
         if (imported.likedAt != null && likedAt == null) datesSkipped++
         val song = imported.copy(likedAt = likedAt)
+        if (song.id in shown || likedAt != null || song.totalPlayTimeMs > 0) visible += song.id
         val local = Database.songNow(song.id)
         if (local == null) {
             Database.insert(song)
-            tracks++
+            if (song.id in visible) tracks++
             if (likedAt != null) favorites++
         } else {
             val merged = local.copy(
@@ -384,34 +405,36 @@ private fun LegacyBundle.write(version: Int): ImportSummary = Database.internal.
     var lyricsAdded = 0
     lyrics.filter { isTrack(it.songId) }.forEach { imported ->
         val local = Database.lyricsNow(imported.songId)
-        when {
-            local == null -> {
-                Database.upsert(imported)
-                lyricsAdded++
-            }
-
-            // Only the sides missing here: nothing found ("") or never asked (null)
-            local.fixed.isNullOrEmpty() && imported.fixed != null ||
-                local.synced.isNullOrEmpty() && imported.synced != null -> {
-                Database.upsert(
-                    local.copy(
-                        fixed = local.fixed?.takeIf { it.isNotEmpty() } ?: imported.fixed,
-                        synced = local.synced?.takeIf { it.isNotEmpty() } ?: imported.synced,
-                        startTime = if (local.synced.isNullOrEmpty()) imported.startTime else local.startTime
-                    )
-                )
-                lyricsAdded++
-            }
+        if (local == null) {
+            Database.upsert(imported)
+            if (imported.songId in visible) lyricsAdded++
+            return@forEach
         }
+        // Only the sides missing here: nothing found ("") or never asked (null)
+        val takeFixed = local.fixed.isNullOrEmpty() && imported.fixed != null
+        val takeSynced = local.synced.isNullOrEmpty() && imported.synced != null
+        if (!takeFixed && !takeSynced) return@forEach
+        Database.upsert(
+            local.copy(
+                fixed = if (takeFixed) imported.fixed else local.fixed,
+                fixedSource = if (takeFixed) imported.fixedSource else local.fixedSource,
+                synced = if (takeSynced) imported.synced else local.synced,
+                syncedSource = if (takeSynced) imported.syncedSource else local.syncedSource,
+                startTime = if (takeSynced) imported.startTime else local.startTime
+            )
+        )
+        if (imported.songId in visible) lyricsAdded++
     }
 
-    // Playlists: one with the same YouTube link or name takes the missing tracks at its end, else a new one
+    // Playlists: the same one (its server id), else one with the same YouTube link or name takes the missing tracks
+    // at its end, else a new one
     var playlistsTouched = 0
     val taken = HashSet<Long>()
     val locals = Database.playlistsNow()
     playlists.forEach { imported ->
         val tracksOf = imported.songIds.filter(::isTrack)
-        val match = locals.firstOrNull { it.id !in taken && imported.browseId != null && it.browseId == imported.browseId }
+        val match = locals.firstOrNull { it.id !in taken && imported.syncId != null && it.syncId == imported.syncId }
+            ?: locals.firstOrNull { it.id !in taken && imported.browseId != null && it.browseId == imported.browseId }
             ?: locals.filter { it.id !in taken && norm(it.name) == norm(imported.name) }.singleOrNull()
         val playlistId = match?.id ?: Database.insert(
             Playlist(
@@ -443,6 +466,17 @@ private fun LegacyBundle.write(version: Int): ImportSummary = Database.internal.
         localSkipped = localSkipped,
         datesSkipped = datesSkipped
     )
+}
+
+/** A source as copies write it: the names of [LyricsSource], or the words of API §4.10. */
+private fun String?.toLyricsSource(): LyricsSource? = when (this) {
+    null -> null
+    "user" -> LyricsSource.User
+    "file" -> LyricsSource.File
+    "youtube_music" -> LyricsSource.YouTubeMusic
+    "lrclib" -> LyricsSource.LrcLib
+    "kugou" -> LyricsSource.KuGou
+    else -> LyricsSource.entries.firstOrNull { it.name == this }
 }
 
 /** The name rule of the server's merge plan (API §4.7): NFKC, trimmed, spaces collapsed, lower case. */

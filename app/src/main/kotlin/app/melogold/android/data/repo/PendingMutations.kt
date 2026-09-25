@@ -214,6 +214,12 @@ fun Int.applyingPlays(pending: List<PendingMutation>): Int = when {
     else -> (this - pending.ofKind<PendingMutation.ForgetTrack>().sumOf { it.plays }).coerceAtLeast(0)
 }
 
+/** The number of tracks in the history without those being forgotten; none while the history is cleared. */
+fun Int.applyingHistoryTracks(pending: List<PendingMutation>): Int = when {
+    pending.any { it is PendingMutation.ClearHistory } -> 0
+    else -> (this - pending.ofKind<PendingMutation.ForgetTrack>().size).coerceAtLeast(0)
+}
+
 /** The number of playlists without those being deleted. */
 fun Int.applyingPlaylists(pending: List<PendingMutation>): Int =
     (this - pending.count { it is PendingMutation.DeletePlaylist }).coerceAtLeast(0)

@@ -217,12 +217,6 @@
     <string name="quick_picks_empty">Быстрый выбор очищен</string>
     <string name="pause_playback_time">Приостановить время воспроизведения</string>
     <string name="format_pause_playback_time_description">Останавливает сохранение времени воспроизведения. Это приостанавливает статистику в плейлисте "Мой топ %1$s"!</string>
-    <string name="backup">Резервное копирование</string>
-    <string name="backup_description">Персональные настройки (например, тема) и кэш исключаются.</string>
-    <string name="backup_action_description">Экспортировать базу данных на внешнее хранилище</string>
-    <string name="restore">Восстановить</string>
-    <string name="restore_warning">Существующие данные будут перезаписаны.\nMelogold автоматически закроется после восстановления базы данных.</string>
-    <string name="restore_description">Импортировать базу данных с внешнего хранилища</string>
     <string name="other">Прочее</string>
     <string name="android_auto">Android Auto</string>
     <string name="android_auto_description">Включить поддержку Android Auto</string>

@@ -842,8 +842,9 @@ interface DatabaseAccessor {
     @Query("SELECT COUNT(*) FROM Artist WHERE bookmarkedAt IS NOT NULL")
     fun savedArtistsCount(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM Event")
-    fun eventsCount(): Flow<Int>
+    /** The tracks in the history: the number on the History tile of the Library. */
+    @Query("SELECT COUNT(DISTINCT songId) FROM Event")
+    fun historyTracksCount(): Flow<Int>
     // endregion R3.2
 
     // region R3.1: "In your library" while typing (REWRITE §3.1.2). SQLite folds only ASCII case, so

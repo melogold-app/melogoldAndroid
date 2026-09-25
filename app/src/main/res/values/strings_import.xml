@@ -16,4 +16,12 @@
     <string name="import_unsupported">Backups of InnerTune, Metrolist and similar apps are not supported yet.</string>
     <string name="import_unreadable">The file could not be read. It may be damaged.</string>
     <string name="import_settings_description">A ViTune, ViMusic or Melogold backup is added to your library: tracks, history, favorites, playlists and lyrics. Nothing here is deleted.</string>
+    <string name="import_open_history">Open history</string>
+    <string name="library_copy">Library copy</string>
+    <string name="library_copy_description">One file with tracks, history, Favorites, playlists and lyrics. Melogold on Android, Windows and Apple opens it.</string>
+    <string name="backup_save">Save a copy</string>
+    <string name="backup_save_description">Settings and the cache are not included</string>
+    <string name="backup_import">Import a copy</string>
+    <string name="backup_saved">Copy saved</string>
+    <string name="backup_failed">Could not save the copy</string>
 </resources>

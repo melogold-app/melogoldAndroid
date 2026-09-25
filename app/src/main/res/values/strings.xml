@@ -220,12 +220,6 @@
     <string name="quick_picks_empty">Quick picks are cleared</string>
     <string name="pause_playback_time">Pause playback time</string>
     <string name="format_pause_playback_time_description">Stops playback time from being saved. This pauses the statistics in the \'My Top %1$s\' playlist!</string>
-    <string name="backup">Backup</string>
-    <string name="backup_description">Personal preferences (i.e. the theme mode) and the cache are excluded.</string>
-    <string name="backup_action_description">Export the database to the external storage</string>
-    <string name="restore">Restore</string>
-    <string name="restore_warning">Existing data will be overwritten.\nMelogold will automatically close itself after restoring the database.</string>
-    <string name="restore_description">Import the database from the external storage</string>
     <string name="other">Other</string>
     <string name="android_auto">Android Auto</string>
     <string name="android_auto_description">Enable Android Auto support</string>

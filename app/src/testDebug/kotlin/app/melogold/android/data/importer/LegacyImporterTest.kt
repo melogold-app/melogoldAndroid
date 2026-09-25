@@ -5,10 +5,18 @@ import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import app.melogold.android.Database
 import app.melogold.android.MainApplication
+import app.melogold.android.internal
+import app.melogold.android.models.Event
+import app.melogold.android.models.Lyrics
+import app.melogold.android.models.LyricsSource
+import app.melogold.android.models.Playlist
+import app.melogold.android.models.Song
+import app.melogold.android.models.SongPlaylistMap
 import app.melogold.domain.importer.ImportIds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -29,6 +37,10 @@ class LegacyImporterTest {
 
     /** Room refuses the main thread, where Robolectric runs the tests. */
     private fun <T> io(block: () -> T): T = runBlocking(Dispatchers.IO) { block() }
+
+    /** The database outlives a test here: each one starts from an empty library. */
+    @Before
+    fun emptyLibrary() = io { Database.internal.clearAllTables() }
 
     @Test
     fun `a ViTune v30 backup merges into the library once`() = io {
@@ -64,6 +76,41 @@ class LegacyImporterTest {
         assertEquals(0, again.favorites)
         assertEquals(0, again.playlists, "the tracks are in the playlist already")
         assertEquals(2, Database.eventsOf(RICK).size)
+    }
+
+    /**
+     * "Save a copy" and "Import" on another device (docs/spec/backup-format.md): own lyrics stay own, the playlist
+     * finds itself by its server id even when renamed there, plays keep their ids.
+     */
+    @Test
+    fun `a copy of Melogold goes round`() = io {
+        Database.insert(Song(id = RICK, title = "Never Gonna Give You Up", durationText = "3:33", thumbnailUrl = null, likedAt = LIKED_AT))
+        Database.upsert(Lyrics(songId = RICK, fixed = "Мои слова", synced = null, fixedSource = LyricsSource.User))
+        val here = Database.insert(Playlist(name = "Дорога", syncId = PLAYLIST_SYNC_ID))
+        Database.insertSongPlaylistMaps(listOf(SongPlaylistMap(songId = RICK, playlistId = here, position = 0)))
+        Database.insertEvents(listOf(Event(songId = RICK, timestamp = PLAYED_AT, playTime = 215_000, syncId = EVENT_SYNC_ID)))
+
+        val copy = File.createTempFile("Melogold_backup", ".db")
+        copy.outputStream().use { LibraryBackup.export(app, it) }
+        val mark = SQLiteDatabase.openDatabase(copy.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+            db.rawQuery("SELECT key, value FROM MelogoldBackup", null).use { cursor ->
+                buildMap { while (cursor.moveToNext()) put(cursor.getString(0), cursor.getString(1)) }
+            }
+        }
+        assertEquals("1", mark["format"])
+        assertEquals("android", mark["platform"])
+
+        // Another device: the same playlist renamed there, nothing else yet
+        Database.internal.clearAllTables()
+        val there = Database.insert(Playlist(name = "Road trip", syncId = PLAYLIST_SYNC_ID))
+        val summary = importer.import(Uri.fromFile(copy))
+
+        assertEquals(1, summary.tracks)
+        assertEquals(1, summary.plays)
+        assertEquals(LyricsSource.User, Database.lyricsNow(RICK)?.fixedSource, "own lyrics stay own")
+        assertEquals(listOf(there), Database.playlistsNow().map { it.id }, "no second playlist")
+        assertEquals(listOf(RICK), Database.playlistMapsNow(there).map { it.songId })
+        assertEquals(EVENT_SYNC_ID, Database.eventsOf(RICK).single().syncId)
     }
 
     @Test
@@ -139,5 +186,7 @@ class LegacyImporterTest {
         const val OTHER = "a1B2c3D4e5F"
         const val LIKED_AT = 1_726_000_000_000L
         const val PLAYED_AT = 1_726_000_100_000L
+        const val PLAYLIST_SYNC_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        const val EVENT_SYNC_ID = "0f8fad5b-d9cb-469f-a165-70867728950e"
     }
 }

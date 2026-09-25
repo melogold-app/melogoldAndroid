@@ -16,4 +16,12 @@
     <string name="import_unsupported">Копии InnerTune, Metrolist и похожих приложений пока не поддерживаются.</string>
     <string name="import_unreadable">Файл не читается. Возможно, он повреждён.</string>
     <string name="import_settings_description">Копия ViTune, ViMusic или Melogold добавится к библиотеке: треки, история, Избранное, плейлисты и тексты. Ничего не удаляется.</string>
+    <string name="import_open_history">Открыть историю</string>
+    <string name="library_copy">Копия библиотеки</string>
+    <string name="library_copy_description">Один файл с треками, историей, Избранным, плейлистами и текстами. Его открывает Melogold на Android, Windows и Apple.</string>
+    <string name="backup_save">Сохранить копию</string>
+    <string name="backup_save_description">Настройки и кэш в копию не входят</string>
+    <string name="backup_import">Импорт копии</string>
+    <string name="backup_saved">Копия сохранена</string>
+    <string name="backup_failed">Не удалось сохранить копию</string>
 </resources>

@@ -2,7 +2,7 @@ package app.melogold.android.ui.screens.library
 
 import app.melogold.android.Database
 import app.melogold.android.data.repo.applying
-import app.melogold.android.data.repo.applyingPlays
+import app.melogold.android.data.repo.applyingHistoryTracks
 import app.melogold.android.data.repo.applyingPlaylists
 import app.melogold.android.data.repo.withPending
 import app.melogold.android.models.Album
@@ -31,9 +31,9 @@ data class LibraryCounts(
     val playlists: Int,
     val albums: Int,
     val artists: Int,
-    val plays: Int
+    val historyTracks: Int
 ) {
-    val isEmpty get() = favorites == 0 && playlists == 0 && albums == 0 && artists == 0 && plays == 0
+    val isEmpty get() = favorites == 0 && playlists == 0 && albums == 0 && artists == 0 && historyTracks == 0
 }
 
 class LibraryModel : ScreenModel() {
@@ -42,9 +42,9 @@ class LibraryModel : ScreenModel() {
         Database.playlistsCount().withPending { applyingPlaylists(it) },
         Database.savedAlbumsCount(),
         Database.savedArtistsCount(),
-        Database.eventsCount().withPending { applyingPlays(it) }
-    ) { favorites, playlists, albums, artists, plays ->
-        LibraryCounts(favorites, playlists, albums, artists, plays)
+        Database.historyTracksCount().withPending { applyingHistoryTracks(it) }
+    ) { favorites, playlists, albums, artists, historyTracks ->
+        LibraryCounts(favorites, playlists, albums, artists, historyTracks)
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
     /** The newest playlists shown in the hub. */
