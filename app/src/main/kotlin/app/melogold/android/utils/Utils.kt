@@ -140,7 +140,7 @@ val String.isVideoFrame: Boolean get() = videoFrameId != null
  * - `lh3`/`yt3` covers are asked for at that size;
  * - a video frame becomes `mqdefault` (320×180) up to 360 px and `hq720` (1280×720) above; both are
  *   16:9 without the black bars of `hqdefault`/`sddefault`. A video without `hq720` falls back to
- *   `hqdefault` with its bars cropped ([VideoFrameFallback]).
+ *   `hqdefault`, and every frame loses its bars as it loads ([VideoFrames]).
  */
 fun String.thumbnail(
     size: Int,

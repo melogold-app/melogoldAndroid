@@ -80,7 +80,7 @@ import app.melogold.android.ui.shell.rememberPermissionRequester
 import app.melogold.android.ui.shell.rememberShellLayout
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
 import app.melogold.android.utils.DisposableListener
-import app.melogold.android.utils.VideoFrameFallback
+import app.melogold.android.utils.VideoFrames
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.rememberEffectiveMotionLevel
 import app.melogold.compose.persist.LocalPersistMap
@@ -448,8 +448,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
 
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(this)
         .components {
-            // A video without hq720.jpg shows its hqdefault.jpg without the black bars
-            add(VideoFrameFallback)
+            // Video frames without black bars; a video without hq720.jpg shows its hqdefault.jpg
+            add(VideoFrames)
             // OkHttp with up to 16 requests per host (its default is 5): a list asks the same
             // thumbnail host for dozens of covers at once
             add(

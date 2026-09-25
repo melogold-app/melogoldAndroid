@@ -15,6 +15,7 @@ import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -48,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,7 +77,6 @@ import app.melogold.android.R
 import app.melogold.android.models.Info
 import app.melogold.android.ui.components.m3e.rememberHaptics
 import app.melogold.android.ui.screens.artistRoute
-import app.melogold.android.utils.isVideoFrame
 import app.melogold.android.utils.squareThumbnail
 import app.melogold.android.utils.thumbnail
 import app.melogold.core.ui.utils.px
@@ -225,11 +226,22 @@ fun RowScope.PlaybackIndicators(
     )
 }
 
+/** Wider than this, the artwork without its black bars is a video frame shown whole at 16:9 (tasks/0005). */
+private const val WIDE_ARTWORK = 1.2f
+
+/** How many artwork shapes are remembered for the next time the player opens. */
+private const val ARTWORK_SHAPES = 256
+
+/** Whether the artworks seen, by address, were wide: a reopened player starts in the right shape. */
+private val wideArtworks = mutableStateMapOf<String, Boolean>()
+
 /**
- * The big Now Playing artwork (28 dp corners), [size] wide: a cover is square, a video frame is
- * shown whole, 9/16 of [size] high (REWRITE §4.8.2), unless [square] asks for room for the
- * [overlay]. Shrinks a little while paused; the tap and the horizontal swipe are handled by [onTap]
- * and [modifier] (the stream info moved to the player menu).
+ * The big Now Playing artwork (28 dp corners), [size] wide. Its shape follows the picture once its
+ * black bars are cut, not its address (tasks/0005): a video frame wider than 1.2:1 is shown whole,
+ * 9/16 of [size] high; a cover, or a single's cover out of a static video, is square, as is the
+ * first picture before it loads and one that fails. [square] asks for room for the [overlay].
+ * Shrinks a little while paused; the tap and the horizontal swipe are handled by [onTap] and
+ * [modifier] (the stream info moved to the player menu).
  */
 @Composable
 fun PlayerArtwork(
@@ -260,7 +272,22 @@ fun PlayerArtwork(
     val context = LocalContext.current
     val sizePx = size.px
     val artworkUri = mediaItem.mediaMetadata.artworkUri
-    val height = if (!square && artworkUri?.toString()?.isVideoFrame == true) size * 9 / 16 else size
+    // A new picture keeps the last shape until it loads: two video frames in a row do not blink square
+    var lastWide by remember { mutableStateOf(false) }
+    val wide = artworkUri?.let { wideArtworks[it.toString()] ?: lastWide } ?: false
+    val ratio by animateFloatAsState(
+        targetValue = if (wide && !square) 9f / 16f else 1f,
+        animationSpec = if (reduceMotion) snap() else tween(300),
+        label = ""
+    )
+    val height = size * ratio
+
+    fun loaded(isWide: Boolean) {
+        lastWide = isWide
+        val key = artworkUri?.toString() ?: return
+        if (wideArtworks.size >= ARTWORK_SHAPES) wideArtworks.clear()
+        wideArtworks[key] = isWide
+    }
 
     Box(
         contentAlignment = Alignment.Center,
@@ -295,6 +322,8 @@ fun PlayerArtwork(
             },
             contentDescription = null,
             contentScale = ContentScale.Crop,
+            onSuccess = { state -> state.result.image.let { loaded(it.width > it.height * WIDE_ARTWORK) } },
+            onError = { loaded(false) },
             modifier = Modifier.fillMaxSize()
         )
 
