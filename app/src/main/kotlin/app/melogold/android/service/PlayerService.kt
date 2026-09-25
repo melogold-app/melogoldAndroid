@@ -1271,24 +1271,33 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                     .withAdditionalHeaders(mapOf("Range" to "bytes=$rangeText"))
             } ?: this
 
+            // The chunk from here, or what is left of the file: the last chunk of a cached track is shorter, and
+            // without this it would be asked of the network (resolving the stream again) although it is cached
+            val cachedChunk = if (chunkLength != null && cache != null && !dataSpec.isLocal) {
+                Database.contentLengthNow(mediaId)
+                    ?.let { total -> (total - dataSpec.position).coerceIn(0L, chunkLength) }
+                    ?.takeIf { it > 0 }
+                    ?: chunkLength
+            } else chunkLength
+
             if (
                 dataSpec.isLocal || (
-                    chunkLength != null && cache != null && cache.isCached(
+                    cachedChunk != null && cache != null && cache.isCached(
                         /* key = */
                         mediaId,
                         /* position = */
                         dataSpec.position,
                         /* length = */
-                        chunkLength
+                        cachedChunk
                     )
                     )
             ) {
                 // Only the cached chunk: past it the cache would ask the network for the video id
                 // itself, which is no address (a local file of that name, "open failed: ENOENT")
-                if (dataSpec.isLocal || chunkLength == null) dataSpec
+                if (dataSpec.isLocal || cachedChunk == null) dataSpec
                 else dataSpec.subrange(
                     0,
-                    if (dataSpec.length == C.LENGTH_UNSET.toLong()) chunkLength else minOf(dataSpec.length, chunkLength)
+                    if (dataSpec.length == C.LENGTH_UNSET.toLong()) cachedChunk else minOf(dataSpec.length, cachedChunk)
                 )
             } else {
                 uriCache[mediaId]?.takeUnless { it.uri.isExpiring() }?.let { cachedUri ->

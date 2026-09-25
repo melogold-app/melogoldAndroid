@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#08041D</color>
+    <!-- The window behind the first frame before Android 12 (no system palette there); 12+ uses the system neutrals -->
+    <color name="window_background_light">#FFFFFF</color>
+    <color name="window_background_dark">#141218</color>
     <color name="melogold_launcher_background">#FFFFFF</color>
 </resources>

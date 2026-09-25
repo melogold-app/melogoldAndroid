@@ -1169,6 +1169,10 @@ interface DatabaseAccessor {
     @Query("SELECT * FROM HistoryForget")
     fun historyForgets(): List<HistoryForget>
 
+    /** The size of the stream file of a track, as the last resolution found it (the cache is keyed by video id). */
+    @Query("SELECT contentLength FROM Format WHERE songId = :songId")
+    fun contentLengthNow(songId: String): Long?
+
     @Query("SELECT COUNT(*) FROM HistoryForget")
     fun historyForgetCount(): Flow<Int>
 

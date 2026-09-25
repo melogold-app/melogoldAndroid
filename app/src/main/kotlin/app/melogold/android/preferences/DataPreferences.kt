@@ -9,7 +9,8 @@ const val TOP_LIST_LENGTH = 50
 
 object DataPreferences : GlobalPreferencesHolder() {
     var coilDiskCacheMaxSize by enum(CoilDiskCacheSize.`128MB`)
-    var exoPlayerDiskCacheMaxSize by enum(ExoPlayerDiskCacheSize.`2GB`)
+    // Every played track is cached; the oldest go when the cache is full (REWRITE §4.7, tasks/0001-cache.md)
+    var exoPlayerDiskCacheMaxSize by enum(ExoPlayerDiskCacheSize.`4GB`)
     var pauseHistory by boolean(false)
     var pausePlaytime by boolean(false)
     var pauseSearchHistory by boolean(false)

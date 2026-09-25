@@ -233,9 +233,9 @@ class PlayerMenuExtras(
 
 /**
  * The ⋮ menu of the player (REWRITE §3.10.5), one short list without section titles: the track
- * without ♡ (it is on screen) with the album and the artists, the lyrics while they are shown, the
- * sleep timer, then what hides the track. The speed, the stream info and the equalizer are in
- * Settings › Player.
+ * with the album and the artists (♡ only from the mini player's long press: the expanded player
+ * shows ♡ itself), the lyrics while they are shown, the sleep timer, then what hides the track.
+ * The speed, the stream info and the equalizer are in Settings › Player.
  */
 @Composable
 private fun PlayerMenu(
@@ -260,7 +260,8 @@ private fun PlayerMenu(
             onNavigate = onNavigate,
             // A hidden track is skipped (REWRITE §3.10.5)
             onHidden = { binder.player.forceSeekToNext() },
-            showFavorite = false,
+            // ♡ is next to the title in the expanded player; the mini player has none, so its long press needs it here
+            showFavorite = extras == null,
             trackRadio = true,
             beforeRemovals = {
                 if (extras?.showLyrics == true) {

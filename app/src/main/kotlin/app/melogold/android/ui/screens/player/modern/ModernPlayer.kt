@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -777,6 +778,17 @@ private fun PortraitLayout(
                 compactControls
             )
         }
+
+        // While the controls are hidden their place is still theirs: a tap there only brings them back (the press
+        // already did, see PlayerModeState.onPress) and does not seek to the lyric line under it
+        if (!controlsVisible) Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(controlsHeight)
+                .pointerInput(Unit) { detectTapGestures { } }
+                .testTag("controls_revealer")
+        )
     }
 }
 

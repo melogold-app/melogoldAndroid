@@ -6,7 +6,9 @@
         <item name="android:windowMinWidthMinor">100%</item>
         <item name="android:windowMinWidthMajor">100%</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:windowBackground">@color/window_background_dark</item>
+        <item name="android:windowBackground">@android:color/system_neutral1_900</item>
+        <!-- The splash screen takes the system background, like the app's dynamic colours -->
+        <item name="android:windowSplashScreenBackground">@android:color/system_neutral1_900</item>
         <item name="android:enforceNavigationBarContrast" tools:ignore="NewApi">false</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
