@@ -2,7 +2,9 @@ package app.melogold.android.sync
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import app.melogold.android.R
 import app.melogold.android.sync.api.ApiException
+import app.melogold.android.ui.screens.settings.account.resolvedLinkError
 import app.melogold.domain.server.UserCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -27,7 +29,8 @@ import kotlin.test.fail
  * "Add device" against a real Melogold server given by `-Pmelogold.testServer=http://127.0.0.1:8787` (tasks/0004,
  * API §4.6 mode `request`). A throwaway account is registered through [Account] (with its proof of work); a watch
  * asks to sign in with raw HTTP, as the Apple client does; this app resolves its code, chooses the number the watch
- * shows, and the watch gets its session. A wrong number and "Deny" refuse. The account is deleted at the end.
+ * shows, and the watch gets its session. A wrong number and "Deny" refuse; a code typed again after its link is over
+ * stays on the code step. The account is deleted at the end.
  */
 @RunWith(RobolectricTestRunner::class)
 class LinkDeviceLiveTest {
@@ -63,6 +66,8 @@ class LinkDeviceLiveTest {
             val completed = poll(url, watch.pollSecret, knownStatus = "claimed", until = "completed")
             assertNotNull(completed["session"], "the watch has its session")
             assertTrue(account.devices().any { it.platform == "watchos" && it.name == "Apple Watch" }, "the watch is a device of the account")
+            val used = account.resolveLink(watch.userCode)
+            assertEquals(R.string.account_error_link_used, resolvedLinkError(used), used.status)
 
             // Another number than the one on the screen: a refusal
             val stranger = watchAsks(url, "Apple Watch 2")
@@ -71,6 +76,10 @@ class LinkDeviceLiveTest {
             val wrong = strangerLink.verifyChoices.first { it != strangerCode }
             val mismatch = runCatching { account.approveLink(strangerLink.linkId, wrong) }.exceptionOrNull()
             assertEquals("link_verify_mismatch", (mismatch as? ApiException)?.code, "$mismatch")
+            // The same code typed again: the server gives the link as it is, denied, without the numbers
+            val again = account.resolveLink(stranger.userCode)
+            assertEquals("denied", again.status)
+            assertEquals(R.string.account_error_link_expired, resolvedLinkError(again))
 
             // "Deny"
             val denied = watchAsks(url, "Apple Watch 3")

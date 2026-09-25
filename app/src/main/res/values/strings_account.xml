@@ -91,6 +91,7 @@
     <string name="account_error_link_expired">The code has expired — get a new one on the device</string>
     <string name="account_error_link_mismatch">The number didn\'t match — sign-in denied</string>
     <string name="account_error_link_claimed">This code is already in use</string>
+    <string name="account_error_link_used">This code has already been used</string>
     <string name="account_error_link_wrong_mode">This is an invitation code, not a sign-in code</string>
 
     <!-- What a device is, for TalkBack: its icon by platform -->

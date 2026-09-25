@@ -80,6 +80,17 @@ internal fun linkError(error: Throwable): Int = when ((error as? ApiException)?.
 }
 
 /**
+ * Why a link that `resolve` gave cannot be approved; null while it waits at `claimed` with its three numbers. A code
+ * typed again after its link is over still resolves (API §4.6): denied after a wrong number, expired, already used.
+ */
+@StringRes
+internal fun resolvedLinkError(link: LinkDetails): Int? = when {
+    link.status == "claimed" && link.verifyChoices.isNotEmpty() -> null
+    link.status == "approved" || link.status == "completed" -> R.string.account_error_link_used
+    else -> R.string.account_error_link_expired
+}
+
+/**
  * "Add device" (tasks/0004, API §4.6 mode `request`): a new device where a password is hard to type, like the watch,
  * shows a code `K7QX-M2PD`. Here it is typed in, the device that asks to sign in is shown, and the number on its
  * screen is chosen from three. A wrong number is a refusal on the server.
@@ -110,7 +121,15 @@ fun AddDeviceScreen() = RouteHandler {
             error = null
             scope.launch {
                 runCatching { account.resolveLink(userCode) }
-                    .onSuccess { link = it }
+                    .onSuccess { details ->
+                        when (val over = resolvedLinkError(details)) {
+                            null -> link = details
+                            else -> {
+                                input = ""
+                                error = over
+                            }
+                        }
+                    }
                     .onFailure { error = linkError(it) }
                 busy = false
             }

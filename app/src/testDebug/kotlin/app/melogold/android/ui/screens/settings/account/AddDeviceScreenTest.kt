@@ -187,6 +187,18 @@ class AddDeviceScreenTest {
         assertEquals(5, minutesLeft(4 * 60_000L + 1))
     }
 
+    @Test
+    fun `a code typed again after its link is over stays on the code step`() {
+        assertEquals(null, resolvedLinkError(watch))
+        // What resolve gives for a link that is over: no device, no network, no numbers
+        fun over(status: String) =
+            resolvedLinkError(watch.copy(status = status, device = null, sameNetwork = null, verifyChoices = emptyList()))
+        listOf("denied", "expired", "cancelled").forEach { assertEquals(R.string.account_error_link_expired, over(it), it) }
+        listOf("approved", "completed").forEach { assertEquals(R.string.account_error_link_used, over(it), it) }
+        assertEquals(R.string.account_error_link_expired, resolvedLinkError(watch.copy(verifyChoices = emptyList())))
+        assertEquals("Этот код уже использован", text(R.string.account_error_link_used))
+    }
+
     private fun text(id: Int, vararg args: Any): String = ApplicationProvider.getApplicationContext<Context>().getString(id, *args)
 
     /** Renders [content] in the Melogold theme. */

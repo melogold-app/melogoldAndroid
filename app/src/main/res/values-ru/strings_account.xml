@@ -91,6 +91,7 @@
     <string name="account_error_link_expired">Код устарел — запросите новый на устройстве</string>
     <string name="account_error_link_mismatch">Число не совпало — вход отклонён</string>
     <string name="account_error_link_claimed">Этот код уже используется</string>
+    <string name="account_error_link_used">Этот код уже использован</string>
     <string name="account_error_link_wrong_mode">Это код приглашения, а не входа</string>
 
     <!-- What a device is, for TalkBack: its icon by platform -->
