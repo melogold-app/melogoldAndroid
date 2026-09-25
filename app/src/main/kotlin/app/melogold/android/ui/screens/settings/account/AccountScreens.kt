@@ -66,6 +66,8 @@ import app.melogold.android.sync.epochMs
 import app.melogold.android.ui.components.m3e.SegmentedGroup
 import app.melogold.android.ui.components.m3e.SegmentedRow
 import app.melogold.android.ui.kit.CollectionScaffold
+import app.melogold.android.ui.kit.deviceIcon
+import app.melogold.android.ui.kit.deviceKindName
 import app.melogold.android.ui.screens.GlobalRoutes
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.settings.LocalSettingsPadding
@@ -84,12 +86,9 @@ val registerRoute = Route0("registerRoute")
 val accountRoute = Route0("accountRoute")
 val serverRoute = Route0("serverRoute")
 
-/** Platforms of the API (API §4.1) shown with a phone. */
-private val MOBILE_PLATFORMS = setOf("android", "ios")
-
 /** What went wrong, in words (API §2 codes). */
 @StringRes
-private fun accountError(error: Throwable): Int = when ((error as? ApiException)?.code) {
+internal fun accountError(error: Throwable): Int = when ((error as? ApiException)?.code) {
     "invalid_credentials" -> R.string.account_error_credentials
     "login_throttled", "rate_limited", "reauth_throttled" -> R.string.account_error_throttled
     "device_limit_reached" -> R.string.account_error_device_limit
@@ -107,7 +106,7 @@ private fun accountError(error: Throwable): Int = when ((error as? ApiException)
 
 /** A page of the account screens: the top bar with "back", then the body; [description] lines up with the fields. */
 @Composable
-private fun AccountPage(title: String, onBack: () -> Unit, description: String? = null, content: @Composable () -> Unit) =
+internal fun AccountPage(title: String, onBack: () -> Unit, description: String? = null, content: @Composable () -> Unit) =
     CollectionScaffold(title = title, subtitle = null, onBack = onBack) { padding ->
         CompositionLocalProvider(LocalSettingsPadding provides padding) {
             SettingsCategoryScreen(title = title) {
@@ -171,7 +170,7 @@ private fun LoginField(value: String, onValueChange: (String) -> Unit, supportin
 )
 
 @Composable
-private fun ErrorText(@StringRes error: Int?) {
+internal fun ErrorText(@StringRes error: Int?) {
     if (error != null) Text(
         text = stringResource(error),
         style = MaterialTheme.typography.bodyMedium,
@@ -181,7 +180,7 @@ private fun ErrorText(@StringRes error: Int?) {
 }
 
 @Composable
-private fun ProgressButton(text: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) =
+internal fun ProgressButton(text: String, busy: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) =
     Button(onClick = onClick, enabled = enabled && !busy, modifier = modifier.fillMaxWidth()) {
         if (busy) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
         else Text(text = text)
@@ -382,13 +381,15 @@ private fun RecoveryCodePage(code: String, onDone: () -> Unit) {
 }
 
 /**
- * The account (REWRITE §3.5.13): how the sync goes with "Sync now", the devices with "Unlink" and "Sign out on
- * other devices", and "Sign out".
+ * The account (REWRITE §3.5.13): how the sync goes with "Sync now", the devices with "Unlink", "Add device"
+ * (tasks/0004) and "Sign out on other devices", and "Sign out".
  */
 @Route
 @Composable
 fun AccountScreen() = RouteHandler {
     GlobalRoutes()
+    // Back here from "Add device", the list is read again: the new device is in it
+    addDeviceRoute { AddDeviceScreen() }
 
     Content {
         val container = LocalAppContainer.current
@@ -433,31 +434,12 @@ fun AccountScreen() = RouteHandler {
             SettingsGroupSpacer()
 
             SettingsEntryGroupText(title = stringResource(R.string.account_devices_group))
-            SegmentedGroup {
-                devices.orEmpty().forEach { device ->
-                    row { shapes ->
-                        SegmentedRow(
-                            headline = device.name,
-                            supporting = if (device.isCurrent) stringResource(R.string.account_device_current)
-                            else device.lastSeenAt?.let { stringResource(R.string.account_device_seen, relativeTime(it.epochMs())) },
-                            icon = if (device.platform in MOBILE_PLATFORMS) R.drawable.ms_smartphone else R.drawable.ms_computer,
-                            shapes = shapes,
-                            onClick = if (device.isCurrent) null else ({ revoking = device }),
-                            trailing = if (device.isCurrent) null else {
-                                { TextButton(onClick = { revoking = device }) { Text(text = stringResource(R.string.account_device_revoke)) } }
-                            }
-                        )
-                    }
-                }
-                if (devices.orEmpty().size > 1) row { shapes ->
-                    SegmentedRow(
-                        headline = stringResource(R.string.account_revoke_others),
-                        icon = R.drawable.ms_link_off,
-                        shapes = shapes,
-                        onClick = { revokingOthers = true }
-                    )
-                }
-            }
+            DevicesGroup(
+                devices = devices.orEmpty(),
+                onRevoke = { revoking = it },
+                onRevokeOthers = { revokingOthers = true },
+                onAddDevice = { addDeviceRoute() }
+            )
             SettingsGroupSpacer()
 
             OutlinedButton(
@@ -514,6 +496,52 @@ fun AccountScreen() = RouteHandler {
                 ) { Text(text = stringResource(R.string.account_sign_out)) }
             },
             dismissButton = { TextButton(onClick = { signingOut = false }) { Text(text = stringResource(R.string.cancel)) } }
+        )
+    }
+}
+
+/**
+ * The devices of the account, each with the icon of its kind (tasks/0004) and "Unlink", then "Add device" and "Sign
+ * out on other devices".
+ */
+@Composable
+internal fun DevicesGroup(
+    devices: List<DeviceDto>,
+    onRevoke: (DeviceDto) -> Unit,
+    onRevokeOthers: () -> Unit,
+    onAddDevice: () -> Unit
+) = SegmentedGroup {
+    devices.forEach { device ->
+        row { shapes ->
+            SegmentedRow(
+                headline = device.name,
+                supporting = if (device.isCurrent) stringResource(R.string.account_device_current)
+                else device.lastSeenAt?.let { stringResource(R.string.account_device_seen, relativeTime(it.epochMs())) },
+                icon = deviceIcon(device.platform),
+                iconDescription = stringResource(deviceKindName(device.platform)),
+                shapes = shapes,
+                onClick = if (device.isCurrent) null else ({ onRevoke(device) }),
+                trailing = if (device.isCurrent) null else {
+                    { TextButton(onClick = { onRevoke(device) }) { Text(text = stringResource(R.string.account_device_revoke)) } }
+                }
+            )
+        }
+    }
+    row { shapes ->
+        SegmentedRow(
+            headline = stringResource(R.string.account_add_device),
+            icon = R.drawable.ms_add,
+            shapes = shapes,
+            onClick = onAddDevice,
+            modifier = Modifier.testTag("account_add_device")
+        )
+    }
+    if (devices.size > 1) row { shapes ->
+        SegmentedRow(
+            headline = stringResource(R.string.account_revoke_others),
+            icon = R.drawable.ms_link_off,
+            shapes = shapes,
+            onClick = onRevokeOthers
         )
     }
 }

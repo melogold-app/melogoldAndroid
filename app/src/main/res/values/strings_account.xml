@@ -72,6 +72,35 @@
     <string name="account_sign_out_text">The library stays on this device but stops syncing</string>
     <string name="account_password_confirm">Confirm</string>
 
+    <!-- Add device: a sign-in by the code a new device shows, like the watch (API §4.6, tasks/0004) -->
+    <string name="account_add_device">Add device</string>
+    <string name="account_add_device_text">On the new device, open Melogold, choose “Sign in with a code” and enter the code it shows</string>
+    <string name="account_add_device_code">Code</string>
+    <string name="account_add_device_code_hint">8 letters and digits, like K7QX-M2PD</string>
+    <string name="account_add_device_continue">Continue</string>
+    <string name="account_add_device_new">New device</string>
+    <string name="account_add_device_same_network">On the same network as this device</string>
+    <string name="account_add_device_other_network">On another network — make sure it\'s your device</string>
+    <string name="account_add_device_expires">The code is valid for %1$d more min</string>
+    <string name="account_add_device_pick">Choose the number shown on the new device</string>
+    <string name="account_add_device_deny">Deny</string>
+    <string name="account_add_device_denied">Sign-in denied</string>
+    <string name="account_add_device_done">“%1$s” signed in to your account</string>
+    <string name="account_add_device_limit">The account already has the most devices it can: unlink one to add a new one</string>
+    <string name="account_error_link_not_found">Code not found</string>
+    <string name="account_error_link_expired">The code has expired — get a new one on the device</string>
+    <string name="account_error_link_mismatch">The number didn\'t match — sign-in denied</string>
+    <string name="account_error_link_claimed">This code is already in use</string>
+    <string name="account_error_link_wrong_mode">This is an invitation code, not a sign-in code</string>
+
+    <!-- What a device is, for TalkBack: its icon by platform -->
+    <string name="device_kind_phone">Phone</string>
+    <string name="device_kind_tablet">Tablet</string>
+    <string name="device_kind_computer">Computer</string>
+    <string name="device_kind_watch">Watch</string>
+    <string name="device_kind_headset">Headset</string>
+    <string name="device_kind_other">Device</string>
+
     <!-- The server page -->
     <string name="server_title">Melogold server</string>
     <string name="server_text">Your library syncs through this server. You can use your own: the server is open source and installs with one command</string>

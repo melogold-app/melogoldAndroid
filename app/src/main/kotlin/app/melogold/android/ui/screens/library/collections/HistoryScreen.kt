@@ -1,6 +1,7 @@
 package app.melogold.android.ui.screens.library.collections
 
 import android.text.format.DateFormat
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -51,12 +52,14 @@ import app.melogold.android.models.Song
 import app.melogold.android.models.SongWithLastPlayed
 import app.melogold.android.models.SongWithPlayTime
 import app.melogold.android.preferences.DataPreferences
+import app.melogold.android.sync.api.DeviceDto
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
 import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.deviceIcon
 import app.melogold.android.ui.kit.formatListeningTime
 import app.melogold.android.ui.model.ScreenModel
 import app.melogold.android.ui.model.rememberScreenModel
@@ -94,6 +97,9 @@ import java.util.concurrent.TimeUnit
 
 private const val KEEP_WHILE_HIDDEN_MS = 5_000L
 
+/** The `platform` of this app on the server (API §1.6). */
+private const val THIS_PLATFORM = "android"
+
 enum class HistoryMode { Recent, MostPlayed }
 
 /** Whose plays History shows: every device of the account, this one, or another one by its id on the server. */
@@ -103,8 +109,8 @@ sealed interface HistoryDevice {
     data class Other(val id: String) : HistoryDevice
 }
 
-/** Another device with plays here; [name] is null for one no longer in the account. */
-data class HistoryDeviceEntry(val id: String, val name: String?)
+/** Another device with plays here; [name] and [platform] are null for one no longer in the account. */
+data class HistoryDeviceEntry(val id: String, val name: String?, val platform: String? = null)
 
 /** The periods of "Most played" (REWRITE §3.2.4); null days: all time. */
 enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
@@ -121,7 +127,7 @@ enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryModel : ScreenModel() {
     private val account = Dependencies.application.container.account
-    private val names = MutableStateFlow<Map<String, String>>(emptyMap())
+    private val names = MutableStateFlow<Map<String, DeviceDto>>(emptyMap())
 
     val period = MutableStateFlow(HistoryPeriod.Month)
     val device = MutableStateFlow<HistoryDevice>(HistoryDevice.All)
@@ -132,7 +138,7 @@ class HistoryModel : ScreenModel() {
     /** The other devices of the account with plays here (API §4.8 history); none without an account. */
     val devices: StateFlow<ImmutableList<HistoryDeviceEntry>> = combine(Database.historyDevices(), names) { ids, names ->
         ids.filter { it != me }
-            .map { HistoryDeviceEntry(id = it, name = names[it]) }
+            .map { HistoryDeviceEntry(id = it, name = names[it]?.name, platform = names[it]?.platform) }
             .sortedBy { it.name == null }
             .toImmutableList()
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), persistentListOf())
@@ -163,7 +169,7 @@ class HistoryModel : ScreenModel() {
     init {
         // The names of the account's devices; a device gone from the account stays "Another device"
         if (account.session != null) scope.launch {
-            runCatching { account.devices() }.onSuccess { list -> names.value = list.associate { it.id to it.name } }
+            runCatching { account.devices() }.onSuccess { list -> names.value = list.associateBy { it.id } }
         }
     }
 
@@ -421,7 +427,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
 
 /**
  * The device whose plays History shows, as an M3 filter chip with a menu: all devices, this one, or another one of
- * the account.
+ * the account, each with the icon of its kind (tasks/0004).
  */
 @Composable
 private fun DeviceFilter(
@@ -438,6 +444,13 @@ private fun DeviceFilter(
         is HistoryDevice.Other -> devices.firstOrNull { it.id == device.id }?.name ?: other
     }
 
+    @DrawableRes
+    fun icon(device: HistoryDevice): Int = when (device) {
+        HistoryDevice.All -> R.drawable.ms_devices
+        HistoryDevice.Here -> deviceIcon(THIS_PLATFORM)
+        is HistoryDevice.Other -> deviceIcon(devices.firstOrNull { it.id == device.id }?.platform)
+    }
+
     Box(modifier = modifier) {
         FilterChip(
             selected = selected != HistoryDevice.All,
@@ -449,7 +462,7 @@ private fun DeviceFilter(
                     )
                 )
             },
-            leadingIcon = { Icon(painter = painterResource(R.drawable.ms_devices), contentDescription = null) },
+            leadingIcon = { Icon(painter = painterResource(icon(selected)), contentDescription = null) },
             trailingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.ms_arrow_drop_down),
@@ -472,6 +485,7 @@ private fun DeviceFilter(
                         expanded = false
                         onSelect(option)
                     },
+                    leadingIcon = { Icon(painter = painterResource(icon(option)), contentDescription = null) },
                     trailingIcon = if (option == selected) {
                         { Icon(painter = painterResource(R.drawable.ms_check), contentDescription = null) }
                     } else null

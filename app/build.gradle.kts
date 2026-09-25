@@ -148,8 +148,12 @@ android {
         // Robolectric reads the merged resources and manifest (REWRITE §4.13)
         unitTests.isIncludeAndroidResources = true
         // A real backup for LegacyImporterTest, never committed: ./gradlew … -Pmelogold.importSample=/path/to.db
+        // A Melogold server for LinkDeviceLiveTest: -Pmelogold.testServer=http://127.0.0.1:8787
+        // Where the screen tests put their pictures: -Pmelogold.screenshots=/path/to/dir
         unitTests.all { test ->
             test.systemProperty("melogold.importSample", providers.gradleProperty("melogold.importSample").orNull.orEmpty())
+            test.systemProperty("melogold.testServer", providers.gradleProperty("melogold.testServer").orNull.orEmpty())
+            test.systemProperty("melogold.screenshots", providers.gradleProperty("melogold.screenshots").orNull.orEmpty())
         }
     }
 
@@ -315,4 +319,9 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.room.testing)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test)
+    testImplementation(libs.espresso.core)
+    // The empty activity the screen tests render in; a debug build only
+    debugImplementation(libs.compose.ui.test.manifest)
 }

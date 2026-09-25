@@ -9,6 +9,8 @@ import app.melogold.android.sync.api.AuthSession
 import app.melogold.android.sync.api.DeviceDto
 import app.melogold.android.sync.api.DeviceInput
 import app.melogold.android.sync.api.DevicePatch
+import app.melogold.android.sync.api.LinkDecision
+import app.melogold.android.sync.api.LinkDetails
 import app.melogold.android.sync.api.LoginRequest
 import app.melogold.android.sync.api.MelogoldApi
 import app.melogold.android.sync.api.PowSolution
@@ -159,6 +161,15 @@ class Account(context: Context) {
     suspend fun revoke(deviceId: String, password: String?) = authorized { api, token -> api.revokeDevice(token, deviceId, password) }
 
     suspend fun revokeOthers(password: String?): Int = authorized { api, token -> api.revokeOthers(token, password).revokedCount }
+
+    /** "Add device" (API §4.6, mode `request`): the code the new device shows, normalized (`UserCode`). */
+    suspend fun resolveLink(userCode: String): LinkDetails = authorized { api, token -> api.resolveLink(token, userCode) }
+
+    /** The number chosen from the three; the new device signs in if it is the one it shows. */
+    suspend fun approveLink(linkId: String, verifyCode: String): LinkDecision =
+        authorized { api, token -> api.approveLink(token, linkId, verifyCode) }
+
+    suspend fun denyLink(linkId: String): LinkDecision = authorized { api, token -> api.denyLink(token, linkId) }
 
     /** The server ended the session: sign in again, the data stays. */
     fun endSession() {

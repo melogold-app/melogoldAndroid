@@ -82,6 +82,7 @@ object SegmentedGroupDefaults {
  * and a trailing slot (a value with "›", a switch, a count, …).
  *
  * @param onClick `null` makes the row non-interactive
+ * @param iconDescription what the icon says to TalkBack when it tells something the headline doesn't (a kind of device)
  */
 @Composable
 fun SegmentedRow(
@@ -91,6 +92,7 @@ fun SegmentedRow(
     onClick: (() -> Unit)? = null,
     supporting: String? = null,
     @DrawableRes icon: Int? = null,
+    iconDescription: String? = null,
     enabled: Boolean = true,
     colors: ListItemColors = SegmentedGroupDefaults.colors(),
     trailing: (@Composable () -> Unit)? = null
@@ -100,7 +102,7 @@ fun SegmentedRow(
             ShapeIcon(
                 icon = it,
                 shape = IconShape.Circle,
-                contentDescription = null,
+                contentDescription = iconDescription,
                 size = 40.dp
             )
         }

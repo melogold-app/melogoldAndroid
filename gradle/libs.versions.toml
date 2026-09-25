@@ -109,6 +109,11 @@ ktor_client_mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 robolectric = { module = "org.robolectric:robolectric", version = "4.17" }
 room_testing = { module = "androidx.room:room-testing", version.ref = "room" }
 androidx_test_core = { module = "androidx.test:core", version = "1.7.0" }
+# Compose screens rendered under Robolectric (versions from the BOM)
+compose_ui_test = { module = "androidx.compose.ui:ui-test-junit4" }
+compose_ui_test_manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+# Over the one ui-test brings: 3.5 reaches InputManager.getInstance(), gone from the SDKs Robolectric runs
+espresso_core = { module = "androidx.test.espresso:espresso-core", version = "3.7.0" }
 
 detekt_compose = { module = "io.nlopez.compose.rules:detekt", version = "0.6.6" }
 detekt_formatting = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }

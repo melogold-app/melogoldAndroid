@@ -72,6 +72,35 @@
     <string name="account_sign_out_text">Библиотека останется на этом устройстве, но перестанет синхронизироваться</string>
     <string name="account_password_confirm">Подтвердить</string>
 
+    <!-- Add device: a sign-in by the code a new device shows, like the watch (API §4.6, tasks/0004) -->
+    <string name="account_add_device">Добавить устройство</string>
+    <string name="account_add_device_text">На новом устройстве откройте Melogold, выберите «Войти по коду» и введите код, который оно покажет</string>
+    <string name="account_add_device_code">Код</string>
+    <string name="account_add_device_code_hint">8 букв и цифр, например K7QX-M2PD</string>
+    <string name="account_add_device_continue">Продолжить</string>
+    <string name="account_add_device_new">Новое устройство</string>
+    <string name="account_add_device_same_network">В той же сети, что и это устройство</string>
+    <string name="account_add_device_other_network">В другой сети — убедитесь, что это ваше устройство</string>
+    <string name="account_add_device_expires">Код действует ещё %1$d мин</string>
+    <string name="account_add_device_pick">Выберите число, которое видно на новом устройстве</string>
+    <string name="account_add_device_deny">Отклонить</string>
+    <string name="account_add_device_denied">Вход отклонён</string>
+    <string name="account_add_device_done">«%1$s» вошло в аккаунт</string>
+    <string name="account_add_device_limit">На аккаунте уже максимум устройств: отвяжите одно, чтобы добавить новое</string>
+    <string name="account_error_link_not_found">Код не найден</string>
+    <string name="account_error_link_expired">Код устарел — запросите новый на устройстве</string>
+    <string name="account_error_link_mismatch">Число не совпало — вход отклонён</string>
+    <string name="account_error_link_claimed">Этот код уже используется</string>
+    <string name="account_error_link_wrong_mode">Это код приглашения, а не входа</string>
+
+    <!-- What a device is, for TalkBack: its icon by platform -->
+    <string name="device_kind_phone">Телефон</string>
+    <string name="device_kind_tablet">Планшет</string>
+    <string name="device_kind_computer">Компьютер</string>
+    <string name="device_kind_watch">Часы</string>
+    <string name="device_kind_headset">Гарнитура</string>
+    <string name="device_kind_other">Устройство</string>
+
     <!-- The server page -->
     <string name="server_title">Сервер Melogold</string>
     <string name="server_text">Библиотека синхронизируется через этот сервер. Можно указать свой — сервер открытый и ставится одной командой</string>

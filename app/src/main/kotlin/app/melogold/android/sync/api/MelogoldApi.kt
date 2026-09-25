@@ -155,6 +155,41 @@ data class PasswordRequest(val password: String? = null)
 data class RevokeOthersResponse(val revokedCount: Int)
 // endregion
 
+// region Linking a device by code (API §4.6, mode `request`)
+@Serializable
+data class ResolveLinkRequest(val userCode: String)
+
+/** What the new device says about itself. */
+@Serializable
+data class LinkDeviceInfo(
+    val name: String,
+    val platform: String,
+    val osVersion: String? = null,
+    val model: String? = null,
+    val clientVersion: String? = null,
+    val alreadyLinked: Boolean = false
+)
+
+/** A link: at `claimed`, the three numbers to choose from, one of them shown on the new device. */
+@Serializable
+data class LinkDetails(
+    val linkId: String,
+    val mode: String,
+    val status: String,
+    val createdAt: String,
+    val expiresAt: String,
+    val device: LinkDeviceInfo? = null,
+    val sameNetwork: Boolean? = null,
+    val verifyChoices: List<String> = emptyList()
+)
+
+@Serializable
+data class ApproveLinkRequest(val verifyCode: String)
+
+@Serializable
+data class LinkDecision(val linkId: String, val status: String)
+// endregion
+
 // region Sync (API §4.7, §4.8)
 @Serializable
 data class SyncRequest(
@@ -365,6 +400,29 @@ class MelogoldApi(private val baseUrl: String) {
         client.post("$baseUrl/auth/me/devices/revoke-others") {
             bearerAuth(token)
             jsonBody(PasswordRequest(password))
+        }
+    }
+
+    /** The code a new device shows (API §4.6): which device asks to sign in, and the three numbers. */
+    suspend fun resolveLink(token: String, userCode: String): LinkDetails = call {
+        client.post("$baseUrl/auth/me/links/resolve") {
+            bearerAuth(token)
+            jsonBody(ResolveLinkRequest(userCode))
+        }
+    }
+
+    /** A wrong number denies the link: `409 link_verify_mismatch`. */
+    suspend fun approveLink(token: String, linkId: String, verifyCode: String): LinkDecision = call {
+        client.post("$baseUrl/auth/me/links/$linkId/approve") {
+            bearerAuth(token)
+            jsonBody(ApproveLinkRequest(verifyCode))
+        }
+    }
+
+    suspend fun denyLink(token: String, linkId: String): LinkDecision = call {
+        client.post("$baseUrl/auth/me/links/$linkId/deny") {
+            bearerAuth(token)
+            jsonBody(JsonObject(emptyMap()))
         }
     }
 
