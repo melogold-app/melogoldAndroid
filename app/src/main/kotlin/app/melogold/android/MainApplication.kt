@@ -46,6 +46,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -63,19 +64,19 @@ import app.melogold.android.service.ServiceNotifications
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.shell.AppShell
-import app.melogold.android.ui.shell.LocalPermissions
-import app.melogold.android.ui.shell.rememberPermissionRequester
 import app.melogold.android.ui.shell.KeyboardShortcuts
 import app.melogold.android.ui.shell.LinkHandler
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.ui.shell.LocalLinkHandler
 import app.melogold.android.ui.shell.LocalMainNav
+import app.melogold.android.ui.shell.LocalPermissions
 import app.melogold.android.ui.shell.MainNavState
 import app.melogold.android.ui.shell.MainNavigationBarHeight
 import app.melogold.android.ui.shell.SearchSource
 import app.melogold.android.ui.shell.TopLevelDestination
 import app.melogold.android.ui.shell.rememberAppSnackbar
 import app.melogold.android.ui.shell.rememberMainNavState
+import app.melogold.android.ui.shell.rememberPermissionRequester
 import app.melogold.android.ui.shell.rememberShellLayout
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
 import app.melogold.android.utils.DisposableListener
@@ -102,16 +103,20 @@ import coil3.decode.ExifOrientationStrategy
 import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import okhttp3.Dispatcher
 
 // Viewmodel in order to avoid recreating the entire Player state (WORKAROUND)
 class MainViewModel : ViewModel() {
@@ -391,6 +396,8 @@ val LocalPlayerServiceBinder = staticCompositionLocalOf<PlayerService.Binder?> {
 val LocalPlayerAwareWindowInsets =
     compositionLocalOf<WindowInsets> { error("No player insets provided") }
 
+
+private const val LYRICS_RECHECK = "lyricsRecheck1"
 class MainApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
     override fun onCreate() {
         StrictMode.setVmPolicy(
@@ -418,6 +425,14 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
 
         // The library follows the account on the Melogold server while signed in
         container.sync.start()
+
+        // Once: lyrics that were not found are searched again with the better chain (2026-09-25)
+        val migrations = getSharedPreferences("melogold_migrations", MODE_PRIVATE)
+        if (!migrations.getBoolean(LYRICS_RECHECK, false)) query {
+            Database.forgetMissingSyncedLyrics()
+            Database.forgetMissingPlainLyrics()
+            migrations.edit { putBoolean(LYRICS_RECHECK, true) }
+        }
         container.updates.start()
 
         // Deletions waiting for "Undo" reach Room before the system may kill the app in the background
@@ -429,6 +444,26 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
     }
 
     override fun newImageLoader(context: PlatformContext) = ImageLoader.Builder(this)
+        .components {
+            // OkHttp with up to 16 requests per host (its default is 5): a list asks the same
+            // thumbnail host for dozens of covers at once
+            add(
+                KtorNetworkFetcherFactory(
+                    httpClient = {
+                        HttpClient(OkHttp) {
+                            engine {
+                                config {
+                                    dispatcher(Dispatcher().apply {
+                                        maxRequests = 64
+                                        maxRequestsPerHost = 16
+                                    })
+                                }
+                            }
+                        }
+                    }
+                )
+            )
+        }
         .crossfade(true)
         .memoryCache {
             MemoryCache.Builder()

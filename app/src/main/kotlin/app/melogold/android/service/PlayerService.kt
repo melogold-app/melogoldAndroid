@@ -59,6 +59,7 @@ import androidx.media3.exoplayer.analytics.PlaybackStatsListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioOffloadSupportProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -997,6 +998,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
     )
 
+    /** How loud what plays now is, for the "now playing" bars. */
+    private val audioLevels = AudioLevels()
+
     private fun createRendersFactory() = object : DefaultRenderersFactory(this) {
         override fun buildAudioSink(
             context: Context,
@@ -1005,6 +1009,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         ): AudioSink {
             @Suppress("DEPRECATION")
             return DefaultAudioSink.Builder(applicationContext)
+                // The "now playing" bars listen here (AudioLevels)
+                .setAudioProcessors(arrayOf(TeeAudioProcessor(audioLevels)))
                 .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                 .setAudioOffloadSupportProvider(
@@ -1030,6 +1036,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
         val sleepTimerMillisLeft: StateFlow<Long?>?
             get() = timerJob?.millisLeft
+
+        /** The loudness of the bands of what plays now (the "now playing" bars). */
+        val audioLevels: AudioLevels
+            get() = this@PlayerService.audioLevels
 
         private var radioJob: Job? = null
 

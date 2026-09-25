@@ -1,7 +1,10 @@
 package app.melogold.android.ui.screens.player.modern
 
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -524,8 +527,10 @@ private fun DrawScope.drawSungWords(
 }
 
 /**
- * Three dots for an instrumental gap. While active and playing they fill one after the other and
- * "breathe"; the animation only touches the draw phase.
+ * Three dots for an instrumental gap, the way the ear expects them: nothing while the gap is not
+ * playing (the row takes no room); when it starts the room opens and the dots pop in one after
+ * the other with a little overshoot; then they fill one by one and "breathe", and just before the
+ * next line they swell and vanish. The animation only touches the draw phase.
  */
 // The states are read in the draw phase so that the playback clock does not recompose the row
 @Suppress("StateParam")
@@ -547,16 +552,24 @@ private fun InterludeRow(
 
     LaunchedEffect(active, playing, reduceMotion) {
         if (!active || !playing || reduceMotion) return@LaunchedEffect
-        val start = withFrameMillis { it }
+        val start = withFrameMillis { it } - clock.floatValue.toLong()
         while (true) {
             withFrameMillis { clock.floatValue = (it - start).toFloat() }
         }
     }
+    // A new gap starts its entrance from the beginning
+    LaunchedEffect(active) { if (!active) clock.floatValue = 0f }
+
+    val height by animateDpAsState(
+        targetValue = if (active) 40.dp else 0.dp,
+        animationSpec = if (reduceMotion) snap() else spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
+        label = "interlude"
+    )
 
     Spacer(
         modifier = modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(height)
             .combinedClickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -570,11 +583,14 @@ private fun InterludeRow(
                 val now = if (isActive) position() else 0L
                 val duration = (row.endMs - row.startMs).coerceAtLeast(1L)
                 val fraction = if (isActive) ((now - row.startMs).toFloat() / duration).coerceIn(0f, 1f) else 0f
+                if (!isActive) return@drawBehind
                 drawInterludeDots(
                     fraction = fraction,
-                    remainingMs = if (isActive) (row.endMs - now).toFloat() else Float.MAX_VALUE,
-                    clockMs = if (isActive) clock.floatValue else 0f,
-                    active = isActive,
+                    remainingMs = (row.endMs - now).toFloat(),
+                    clockMs = clock.floatValue,
+                    // Paused (or reduced motion): the dots are simply there
+                    appearMs = if (playing && !reduceMotion) clock.floatValue else Float.MAX_VALUE,
+                    active = true,
                     animated = !reduceMotion,
                     // With the next singer, where the eye goes next
                     right = (layoutDirection == LayoutDirection.Rtl) != (row.side == VocalSide.End),
@@ -592,6 +608,7 @@ internal fun DrawScope.drawInterludeDots(
     fraction: Float,
     remainingMs: Float,
     clockMs: Float,
+    appearMs: Float,
     active: Boolean,
     animated: Boolean,
     right: Boolean,
@@ -625,11 +642,22 @@ internal fun DrawScope.drawInterludeDots(
         repeat(3) { k ->
             val fill = if (active) (fraction * 3f - k).coerceIn(0f, 1f) else 0f
             val alpha = (0.2f + 0.7f * fill) * groupAlpha
+            // The entrance: each dot pops in 90 ms after the one before, overshooting a little
+            val appear = if (animated) easeOutBack(((appearMs - k * 90f) / 320f).coerceIn(0f, 1f)) else 1f
+            if (appear <= 0f) return@repeat
             drawCircle(
                 color = color.copy(alpha = alpha.coerceIn(0f, 1f)),
-                radius = dot / 2,
+                radius = dot / 2 * appear,
                 center = Offset(startX + dot / 2 + k * (dot + gap), cy)
             )
         }
     }
+}
+
+/** 0 → 1 with a small overshoot at the end (the "back" easing). */
+private fun easeOutBack(t: Float): Float {
+    val c1 = 1.70158f
+    val c3 = c1 + 1f
+    val u = t - 1f
+    return 1f + c3 * u * u * u + c1 * u * u
 }

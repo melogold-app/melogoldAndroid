@@ -307,12 +307,16 @@ fun ModernPlayer(
     )
 
     val lyricsEntries: @Composable ColumnScope.() -> Unit = {
-        val showingSynced = PlayerPreferences.preferSyncedLyrics
+        // What is on screen, not the preference: without synced lyrics plain text shows either way
+        val showingSynced = lyrics.content is LyricsContent.Synced
         val raw = lyrics.raw
+        val hasSynced = !raw?.synced.isNullOrBlank()
 
         LyricsMenuEntries(
             showingSynced = showingSynced,
-            onToggleSynced = { PlayerPreferences.preferSyncedLyrics = !showingSynced },
+            onToggleSynced = if (hasSynced) {
+                { PlayerPreferences.preferSyncedLyrics = !showingSynced }
+            } else null,
             onFind = { picking = true },
             onEdit = { editing = true },
             onSetStartOffset = if (showingSynced && raw != null) {

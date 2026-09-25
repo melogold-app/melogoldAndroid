@@ -47,14 +47,13 @@ object LrcLib {
         }
     }
 
+    // No album: YouTube Music names albums its own way, and one word off finds nothing
     private suspend fun queryLyrics(
         artist: String,
-        title: String,
-        album: String? = null
+        title: String
     ) = client.get("/api/search") {
         parameter("track_name", title)
         parameter("artist_name", artist)
-        if (album != null) parameter("album_name", album)
     }.body<List<Track>>()
 
     private suspend fun queryLyrics(query: String) = client.get("/api/search") {
@@ -64,13 +63,11 @@ object LrcLib {
     suspend fun lyrics(
         artist: String,
         title: String,
-        album: String? = null,
         synced: Boolean = true
     ) = runCatchingCancellable {
         queryLyrics(
             artist = artist,
-            title = title,
-            album = album
+            title = title
         ).let { list ->
             list.filter { if (synced) it.syncedLyrics != null else it.plainLyrics != null }
         }
@@ -85,12 +82,10 @@ object LrcLib {
         artist: String,
         title: String,
         duration: Duration,
-        album: String? = null,
         synced: Boolean = true
     ) = lyrics(
         artist = artist,
         title = title,
-        album = album,
         synced = synced
     )?.mapCatching { tracks ->
         tracks.bestMatchingFor(title, duration)

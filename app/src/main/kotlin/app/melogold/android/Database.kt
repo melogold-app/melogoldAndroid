@@ -379,6 +379,17 @@ interface DatabaseAccessor {
     @Query("SELECT * FROM Lyrics WHERE songId = :songId")
     fun lyrics(songId: String): Flow<Lyrics?>
 
+    /**
+     * Searches that found nothing ("" and no source) are asked again the next time the lyrics are
+     * shown: once, after the search learned to clean YouTube titles and to read YouTube Music's
+     * timed lyrics (REWRITE §4.10.8). What the user set is left alone: it has a source.
+     */
+    @Query("UPDATE Lyrics SET synced = NULL WHERE synced = '' AND syncedSource IS NULL")
+    fun forgetMissingSyncedLyrics(): Int
+
+    @Query("UPDATE Lyrics SET fixed = NULL WHERE fixed = '' AND fixedSource IS NULL")
+    fun forgetMissingPlainLyrics(): Int
+
     @Query("SELECT * FROM Artist WHERE id = :id")
     fun artist(id: String): Flow<Artist?>
 

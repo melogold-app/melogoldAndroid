@@ -117,12 +117,22 @@ val Duration.formatted
 /** The largest artwork size requested from the thumbnail servers, in pixels. */
 const val MAX_THUMBNAIL_SIZE = 1920
 
+/** A YouTube video frame: `https://i.ytimg.com/vi/<id>/<name>.jpg`, often with signed crop parameters. */
+private val VIDEO_THUMBNAIL = Regex("""^https://i\.ytimg\.com/vi(?:_webp)?/([^/]+)/[^/?]+""")
+
+/** Up to this size a video frame is fetched as `mqdefault` (320×180, 16:9, no black bars). */
+private const val SMALL_VIDEO_THUMBNAIL = 360
+
 fun String.thumbnail(
     size: Int,
     maxSize: Int = MAX_THUMBNAIL_SIZE
 ): String {
     val actualSize = size.coerceAtMost(maxSize)
     return when {
+        // A list row needs a few kilobytes, not the 1280×720 frame of the video page
+        size <= SMALL_VIDEO_THUMBNAIL && VIDEO_THUMBNAIL.containsMatchIn(this) ->
+            VIDEO_THUMBNAIL.find(this)!!.groupValues[1].let { "https://i.ytimg.com/vi/$it/mqdefault.jpg" }
+
         this.startsWith("https://lh3.googleusercontent.com") ||
             this.startsWith("https://yt3.googleusercontent.com") -> "$this-w$actualSize-h$actualSize"
 

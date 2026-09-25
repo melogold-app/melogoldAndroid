@@ -11,14 +11,15 @@ import app.melogold.android.ui.components.menu.MenuEntry
  * The lyrics group of the player menu, three rows: synced or plain, "Find lyrics" (LRCLIB, or a file
  * from the same dialog) and "Edit lyrics". Everything happens in the app.
  *
- * Every entry hides the menu before invoking its callback; [onSetStartOffset] being null hides its
- * entry (it acts on a long-pressed line).
+ * Every entry hides the menu before invoking its callback. [showingSynced] is what the lyrics area
+ * shows now; [onToggleSynced] is null without synced lyrics (nothing to switch to); [onSetStartOffset]
+ * being null hides its entry (it acts on a long-pressed line).
  */
 @Suppress("ParameterNaming") // "synced" names the lyrics kind, not a past event
 @Composable
 fun ColumnScope.LyricsMenuEntries(
     showingSynced: Boolean,
-    onToggleSynced: () -> Unit,
+    onToggleSynced: (() -> Unit)?,
     onFind: () -> Unit,
     onEdit: () -> Unit,
     onSetStartOffset: (() -> Unit)?
@@ -30,7 +31,7 @@ fun ColumnScope.LyricsMenuEntries(
         action()
     }
 
-    MenuEntry(
+    if (onToggleSynced != null) MenuEntry(
         icon = R.drawable.ms_lyrics,
         text = stringResource(if (showingSynced) R.string.lyrics_show_plain else R.string.lyrics_show_synced),
         onClick = entry(onToggleSynced)
