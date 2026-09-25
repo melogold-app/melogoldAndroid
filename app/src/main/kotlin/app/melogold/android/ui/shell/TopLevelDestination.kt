@@ -5,8 +5,8 @@ import androidx.annotation.StringRes
 import app.melogold.android.R
 
 /**
- * The five top-level sections of the app, in bottom bar order: Library · Trends · New · Settings ·
- * Search (the user's decision of 2026-09-24, search at the right edge).
+ * The five top-level sections of the app, in bottom bar order: Trends · New · Library · Search ·
+ * Settings (the user's decision of 2026-09-25).
  *
  * @param label the name in the navigation bar / rail
  * @param icon the outlined icon of an unselected item
@@ -18,11 +18,6 @@ enum class TopLevelDestination(
     @param:DrawableRes val icon: Int,
     @param:DrawableRes val selectedIcon: Int
 ) {
-    Library(
-        label = R.string.nav_library,
-        icon = R.drawable.ms_library_music,
-        selectedIcon = R.drawable.ms_library_music_fill
-    ),
     Trends(
         label = R.string.nav_trends,
         icon = R.drawable.ms_trending_up,
@@ -33,17 +28,20 @@ enum class TopLevelDestination(
         icon = R.drawable.ms_new_releases,
         selectedIcon = R.drawable.ms_new_releases_fill
     ),
-    Settings(
-        label = R.string.nav_settings,
-        icon = R.drawable.ms_settings,
-        selectedIcon = R.drawable.ms_settings_fill
+    Library(
+        label = R.string.nav_library,
+        icon = R.drawable.ms_library_music,
+        selectedIcon = R.drawable.ms_library_music_fill
     ),
-
-    // Last: search is reached with the thumb at the far edge, as in the players people know
     Search(
         label = R.string.nav_search,
         icon = R.drawable.ms_search,
         selectedIcon = R.drawable.ms_search_bold
+    ),
+    Settings(
+        label = R.string.nav_settings,
+        icon = R.drawable.ms_settings,
+        selectedIcon = R.drawable.ms_settings_fill
     );
 
     /**

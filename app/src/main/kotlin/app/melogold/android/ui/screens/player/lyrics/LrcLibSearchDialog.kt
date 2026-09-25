@@ -4,6 +4,8 @@ package app.melogold.android.ui.screens.player.lyrics
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -40,9 +42,9 @@ import app.melogold.android.R
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.providers.lrclib.LrcLib
 import app.melogold.providers.lrclib.models.Track
-import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
 
 /**
  * Searches LRCLIB for the lyrics of [query], synced or plain, and lets the user pick one of the
@@ -55,6 +57,7 @@ fun LrcLibSearchDialog(
     setQuery: (String) -> Unit,
     onDismiss: () -> Unit,
     onPick: (Track) -> Unit,
+    onImport: () -> Unit,
     modifier: Modifier = Modifier
 ) = BasicAlertDialog(onDismissRequest = onDismiss, modifier = modifier) {
     val tracks = remember { mutableStateListOf<Track>() }
@@ -139,13 +142,15 @@ fun LrcLibSearchDialog(
                 }
             }
 
-            TextButton(
-                onClick = onDismiss,
+            // Lyrics from a file are the other way to get them (the editor is the third)
+            Row(
                 modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(end = 16.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
-                Text(text = stringResource(R.string.cancel))
+                TextButton(onClick = onImport) { Text(text = stringResource(R.string.lyrics_import_file)) }
+                Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.cancel)) }
             }
         }
     }

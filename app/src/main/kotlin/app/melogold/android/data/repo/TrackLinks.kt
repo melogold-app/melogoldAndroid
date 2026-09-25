@@ -37,6 +37,17 @@ val MediaItem.knownTrackLinks: TrackLinks
         )
     }
 
+/** The album and the artists as the item and Room know them: no network, a few milliseconds. */
+suspend fun MediaItem.storedTrackLinks(): TrackLinks = withContext(Dispatchers.IO) {
+    if (isLocal) return@withContext TrackLinks(album = null, artists = emptyList())
+
+    val known = knownTrackLinks
+    TrackLinks(
+        album = known.album ?: Database.songAlbumInfo(mediaId),
+        artists = known.artists.ifEmpty { Database.songArtistInfo(mediaId) }
+    )
+}
+
 /**
  * The album and the artists of this track: what the item carries, then Room, and what is still
  * missing from its YouTube Music watch page, saved to Room when the track is there. Local files
@@ -45,9 +56,7 @@ val MediaItem.knownTrackLinks: TrackLinks
 suspend fun MediaItem.trackLinks(): TrackLinks = withContext(Dispatchers.IO) {
     if (isLocal) return@withContext TrackLinks(album = null, artists = emptyList())
 
-    val known = knownTrackLinks
-    val album = known.album ?: Database.songAlbumInfo(mediaId)
-    val artists = known.artists.ifEmpty { Database.songArtistInfo(mediaId) }
+    val (album, artists) = storedTrackLinks()
     if (album != null && artists.isNotEmpty()) return@withContext TrackLinks(album, artists)
 
     val found = answered[mediaId] ?: Innertube.song(mediaId)?.getOrNull()?.let { song ->

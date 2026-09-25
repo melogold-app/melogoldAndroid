@@ -46,6 +46,7 @@ fun RouteHandlerScope.SettingsRoot() {
                 .padding(contentPadding)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+            UpdateCard()
             AccountCard()
             ServerSettingsRow()
 

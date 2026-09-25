@@ -87,7 +87,7 @@ fun MainNavigationRail(
             WideNavigationRailItem(
                 selected = selected,
                 onClick = { nav.onItemClick(tab) },
-                icon = { DestinationIcon(tab = tab, selected = selected, badge = nav.hasBadge(tab)) },
+                icon = { DestinationIcon(tab = tab, selected = selected, badge = badgeCount(tab)) },
                 label = { DestinationLabel(tab = tab, style = if (expanded) null else collapsedLabelStyle) },
                 railExpanded = expanded,
                 modifier = Modifier.semantics {

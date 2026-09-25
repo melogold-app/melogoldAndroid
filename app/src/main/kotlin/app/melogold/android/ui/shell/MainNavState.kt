@@ -3,7 +3,6 @@ package app.melogold.android.ui.shell
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -83,17 +82,6 @@ class MainNavState internal constructor(
      */
     var searchFocusRequested by mutableStateOf(false)
         private set
-
-    private val badges = mutableStateMapOf<TopLevelDestination, Boolean>()
-
-    /**
-     * Whether the navigation item of [tab] shows a dot (e.g. Settings on a sync error).
-     */
-    fun hasBadge(tab: TopLevelDestination) = badges[tab] == true
-
-    fun setBadge(tab: TopLevelDestination, visible: Boolean) {
-        badges[tab] = visible
-    }
 
     /**
      * A tap on the navigation item of [tab].

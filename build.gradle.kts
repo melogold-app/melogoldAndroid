@@ -24,7 +24,8 @@ val topLevelLibs = libs
 
 allprojects {
     group = "app.melogold"
-    version = "0.1.0"
+    // The version of the app: gradle.properties, bumped by scripts/release.sh
+    version = providers.gradleProperty("melogold.version").get()
 
     apply(plugin = "dev.detekt")
 

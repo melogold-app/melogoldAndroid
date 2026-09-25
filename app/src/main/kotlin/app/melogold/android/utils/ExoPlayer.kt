@@ -17,6 +17,7 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheDataSource
 import java.io.EOFException
+import java.io.IOException
 import kotlin.math.pow
 
 class RangeHandlerDataSourceFactory(private val parent: DataSource.Factory) : DataSource.Factory {
@@ -47,6 +48,12 @@ class RangeHandlerDataSourceFactory(private val parent: DataSource.Factory) : Da
     override fun createDataSource() = Source(parent.createDataSource())
 }
 
+/**
+ * Reports every failure to open a source to [onError]. Input and output errors stay what they are:
+ * the player retries them, and a 403 of a stream address that expired or belongs to another network
+ * gets a new address on the retry (REWRITE §4.10.3). Only what is neither becomes a fatal
+ * [PlaybackException].
+ */
 class CatchingDataSourceFactory(
     private val parent: DataSource.Factory,
     private val onError: ((Throwable) -> Unit)?
@@ -55,14 +62,17 @@ class CatchingDataSourceFactory(
         override fun open(dataSpec: DataSpec) = runCatching {
             parent.open(dataSpec)
         }.getOrElse { ex ->
-            ex.printStackTrace()
+            Log.w(TAG, "Could not open ${dataSpec.key ?: dataSpec.uri}", ex)
+            onError?.invoke(ex)
 
-            if (ex is PlaybackException) throw ex
-            else throw PlaybackException(
-                /* message = */ "Unknown playback error",
-                /* cause = */ ex,
-                /* errorCode = */ PlaybackException.ERROR_CODE_UNSPECIFIED
-            ).also { onError?.invoke(it) }
+            when (ex) {
+                is IOException, is PlaybackException -> throw ex
+                else -> throw PlaybackException(
+                    /* message = */ "Unknown playback error",
+                    /* cause = */ ex,
+                    /* errorCode = */ PlaybackException.ERROR_CODE_UNSPECIFIED
+                )
+            }
         }
 
         override fun getResponseHeaders(): Map<String, List<String>> = parent.responseHeaders

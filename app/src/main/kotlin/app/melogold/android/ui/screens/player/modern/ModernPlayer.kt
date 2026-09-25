@@ -98,7 +98,9 @@ import app.melogold.android.ui.screens.player.LyricsMenuEntries
 import app.melogold.android.ui.screens.player.PlayerMenuExtras
 import app.melogold.android.ui.screens.player.PlaybackErrorCard
 import app.melogold.android.ui.screens.player.Queue
-import app.melogold.android.ui.screens.player.StreamInfoSheet
+import app.melogold.android.ui.screens.player.SleepTimerMenu
+import app.melogold.android.ui.screens.settings.SettingsPage
+import app.melogold.android.ui.screens.settingsPageRoute
 import app.melogold.android.ui.screens.player.lyrics.LrcLibSearchDialog
 import app.melogold.android.ui.screens.player.lyricseditor.LyricsEditorDialog
 import app.melogold.android.ui.screens.player.lyricseditor.initialDraft
@@ -313,22 +315,6 @@ fun ModernPlayer(
             onToggleSynced = { PlayerPreferences.preferSyncedLyrics = !showingSynced },
             onFind = { picking = true },
             onEdit = { editing = true },
-            onImport = importLyrics,
-            onRefetch = raw?.let { current ->
-                {
-                    transaction {
-                        runCatching {
-                            Database.insert(mediaItem)
-                            Database.upsert(
-                                if (showingSynced) current.copy(synced = null, syncedSource = null)
-                                else current.copy(fixed = null, fixedSource = null)
-                            )
-                        }
-                    }
-                    // Also covers a side that is already null (nothing changes in Room then)
-                    lyrics.retry()
-                }
-            },
             onSetStartOffset = if (showingSynced && raw != null) {
                 {
                     val startTime = binder.player.currentPosition
@@ -344,7 +330,6 @@ fun ModernPlayer(
         PlayerMenuExtras(
             lyrics = lyricsEntries,
             showLyrics = mode == PlayerMode.Lyrics,
-            onStreamInfo = { menuState.display { StreamInfoSheet(mediaId = mediaId, binder = binder) } },
             top = top
         )
     )
@@ -354,7 +339,12 @@ fun ModernPlayer(
         PlaybackIndicators(
             sleepTimerMillisLeft = sleepTimerMillisLeft,
             speed = PlayerPreferences.speed,
-            onClick = { showPlayerMenu() }
+            onSleepTimerClick = { menuState.display { SleepTimerMenu(binder = binder) } },
+            // The speed is a setting of the player (Settings › Player)
+            onSpeedClick = {
+                layoutState.collapseSoft()
+                settingsPageRoute.global(SettingsPage.Player)
+            }
         )
     }
 
@@ -478,6 +468,8 @@ fun ModernPlayer(
             modifier = areaModifier
         ) { target ->
             val overlapPx: () -> Int = { if (overlaid) controlsHeightPx.intValue else 0 }
+            // What the controls cover at the bottom: states are centered in what stays visible
+            val visibleBottom = if (overlaid) controlsHeight else 0.dp
 
             when (val targetContent = target.content) {
                 is LyricsContent.Synced -> SyncedLyricsView(
@@ -498,18 +490,19 @@ fun ModernPlayer(
                     source = targetContent.source,
                     mediaId = target.mediaId,
                     controlsOverlapPx = overlapPx,
-                    bottomPadding = if (overlaid) controlsHeight else 0.dp
+                    bottomPadding = visibleBottom
                 )
 
-                LyricsContent.Loading, LyricsContent.Unknown -> LyricsLoading(anchor = anchor)
+                LyricsContent.Loading, LyricsContent.Unknown -> LyricsLoading(bottomPadding = visibleBottom)
 
                 LyricsContent.NotFound -> LyricsEmptyState(
                     onSearchLrcLib = { picking = true },
                     onImport = importLyrics,
-                    onEnterManually = { editing = true }
+                    onEnterManually = { editing = true },
+                    bottomPadding = visibleBottom
                 )
 
-                LyricsContent.Failed -> LyricsErrorState(onRetry = lyrics::retry)
+                LyricsContent.Failed -> LyricsErrorState(onRetry = lyrics::retry, bottomPadding = visibleBottom)
             }
         }
     }
@@ -636,6 +629,10 @@ fun ModernPlayer(
                 query = searchQuery,
                 setQuery = { searchQuery = it },
                 onDismiss = { picking = false },
+                onImport = {
+                    picking = false
+                    importLyrics()
+                },
                 onPick = { track ->
                     // The picked track replaces both kinds; a kind it lacks is stored as "none" (""),
                     // so what it has is what shows

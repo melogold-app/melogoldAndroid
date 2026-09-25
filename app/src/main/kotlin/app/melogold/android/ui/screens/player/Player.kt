@@ -85,7 +85,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 private val sleepTimerMinutes = listOf(15, 30, 45, 60)
-private val speedPresets = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
 
 /**
  * @param collapsedBottomExtra the space under the mini player that other content covers: the
@@ -168,8 +167,6 @@ fun Player(
 
     OnGlobalRoute { if (layoutState.expanded) layoutState.collapseSoft() }
 
-    var speedDialogOpen by rememberSaveable { mutableStateOf(false) }
-
     /** Opens the player menu; [extras] come from the expanded player. */
     fun openPlayerMenu(extras: PlayerMenuExtras?) {
         val item = mediaItem ?: return
@@ -181,7 +178,6 @@ fun Player(
                 mediaItem = item,
                 onDismiss = menuState::hide,
                 onNavigate = { if (layoutState.expanded) layoutState.collapseSoft() },
-                onCustomSpeed = { speedDialogOpen = true },
                 extras = extras
             )
         }
@@ -224,8 +220,6 @@ fun Player(
             )
         }
     }
-
-    if (speedDialogOpen) SpeedDialog(onDismiss = { speedDialogOpen = false })
 }
 
 /** What the expanded player adds to its ⋮ menu. */
@@ -233,15 +227,15 @@ class PlayerMenuExtras(
     /** The "Lyrics" group, shown while [showLyrics]. */
     val lyrics: @Composable ColumnScope.() -> Unit,
     val showLyrics: Boolean,
-    val onStreamInfo: () -> Unit,
     /** An action on what was long-pressed (a lyrics line), above the groups. */
     val top: (@Composable ColumnScope.() -> Unit)? = null
 )
 
 /**
- * The ⋮ menu of the player (REWRITE §3.10.5), one list without submenus: "Track" without ♡ (it is
- * on screen) with the album and the artists, "Lyrics" while the lyrics are shown, then "Playback"
- * with the sleep timer and the speed as chips and the stream info. The equalizer lives in Settings.
+ * The ⋮ menu of the player (REWRITE §3.10.5), one short list without section titles: the track
+ * without ♡ (it is on screen) with the album and the artists, the lyrics while they are shown, the
+ * sleep timer, then what hides the track. The speed, the stream info and the equalizer are in
+ * Settings › Player.
  */
 @Composable
 private fun PlayerMenu(
@@ -249,14 +243,12 @@ private fun PlayerMenu(
     mediaItem: MediaItem,
     onDismiss: () -> Unit,
     onNavigate: () -> Unit,
-    onCustomSpeed: () -> Unit,
     extras: PlayerMenuExtras?
 ) {
     Menu(modifier = Modifier.testTag("player_menu")) {
         MediaItemMenuHeader(mediaItem = mediaItem)
         extras?.top?.invoke(this)
 
-        MenuSectionTitle(text = stringResource(R.string.menu_section_track))
         TrackMenuEntries(
             mediaItem = mediaItem,
             onDismiss = onDismiss,
@@ -269,116 +261,70 @@ private fun PlayerMenu(
             // A hidden track is skipped (REWRITE §3.10.5)
             onHidden = { binder.player.forceSeekToNext() },
             showFavorite = false,
-            trackRadio = true
-        )
-
-        if (extras?.showLyrics == true) {
-            MenuDivider()
-            MenuSectionTitle(text = stringResource(R.string.menu_section_lyrics))
-            extras.lyrics(this)
-        }
-
-        MenuDivider()
-        MenuSectionTitle(text = stringResource(R.string.menu_section_playback))
-        SleepTimerRow(binder = binder)
-        SpeedRow(
-            onCustom = {
-                onDismiss()
-                onCustomSpeed()
+            trackRadio = true,
+            beforeRemovals = {
+                if (extras?.showLyrics == true) {
+                    MenuDivider()
+                    extras.lyrics(this)
+                }
+                MenuDivider()
+                SleepTimerEntry(binder = binder)
             }
         )
-        extras?.let {
-            MenuEntry(
-                icon = R.drawable.ms_info,
-                text = stringResource(R.string.menu_stream_info),
-                onClick = {
-                    onDismiss()
-                    it.onStreamInfo()
-                }
-            )
-        }
     }
 }
 
-/** A row of the "Playback" group: an icon, a title with the current value, then a row of chips. */
+/** The sleep timer as one row (REWRITE §3.10.7): its time left; a tap shows the choices in its place. */
 @Composable
-private fun ChipsRow(
-    @DrawableRes icon: Int,
-    title: String,
-    value: String?,
-    trailing: (@Composable () -> Unit)? = null,
-    chips: @Composable () -> Unit
-) = Column(modifier = Modifier.fillMaxWidth()) {
-    ListItem(
-        supportingContent = value?.let { { Text(text = it) } },
-        trailingContent = trailing,
-        leadingContent = {
-            Icon(
-                painter = painterResource(icon),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-    ) {
-        Text(text = title)
-    }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(start = MenuEntryTextStart, end = 16.dp, bottom = 4.dp)
-    ) {
-        chips()
-    }
+private fun SleepTimerEntry(binder: PlayerService.Binder) {
+    val menuState = LocalMenuState.current
+    val millisLeft = binder.sleepTimerLeft()
+
+    MenuEntry(
+        icon = R.drawable.ms_bedtime,
+        text = stringResource(R.string.menu_sleep_timer),
+        secondaryText = millisLeft?.let { stringResource(R.string.menu_sleep_timer_left, it.minutesLeft()) },
+        onClick = { menuState.display { SleepTimerMenu(binder = binder) } }
+    )
 }
 
 /**
- * The sleep timer (REWRITE §3.10.7): chips 15 · 30 · 45 · 60 min and "End of track"; while it runs,
- * "23 min left" and "Turn off timer".
+ * The choices of the sleep timer, in the menu sheet: 15 · 30 · 45 · 60 min and "End of track";
+ * while it runs, "Turn off timer" first. Also opened by the timer chip of the player.
  */
 @Composable
-private fun SleepTimerRow(binder: PlayerService.Binder) {
+internal fun SleepTimerMenu(binder: PlayerService.Binder) {
+    val menuState = LocalMenuState.current
     val millisLeft = binder.sleepTimerLeft()
-    // Which chip started the running timer; unknown after the menu is opened again
-    var chosen by rememberSaveable { mutableStateOf<Int?>(null) }
-    val running = millisLeft != null
 
-    ChipsRow(
-        icon = R.drawable.ms_bedtime,
-        title = stringResource(R.string.menu_sleep_timer),
-        value = millisLeft?.let { stringResource(R.string.menu_sleep_timer_left, it.minutesLeft()) },
-        trailing = if (running) {
-            {
-                TextButton(
-                    onClick = {
-                        chosen = null
-                        binder.cancelSleepTimer()
-                    }
-                ) { Text(text = stringResource(R.string.menu_sleep_timer_stop)) }
-            }
-        } else null
-    ) {
+    fun choose(action: () -> Unit): () -> Unit = {
+        menuState.hide()
+        action()
+    }
+
+    Menu(modifier = Modifier.testTag("sleep_timer_menu")) {
+        MenuSectionTitle(
+            text = millisLeft?.let { stringResource(R.string.menu_sleep_timer_left, it.minutesLeft()) }
+                ?: stringResource(R.string.menu_sleep_timer)
+        )
+        if (millisLeft != null) MenuEntry(
+            icon = R.drawable.ms_timer_off,
+            text = stringResource(R.string.menu_sleep_timer_stop),
+            onClick = choose(binder::cancelSleepTimer)
+        )
         sleepTimerMinutes.forEach { minutes ->
-            FilterChip(
-                selected = running && chosen == minutes,
-                onClick = {
-                    chosen = minutes
-                    binder.startSleepTimer(minutes * 60_000L)
-                },
-                label = { Text(text = stringResource(R.string.menu_sleep_timer_minutes, minutes)) }
+            MenuEntry(
+                icon = R.drawable.ms_bedtime,
+                text = stringResource(R.string.menu_sleep_timer_minutes, minutes),
+                onClick = choose { binder.startSleepTimer(minutes * 60_000L) }
             )
         }
-        FilterChip(
-            selected = running && chosen == 0,
-            onClick = {
-                chosen = 0
-                runCatching {
-                    binder.startSleepTimer(binder.player.duration - binder.player.contentPosition)
-                }
-            },
-            label = { Text(text = stringResource(R.string.menu_sleep_timer_end_of_track)) }
+        MenuEntry(
+            icon = R.drawable.ms_bedtime,
+            text = stringResource(R.string.menu_sleep_timer_end_of_track),
+            onClick = choose {
+                runCatching { binder.startSleepTimer(binder.player.duration - binder.player.contentPosition) }
+            }
         )
     }
 }
@@ -399,77 +345,11 @@ internal fun PlayerService.Binder.sleepTimerLeft(): Long? {
 /** Whole minutes left, rounded up: a timer with 30 s left still shows "1 min". */
 internal fun Long.minutesLeft() = ((this + 59_999) / 60_000).toInt()
 
-/** The playback speed as chips, with "Custom…" for anything in between. */
-@Composable
-private fun SpeedRow(onCustom: () -> Unit) {
-    val speed = PlayerPreferences.speed
-
-    ChipsRow(
-        icon = R.drawable.ms_speed,
-        title = stringResource(R.string.menu_speed),
-        value = stringResource(R.string.menu_speed_value, formatSpeed(speed))
-    ) {
-        speedPresets.forEach { preset ->
-            FilterChip(
-                selected = abs(speed - preset) < 0.01f,
-                onClick = { PlayerPreferences.speed = preset },
-                label = { Text(text = stringResource(R.string.menu_speed_value, formatSpeed(preset))) }
-            )
-        }
-        FilterChip(
-            selected = speedPresets.none { abs(speed - it) < 0.01f },
-            onClick = onCustom,
-            label = { Text(text = stringResource(R.string.menu_speed_custom)) }
-        )
-    }
-}
-
+/** "1,25" for the speed 1.25 (with "×" from `menu_speed_value`). */
 internal fun formatSpeed(speed: Float): String = NumberFormat.getInstance().apply {
     minimumFractionDigits = 0
     maximumFractionDigits = 2
 }.format(speed)
-
-/** Any speed from 0.25× to 2× in steps of 0.05×. */
-@Composable
-private fun SpeedDialog(onDismiss: () -> Unit) {
-    var value by remember { mutableFloatStateOf(PlayerPreferences.speed.coerceIn(0.25f, 2f)) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.menu_speed)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.menu_speed_value, formatSpeed(value)),
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Slider(
-                    value = value,
-                    onValueChange = { value = (it * 20).roundToInt() / 20f },
-                    onValueChangeFinished = { PlayerPreferences.speed = value },
-                    valueRange = 0.25f..2f,
-                    steps = 34
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    PlayerPreferences.speed = value
-                    onDismiss()
-                }
-            ) { Text(text = stringResource(R.string.done)) }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    value = 1f
-                    PlayerPreferences.speed = 1f
-                }
-            ) { Text(text = stringResource(R.string.reset)) }
-        }
-    )
-}
 
 /**
  * Whether the play buttons show "pause": a track that failed is not playing, even though the

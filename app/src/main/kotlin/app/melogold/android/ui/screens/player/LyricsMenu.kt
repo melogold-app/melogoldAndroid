@@ -8,11 +8,11 @@ import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.menu.MenuEntry
 
 /**
- * The "Lyrics" group of the player menu. Everything happens in the app: the lyrics are found on
- * LRCLIB in a dialog, imported from a file or typed in the editor.
+ * The lyrics group of the player menu, three rows: synced or plain, "Find lyrics" (LRCLIB, or a file
+ * from the same dialog) and "Edit lyrics". Everything happens in the app.
  *
- * Every entry hides the menu before invoking its callback. [onRefetch] being null shows a disabled
- * entry; [onSetStartOffset] being null hides its entry.
+ * Every entry hides the menu before invoking its callback; [onSetStartOffset] being null hides its
+ * entry (it acts on a long-pressed line).
  */
 @Suppress("ParameterNaming") // "synced" names the lyrics kind, not a past event
 @Composable
@@ -21,8 +21,6 @@ fun ColumnScope.LyricsMenuEntries(
     onToggleSynced: () -> Unit,
     onFind: () -> Unit,
     onEdit: () -> Unit,
-    onImport: () -> Unit,
-    onRefetch: (() -> Unit)?,
     onSetStartOffset: (() -> Unit)?
 ) {
     val menuState = LocalMenuState.current
@@ -48,19 +46,6 @@ fun ColumnScope.LyricsMenuEntries(
         icon = R.drawable.ms_edit,
         text = stringResource(R.string.lyrics_edit),
         onClick = entry(onEdit)
-    )
-
-    MenuEntry(
-        icon = R.drawable.ms_file_open,
-        text = stringResource(R.string.lyrics_import_file),
-        onClick = entry(onImport)
-    )
-
-    MenuEntry(
-        icon = R.drawable.ms_refresh,
-        text = stringResource(R.string.lyrics_refetch),
-        enabled = onRefetch != null,
-        onClick = entry { onRefetch?.invoke() }
     )
 
     if (onSetStartOffset != null) MenuEntry(

@@ -20,3 +20,6 @@ jniLibs/
 /.direnv
 /result*
 /repl-result*
+
+# Release builds (scripts/release.sh)
+/dist/

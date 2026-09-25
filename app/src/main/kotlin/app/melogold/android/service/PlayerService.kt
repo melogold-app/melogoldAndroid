@@ -16,6 +16,8 @@ import android.media.MediaMetadata
 import android.media.audiofx.LoudnessEnhancer
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.Uri
+import android.os.Binder as AndroidBinder
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -45,9 +47,9 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.NoOpCacheEvictor
-import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -60,14 +62,14 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.extractor.DefaultExtractorsFactory
-import app.melogold.android.data.repo.applyingHidden
-import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.Database
-import app.melogold.android.MainApplication
-import app.melogold.android.data.downloads.ChunkedDataSource
 import app.melogold.android.Dependencies
 import app.melogold.android.MainActivity
+import app.melogold.android.MainApplication
 import app.melogold.android.R
+import app.melogold.android.data.downloads.ChunkedDataSource
+import app.melogold.android.data.repo.applyingHidden
+import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.models.Event
 import app.melogold.android.models.Format
 import app.melogold.android.models.QueuedMediaItem
@@ -121,6 +123,9 @@ import app.melogold.providers.sponsorblock.SponsorBlock
 import app.melogold.providers.sponsorblock.models.Action
 import app.melogold.providers.sponsorblock.models.Category
 import app.melogold.providers.sponsorblock.requests.segments
+import java.io.IOException
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -150,10 +155,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import java.io.IOException
-import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.milliseconds
-import android.os.Binder as AndroidBinder
 
 const val LOCAL_KEY_PREFIX = "local:"
 private const val TAG = "PlayerService"
@@ -1270,9 +1271,15 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                     )
                     )
             ) {
-                dataSpec
+                // Only the cached chunk: past it the cache would ask the network for the video id
+                // itself, which is no address (a local file of that name, "open failed: ENOENT")
+                if (dataSpec.isLocal || chunkLength == null) dataSpec
+                else dataSpec.subrange(
+                    0,
+                    if (dataSpec.length == C.LENGTH_UNSET.toLong()) chunkLength else minOf(dataSpec.length, chunkLength)
+                )
             } else {
-                uriCache[mediaId]?.let { cachedUri ->
+                uriCache[mediaId]?.takeUnless { it.uri.isExpiring() }?.let { cachedUri ->
                     dataSpec
                         .withUri(cachedUri.uri)
                         .ranged(cachedUri.meta)
@@ -1341,7 +1348,12 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                 }
             }
         }.handleUnknownErrors {
+            // The next attempt resolves the address again (a 403: expired, or another network)
             uriCache.clear()
         }
     }
 }
+
+/** A stream address of YouTube that expires in less than 5 minutes (`expire`, epoch seconds). */
+private fun Uri.isExpiring(now: Long = System.currentTimeMillis()): Boolean =
+    getQueryParameter("expire")?.toLongOrNull()?.let { it * 1000 - 5 * 60_000 < now } == true

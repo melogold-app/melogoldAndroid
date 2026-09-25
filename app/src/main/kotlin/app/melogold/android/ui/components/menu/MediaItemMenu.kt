@@ -7,10 +7,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.content.Context
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,7 +32,10 @@ import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.data.repo.TrackLinks
+import app.melogold.android.models.Info
 import app.melogold.android.data.repo.knownTrackLinks
+import app.melogold.android.data.repo.storedTrackLinks
 import app.melogold.android.data.repo.trackLinks
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongPlaylistMap
@@ -115,6 +115,19 @@ fun BaseMediaItemMenu(
     )
 }
 
+/** "Go to artist" of a track with several artists found after its menu opened: one row per artist. */
+@Composable
+private fun ArtistChoiceMenu(artists: List<Info>, onChoose: (String) -> Unit) = Menu {
+    MenuSectionTitle(text = stringResource(R.string.menu_go_to_artist))
+    artists.forEach { (id, name) ->
+        MenuEntry(
+            icon = R.drawable.ms_person,
+            text = name ?: id,
+            onClick = { onChoose(id) }
+        )
+    }
+}
+
 /** The track the menu is about: cover, title and "Artist · Album". */
 @Composable
 fun MediaItemMenuHeader(
@@ -145,9 +158,11 @@ fun MediaItemMenuHeader(
  *
  * @param showFavorite false where ♡ is already on screen (the player)
  * @param trackRadio "Start track radio" instead of "Start radio" (the player menu)
+ * @param beforeRemovals more groups before the divider of the removals (the player's lyrics and
+ * sleep timer)
  */
 @Composable
-fun TrackMenuEntries(
+fun ColumnScope.TrackMenuEntries(
     mediaItem: MediaItem,
     onDismiss: () -> Unit,
     onStartRadio: (() -> Unit)? = null,
@@ -160,7 +175,8 @@ fun TrackMenuEntries(
     onNavigate: () -> Unit = {},
     onHidden: () -> Unit = {},
     showFavorite: Boolean = true,
-    trackRadio: Boolean = false
+    trackRadio: Boolean = false,
+    beforeRemovals: @Composable ColumnScope.() -> Unit = {}
 ) {
     val context = LocalContext.current
     val menuState = LocalMenuState.current
@@ -178,9 +194,20 @@ fun TrackMenuEntries(
         }
     }.collectAsState(initial = false, context = Dispatchers.IO)
 
-    // What the item carries at once; Room and then YouTube Music fill in the rest
+    // What the item carries at once, Room a few milliseconds later, YouTube Music last. The rows
+    // are there from the first frames with the names the track shows, so the sheet keeps its
+    // height instead of jumping once the links arrive
     var links by remember(mediaItem) { mutableStateOf(mediaItem.knownTrackLinks) }
-    LaunchedEffect(mediaItem) { links = mediaItem.trackLinks() }
+    var stored by remember(mediaItem) { mutableStateOf<TrackLinks?>(null) }
+    var resolved by remember(mediaItem) { mutableStateOf(false) }
+    LaunchedEffect(mediaItem) {
+        mediaItem.storedTrackLinks().let {
+            stored = it
+            links = it
+        }
+        links = mediaItem.trackLinks()
+        resolved = true
+    }
     val album = links.album
 
     fun entry(action: () -> Unit): () -> Unit = {
@@ -255,36 +282,56 @@ fun TrackMenuEntries(
             )
         }
 
-        // Found after the menu opened: the rows unfold instead of jumping in
-        AnimatedVisibility(visible = album != null, enter = expandVertically() + fadeIn()) {
-            album?.let { (id, name) ->
-                MenuEntry(
-                    icon = R.drawable.ms_album,
-                    text = stringResource(R.string.menu_go_to_album),
-                    secondaryText = name ?: mediaItem.mediaMetadata.albumTitle?.toString(),
-                    onClick = entry {
-                        onNavigate()
-                        albumRoute.global(id)
-                    }
-                )
-            }
-        }
+        val albumTitle = mediaItem.mediaMetadata.albumTitle?.toString()?.takeIf { it.isNotBlank() }
+        val artistText = mediaItem.mediaMetadata.artist?.toString()?.takeIf { it.isNotBlank() }
 
-        AnimatedVisibility(visible = links.artists.isNotEmpty(), enter = expandVertically() + fadeIn()) {
-            Column {
-                links.artists.forEach { (id, name) ->
-                    MenuEntry(
-                        icon = R.drawable.ms_person,
-                        text = stringResource(R.string.menu_go_to_artist),
-                        secondaryText = name,
-                        onClick = entry {
+        // The album: known, or its title is on the track and the link is on its way
+        if (album != null || (albumTitle != null && !resolved)) MenuEntry(
+            icon = R.drawable.ms_album,
+            text = stringResource(R.string.menu_go_to_album),
+            secondaryText = album?.name ?: albumTitle,
+            enabled = album != null,
+            onClick = entry {
+                onNavigate()
+                album?.let { albumRoute.global(it.id) }
+            }
+        )
+
+        val artists = links.artists
+        // Known before the menu opened: a row per artist. Found later: one row, as the track
+        // names them, that leads to the artist or, for several, to a choice
+        if (stored?.artists.orEmpty().size > 1) artists.forEach { (id, name) ->
+            MenuEntry(
+                icon = R.drawable.ms_person,
+                text = stringResource(R.string.menu_go_to_artist),
+                secondaryText = name,
+                onClick = entry {
+                    onNavigate()
+                    artistRoute.global(id)
+                }
+            )
+        } else if (artists.isNotEmpty() || (artistText != null && !resolved)) MenuEntry(
+            icon = R.drawable.ms_person,
+            text = stringResource(R.string.menu_go_to_artist),
+            secondaryText = artists.mapNotNull { it.name }.joinToString(", ").ifEmpty { artistText },
+            enabled = artists.isNotEmpty(),
+            onClick = {
+                if (artists.size == 1) entry {
+                    onNavigate()
+                    artistRoute.global(artists.single().id)
+                }()
+                else menuState.display {
+                    ArtistChoiceMenu(
+                        artists = artists,
+                        onChoose = { id ->
+                            menuState.hide()
                             onNavigate()
                             artistRoute.global(id)
                         }
                     )
                 }
             }
-        }
+        )
 
         MenuEntry(
             icon = R.drawable.ms_share,
@@ -292,6 +339,8 @@ fun TrackMenuEntries(
             onClick = entry { context.shareTrack(mediaItem, isMusic = album != null) }
         )
     }
+
+    beforeRemovals()
 
     val hasRemovals = !isLocal || onRemoveFromPlaylist != null || onHideFromDatabase != null ||
         onRemoveFromQueue != null

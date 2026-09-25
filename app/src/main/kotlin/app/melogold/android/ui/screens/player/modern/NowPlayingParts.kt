@@ -191,18 +191,19 @@ fun PlayerTopBar(
 }
 
 /**
- * The sleep timer ("⏾ 23 min") and a speed other than 1× next to ⋮ (REWRITE §3.10.7, §3.10.8); a
- * tap opens the player menu, where both are set.
+ * The sleep timer ("⏾ 23 min") and a speed other than 1× next to ⋮ (REWRITE §3.10.7, §3.10.8): a
+ * tap on the timer shows its choices, a tap on the speed opens Settings › Player, where it is set.
  */
 @Composable
 fun RowScope.PlaybackIndicators(
     sleepTimerMillisLeft: Long?,
     speed: Float,
-    onClick: () -> Unit
+    onSleepTimerClick: () -> Unit,
+    onSpeedClick: () -> Unit
 ) {
     sleepTimerMillisLeft?.let { millis ->
         AssistChip(
-            onClick = onClick,
+            onClick = onSleepTimerClick,
             label = { Text(text = stringResource(R.string.menu_sleep_timer_minutes, millis.minutesLeft())) },
             leadingIcon = {
                 Icon(
@@ -216,7 +217,7 @@ fun RowScope.PlaybackIndicators(
     }
 
     if (abs(speed - 1f) >= 0.01f) AssistChip(
-        onClick = onClick,
+        onClick = onSpeedClick,
         label = { Text(text = stringResource(R.string.menu_speed_value, formatSpeed(speed))) },
         modifier = Modifier.testTag("player_speed")
     )

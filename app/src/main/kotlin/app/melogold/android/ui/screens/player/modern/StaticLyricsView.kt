@@ -129,19 +129,22 @@ fun LyricsSourceFooter(
     )
 }
 
-/** The loading indicator at the anchor while the lyrics load (REWRITE §3.10.3). */
+/**
+ * The loading indicator while the lyrics load (REWRITE §3.10.3), in the middle of the part of the
+ * lyrics area that stays visible: [bottomPadding] is what the controls cover.
+ */
 @Composable
 fun LyricsLoading(
-    anchor: Dp,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) {
     val description = stringResource(R.string.lyrics_loading)
 
     Box(
-        contentAlignment = Alignment.TopCenter,
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .fillMaxSize()
-            .padding(top = anchor)
+            .padding(bottom = bottomPadding)
             .semantics { contentDescription = description }
             .testTag("lyrics_loading")
     ) {
@@ -153,14 +156,16 @@ fun LyricsLoading(
 private fun LyricsMessage(
     message: String,
     testTag: String,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier,
     actions: @Composable () -> Unit
 ) = Column(
     horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(20.dp),
+    // In the middle of what the controls leave visible, like the loading indicator before it
+    verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
     modifier = modifier
         .fillMaxSize()
-        .padding(top = 140.dp, start = 32.dp, end = 32.dp)
+        .padding(start = 32.dp, end = 32.dp, bottom = bottomPadding)
         .testTag(testTag)
 ) {
     Text(
@@ -184,10 +189,12 @@ fun LyricsEmptyState(
     onSearchLrcLib: () -> Unit,
     onImport: () -> Unit,
     onEnterManually: () -> Unit,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) = LyricsMessage(
     message = stringResource(R.string.lyrics_unavailable_title),
     testTag = "lyrics_empty",
+    bottomPadding = bottomPadding,
     modifier = modifier
 ) {
     FilledTonalButton(onClick = onSearchLrcLib) { Text(text = stringResource(R.string.lyrics_find)) }
@@ -199,10 +206,12 @@ fun LyricsEmptyState(
 @Composable
 fun LyricsErrorState(
     onRetry: () -> Unit,
+    bottomPadding: Dp,
     modifier: Modifier = Modifier
 ) = LyricsMessage(
     message = stringResource(R.string.lyrics_load_failed),
     testTag = "lyrics_error",
+    bottomPadding = bottomPadding,
     modifier = modifier
 ) {
     FilledTonalButton(onClick = onRetry) { Text(text = stringResource(R.string.retry)) }

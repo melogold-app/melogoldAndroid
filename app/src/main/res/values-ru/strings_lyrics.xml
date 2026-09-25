@@ -13,7 +13,6 @@
     <string name="lyrics_show_plain">Текст без синхронизации</string>
     <string name="lyrics_show_synced">Синхронизированный текст</string>
     <string name="lyrics_edit">Редактировать текст</string>
-    <string name="lyrics_refetch">Загрузить заново</string>
     <string name="lyrics_find">Найти текст</string>
     <string name="lyrics_result_synced">Синхронизированный</string>
     <string name="lyrics_result_plain">Без синхронизации</string>

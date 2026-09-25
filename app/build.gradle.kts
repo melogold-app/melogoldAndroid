@@ -25,14 +25,20 @@ android {
         minSdk = 24
         targetSdk = 37
 
-        versionCode = System.getenv("ANDROID_VERSION_CODE")?.toIntOrNull() ?: 1
+        // 0.1.2 → 102: every release has a higher code, which the self-update compares (REWRITE §4.14)
         versionName = project.version.toString()
+        versionCode = versionName!!.substringBefore('-').split('.').map { it.toInt() }
+            .let { (major, minor, patch) -> major * 10_000 + minor * 100 + patch }
 
         multiDexEnabled = true
 
         // The Melogold server the app offers first (Settings › Server can point it elsewhere). Until the
         // official domain exists this is the owner's instance behind a sslip.io name (REWRITE §3.5.12)
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"https://178-250-187-202.sslip.io\"")
+
+        // Where the self-update reads the latest release (REWRITE §4.14); empty: the build doesn't
+        // update itself. Only the release build does: the others are other packages
+        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
 
         ndk {
             //noinspection ChromeOsAbiSupport
@@ -56,6 +62,21 @@ android {
     }
 
     signingConfigs {
+        // The key of the releases on GitHub. It never enters the repository: its path and passwords
+        // come from ~/.gradle/gradle.properties or the environment; without them the release build
+        // is unsigned
+        create("release") {
+            fun secret(property: String, variable: String) =
+                providers.gradleProperty(property).orElse(providers.environmentVariable(variable)).orNull
+
+            secret("melogold.release.storeFile", "MELOGOLD_RELEASE_STORE_FILE")?.let { path ->
+                storeFile = file(path)
+                storePassword = secret("melogold.release.storePassword", "MELOGOLD_RELEASE_STORE_PASSWORD")
+                keyAlias = secret("melogold.release.keyAlias", "MELOGOLD_RELEASE_KEY_ALIAS")
+                keyPassword = secret("melogold.release.keyPassword", "MELOGOLD_RELEASE_KEY_PASSWORD")
+            }
+        }
+
         create("ci") {
             storeFile = System.getenv("ANDROID_NIGHTLY_KEYSTORE")?.let { file(it) }
             storePassword = System.getenv("ANDROID_NIGHTLY_KEYSTORE_PASSWORD")
@@ -76,6 +97,13 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             manifestPlaceholders["appName"] = "Melogold"
+            signingConfig = signingConfigs.getByName("release").takeIf { it.storeFile != null }
+            buildConfigField(
+                "String",
+                "UPDATE_MANIFEST_URL",
+                "\"" + providers.gradleProperty("melogold.updateManifestUrl")
+                    .getOrElse("https://github.com/melogold-app/melogoldAndroid/releases/latest/download/update.json") + "\""
+            )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -90,6 +118,7 @@ android {
             versionNameSuffix = "-NIGHTLY"
             manifestPlaceholders["appName"] = "Melogold Nightly"
             signingConfig = signingConfigs.findByName("ci")
+            buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
         }
 
         // The release build (R8, not debuggable) signed with the debug key: it installs over the
@@ -103,6 +132,7 @@ android {
             versionNameSuffix = "-STAGING"
             manifestPlaceholders["appName"] = "Melogold Debug"
             signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
         }
     }
 
@@ -266,7 +296,6 @@ dependencies {
     implementation(libs.slf4j)
     implementation(libs.logback)
 
-    implementation(projects.providers.github)
     implementation(projects.providers.innertube)
     implementation(projects.providers.kugou)
     implementation(projects.providers.lrclib)

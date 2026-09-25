@@ -16,7 +16,6 @@
     <string name="lyrics_show_plain">Show plain lyrics</string>
     <string name="lyrics_show_synced">Show synced lyrics</string>
     <string name="lyrics_edit">Edit lyrics</string>
-    <string name="lyrics_refetch">Fetch again</string>
     <string name="lyrics_find">Find lyrics</string>
     <string name="lyrics_result_synced">Synced</string>
     <string name="lyrics_result_plain">Plain</string>

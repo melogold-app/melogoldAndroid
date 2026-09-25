@@ -19,18 +19,12 @@
     <string name="menu_remove_from_history">Убрать из истории</string>
     <string name="menu_remove_from_queue">Убрать из очереди</string>
     <string name="menu_not_interested">Не интересно</string>
-
-    <string name="menu_section_track">Трек</string>
-    <string name="menu_section_lyrics">Текст</string>
-    <string name="menu_section_playback">Воспроизведение</string>
     <string name="menu_sleep_timer">Таймер сна</string>
     <string name="menu_sleep_timer_minutes">%1$d мин</string>
     <string name="menu_sleep_timer_end_of_track">До конца трека</string>
     <string name="menu_sleep_timer_left">Осталось %1$d мин</string>
     <string name="menu_sleep_timer_stop">Выключить таймер</string>
-    <string name="menu_speed">Скорость</string>
     <string name="menu_speed_value">%1$s×</string>
-    <string name="menu_speed_custom">Точнее…</string>
     <string name="menu_stream_info">Сведения о потоке</string>
 
     <string name="add_to_playlist_title">Добавить в плейлист</string>
@@ -44,4 +38,7 @@
         <item quantity="many">Изменено в %1$d плейлистах</item>
         <item quantity="other">Изменено в %1$d плейлиста</item>
     </plurals>
+    <string name="player_speed">Скорость воспроизведения</string>
+    <string name="player_speed_description">Для всех треков</string>
+    <string name="player_nothing_playing">Сейчас ничего не играет</string>
 </resources>

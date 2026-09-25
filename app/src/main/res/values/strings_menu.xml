@@ -20,18 +20,12 @@
     <string name="menu_remove_from_history">Remove from history</string>
     <string name="menu_remove_from_queue">Remove from queue</string>
     <string name="menu_not_interested">Not interested</string>
-
-    <string name="menu_section_track">Track</string>
-    <string name="menu_section_lyrics">Lyrics</string>
-    <string name="menu_section_playback">Playback</string>
     <string name="menu_sleep_timer">Sleep timer</string>
     <string name="menu_sleep_timer_minutes">%1$d min</string>
     <string name="menu_sleep_timer_end_of_track">End of track</string>
     <string name="menu_sleep_timer_left">%1$d min left</string>
     <string name="menu_sleep_timer_stop">Turn off timer</string>
-    <string name="menu_speed">Speed</string>
     <string name="menu_speed_value">%1$s×</string>
-    <string name="menu_speed_custom">Custom…</string>
     <string name="menu_stream_info">Stream info</string>
 
     <string name="add_to_playlist_title">Add to playlist</string>
@@ -43,4 +37,7 @@
         <item quantity="one">Changed in %1$d playlist</item>
         <item quantity="other">Changed in %1$d playlists</item>
     </plurals>
+    <string name="player_speed">Playback speed</string>
+    <string name="player_speed_description">For every track</string>
+    <string name="player_nothing_playing">Nothing is playing</string>
 </resources>

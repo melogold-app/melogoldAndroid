@@ -418,6 +418,7 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
 
         // The library follows the account on the Melogold server while signed in
         container.sync.start()
+        container.updates.start()
 
         // Deletions waiting for "Undo" reach Room before the system may kill the app in the background
         ProcessLifecycleOwner.get().lifecycle.addObserver(

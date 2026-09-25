@@ -10,6 +10,7 @@ import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
 import app.melogold.android.sync.Account
 import app.melogold.android.sync.SyncEngine
+import app.melogold.android.update.AppUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,6 +37,9 @@ class AppContainer(private val application: Application) {
     /** The account on the Melogold server and the sync of the library with it. */
     val account by lazy { Account(application) }
     val sync by lazy { SyncEngine(account, network, appScope) }
+
+    /** The self-update from GitHub Releases (REWRITE §4.14). */
+    val updates by lazy { AppUpdater(application, appScope) }
 
     val json = Json {
         ignoreUnknownKeys = true
