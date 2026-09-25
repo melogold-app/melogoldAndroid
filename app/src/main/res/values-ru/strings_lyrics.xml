@@ -9,6 +9,7 @@
     <string name="lyrics_source_kugou">Текст: KuGou</string>
     <string name="lyrics_source_file">Текст импортирован из файла</string>
     <string name="lyrics_source_user">Ваш текст</string>
+    <string name="lyrics_source_melogold">Текст от сообщества Melogold</string>
 
     <string name="lyrics_show_plain">Текст без синхронизации</string>
     <string name="lyrics_show_synced">Синхронизированный текст</string>

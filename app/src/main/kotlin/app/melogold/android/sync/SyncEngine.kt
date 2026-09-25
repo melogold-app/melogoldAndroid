@@ -8,6 +8,8 @@ import app.melogold.android.data.NetworkMonitor
 import app.melogold.android.internal
 import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
+import app.melogold.android.models.Event
+import app.melogold.android.models.HistoryForget
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongPlaylistMap
@@ -47,7 +49,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -67,11 +71,23 @@ private const val MAX_OPS = 500
 private const val LOCAL_CHANGE_DELAY_MS = 2_000L
 private const val MAX_BACKOFF_MS = 5 * 60_000L
 private const val STREAM_LIBRARY = "library"
+private const val STREAM_HISTORY = "history"
+
+/** Plays sent per sync: the server takes at most 2000 an hour (API §11 `playAddPerHour`). */
+private const val PLAY_BATCH = 500
+
+/** The newest plays the first sync of the history sends (API §11 `history.mergeUploadMax`). */
+private const val MERGE_UPLOAD_MAX = 20_000
+private const val BASELINE_MAX = 500
+private const val VIDEO_ID_LENGTH = 11
+private const val MAX_PLAY_TIME_MS = 86_400_000L
 
 private const val KEY_BINDING = "binding"
 private const val KEY_CURSOR = "cursor"
 private const val KEY_MERGE = "needsMerge"
 private const val KEY_LAST_SYNC = "lastSyncAt"
+private const val KEY_HISTORY_BASELINE = "historyBaseline"
+private const val KEY_PLAY_RETRY_AT = "playRetryAt"
 
 /** What the sync is doing, for Settings. */
 sealed interface SyncStatus {
@@ -103,6 +119,10 @@ private data class LiveEvent(val id: String, val type: String)
  * device had seen and loses to newer changes of other devices by time (API §4.8, DESIGN §3.4). The server answers with
  * the current rows of every key an op touched, whatever its result: a change that lost comes back as the winner.
  *
+ * The history (stream `history`) is a log instead: every play of this device goes up once with `play.add` (its id
+ * made when it was played), the plays of the other devices come down with the device that played them, and "forget"
+ * and "clear" go to every device. The first sync with an account sends the time played so far with `play.baseline`.
+ *
  * Syncs run one at a time: after a change of the library (2 s later), when the app comes to the front, on
  * `sync.changed` of the live stream (API §6) and on request.
  */
@@ -112,6 +132,8 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     private val json = Json { ignoreUnknownKeys = true }
     private val mutableStatus = MutableStateFlow<SyncStatus>(SyncStatus.Off)
     private val mutableDevicesChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    private val lyrics = LyricsSync(account)
 
     /** The cursor the ops being built were computed against (their `base`); set by [buildOps]. */
     private var base: String? = null
@@ -165,14 +187,29 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
             }
     }
 
-    /** A change of the Favorites, playlists or saved albums and artists is sent 2 s later. */
+    /**
+     * A change of the Favorites, playlists, saved albums and artists, own lyrics, a new play or a forgotten one is sent
+     * 2 s later.
+     */
     private suspend fun followLocalChanges() {
-        Database.libraryFingerprint()
-            .distinctUntilChanged()
-            .drop(1)
+        merge(
+            Database.libraryFingerprint().distinctUntilChanged().drop(1).map { },
+            Database.ownLyrics().distinctUntilChanged().drop(1).map { },
+            Database.unsentEventCount().distinctUntilChanged().drop(1).filter { it > 0 }.map { },
+            Database.historyForgetCount().distinctUntilChanged().drop(1).filter { it > 0 }.map { }
+        )
             .debounce(LOCAL_CHANGE_DELAY_MS)
             .collect { sync(force = false) }
     }
+
+    /**
+     * The lyrics of [videoId] the server has for this user (their own, else the shared ones), for the lyrics search;
+     * `null` without an account or an answer in time (API §4.10).
+     */
+    suspend fun serverLyrics(videoId: String) = lyrics.fromServer(videoId)
+
+    /** The user's own lyrics of a track that came from another device before this one stored the track. */
+    fun ownLyricsFromSync(videoId: String) = lyrics.ownFromSnapshot(videoId)
 
     private suspend fun syncOnce(force: Boolean) {
         val session = account.session ?: return
@@ -184,6 +221,10 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
                 Database.clearSyncedLikes()
                 Database.clearSyncedPlaylists()
                 Database.clearSyncedBookmarks()
+                Database.clearSyncedLyrics()
+                Database.markOwnEventsUnsent()
+                Database.deleteOtherDevicesEvents()
+                Database.clearHistoryForgets()
                 Database.clearPlaylistSyncIds()
                 Database.clearSortKeys()
                 Database.clearSyncState()
@@ -193,8 +234,14 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         }
         if (withContext(Dispatchers.IO) { Database.syncState(KEY_MERGE) } == "1") planMerge()
 
+        syncLibrary(force)
+        lyrics.sync(force)
+    }
+
+    private suspend fun syncLibrary(force: Boolean) {
         var ops = withContext(Dispatchers.IO) { Database.internal.runInTransaction<List<Op>> { buildOps() } }
         if (ops.isEmpty() && !force) return
+        val baseline = ops.any { it.kind == "play.baseline" }
 
         var cursor = withContext(Dispatchers.IO) { Database.syncState(KEY_CURSOR) }.orEmpty()
         var restarted = false
@@ -202,7 +249,10 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
             val batch = ops.take(MAX_OPS)
             val response = try {
                 account.authorized { api, token ->
-                    api.sync(token, SyncRequest(cursor = cursor, ops = batch.map { it.json }, streams = listOf(STREAM_LIBRARY)))
+                    api.sync(
+                        token,
+                        SyncRequest(cursor = cursor, ops = batch.map { it.json }, streams = listOf(STREAM_LIBRARY, STREAM_HISTORY))
+                    )
                 }
             } catch (e: ApiException) {
                 // The server was restored or forgot this cursor: read everything again (API §4.8, 410)
@@ -228,6 +278,7 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         withContext(Dispatchers.IO) {
             Database.setSyncState(SyncState(KEY_LAST_SYNC, System.currentTimeMillis().toString()))
             Database.setSyncState(SyncState(KEY_MERGE, "0"))
+            if (baseline) Database.setSyncState(SyncState(KEY_HISTORY_BASELINE, "1"))
         }
     }
 
@@ -347,6 +398,70 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
                 put("bookmarked", false)
             }
         }
+
+        ops += historyOps(now)
+        return ops
+    }
+
+    /** The history (API §4.8): the time played so far once, the plays not sent yet, then forget and clear. */
+    private fun historyOps(now: Long): List<Op> {
+        val ops = mutableListOf<Op>()
+        if (Database.syncState(KEY_HISTORY_BASELINE) != "1") {
+            Database.keepNewestUnsentEvents(MERGE_UPLOAD_MAX)
+            Database.playedSongsNow().filter { it.id.isVideoId }.chunked(BASELINE_MAX).forEach { songs ->
+                ops += op("play.baseline", "stat:batch", at = now) {
+                    put("mode", "atLeast")
+                    put(
+                        "entries",
+                        buildJsonArray {
+                            songs.forEach { song ->
+                                add(buildJsonObject {
+                                    put("videoId", song.id)
+                                    put("totalMs", song.totalPlayTimeMs)
+                                })
+                            }
+                        }
+                    )
+                    putTracks(songs)
+                }
+            }
+        }
+
+        val retryAt = Database.syncState(KEY_PLAY_RETRY_AT)?.toLongOrNull() ?: 0L
+        if (now >= retryAt) Database.unsentEvents(PLAY_BATCH).forEach { event ->
+            // Local files are not YouTube videos: nothing the server can keep
+            if (!event.songId.isVideoId) {
+                Database.markEventSent(event.id)
+                return@forEach
+            }
+            val eventId = event.syncId ?: UUID.randomUUID().toString().also { Database.setEventSyncId(event.id, it) }
+            ops += Op(
+                kind = "play.add",
+                key = "play:$eventId",
+                json = buildJsonObject {
+                    put("opId", eventId)
+                    put("kind", "play.add")
+                    put("at", event.timestamp.isoTime())
+                    put("videoId", event.songId)
+                    put("playedAt", event.timestamp.isoTime())
+                    put("playTimeMs", event.playTime.coerceIn(1L, MAX_PLAY_TIME_MS))
+                    put("history", true)
+                    put("playtime", true)
+                    putTracks(listOfNotNull(Database.songNow(event.songId)))
+                }
+            )
+        }
+
+        Database.historyForgets().forEach { forget ->
+            val key = "forget:${forget.videoId}:${forget.eventsBefore}"
+            ops += if (forget.videoId == HistoryForget.ALL) {
+                op("history.clear", key, at = now) { put("eventsBefore", forget.eventsBefore.isoTime()) }
+            } else op("history.forget", key, at = now) {
+                put("videoId", forget.videoId)
+                put("eventsBefore", forget.eventsBefore.isoTime())
+                put("resetTotal", forget.resetTotal)
+            }
+        }
         return ops
     }
 
@@ -419,9 +534,31 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         )
     }
 
-    /** A playlist the server moved to a recovery copy (`redirected`) follows it here. */
+    /**
+     * A playlist the server moved to a recovery copy (`redirected`) follows it here. A play or a forget the server
+     * took is not sent again; one deferred for the hourly limit waits for it (API §2.3 `op_rate_limited`).
+     */
     private fun applyResults(batch: List<Op>, results: List<OpResult>) {
         batch.zip(results).forEach { (op, result) ->
+            val deferred = result.status == "deferred"
+            when {
+                op.key.startsWith("play:") -> {
+                    if (!deferred) Database.markEventSent(op.key.removePrefix("play:"))
+                    else result.retryAfterSeconds?.let {
+                        val retryAt = System.currentTimeMillis() + it * 1000L
+                        Database.setSyncState(SyncState(KEY_PLAY_RETRY_AT, retryAt.toString()))
+                    }
+                    return@forEach
+                }
+
+                op.key.startsWith("forget:") -> {
+                    if (!deferred) {
+                        val (videoId, before) = op.key.removePrefix("forget:").split(":")
+                        Database.deleteHistoryForget(videoId, before.toLong())
+                    }
+                    return@forEach
+                }
+            }
             if (result.status == "redirected" && op.key.startsWith("pl:")) {
                 val old = op.key.removePrefix("pl:")
                 val newId = result.playlistId ?: return@forEach
@@ -508,6 +645,31 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
             if (row.bookmarked) Database.upsertSyncedBookmark(SyncedBookmark(row.type, row.browseId))
             else Database.deleteSyncedBookmark(row.type, row.browseId)
         }
+
+        // History: plays of every device (this one's come back and are already here), totals, forgets
+        response.plays.forEach { row ->
+            if (Database.eventExists(row.eventId)) return@forEach
+            ensureSong(row.videoId, null)
+            Database.insert(
+                Event(
+                    songId = row.videoId,
+                    timestamp = row.playedAt.epochMs(),
+                    playTime = row.playTimeMs,
+                    syncId = row.eventId,
+                    // "" for a play whose device is gone
+                    deviceId = row.deviceId.orEmpty(),
+                    sent = true
+                )
+            )
+        }
+        response.playStats.forEach { row ->
+            if (Database.songNow(row.videoId) != null) Database.setTotalPlayTime(row.videoId, row.totalPlayTimeMs)
+        }
+        response.playForgets.forEach { row ->
+            val before = row.eventsBefore.epochMs()
+            if (row.videoId == HistoryForget.ALL) Database.deleteEventsBefore(before)
+            else Database.deleteEventsOf(row.videoId, before)
+        }
     }
 
     /** Tracks with a server order key in its order, then those without one (local files) as they were. */
@@ -586,7 +748,7 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     private fun onLiveEvent(data: String) {
         val event = runCatching { json.decodeFromString<LiveEvent>(data) }.getOrNull() ?: return
         when (event.type) {
-            "system.connected", "sync.changed" -> scope.launch { sync(force = true) }
+            "system.connected", "sync.changed", "lyrics.changed" -> scope.launch { sync(force = true) }
             "devices.updated" -> mutableDevicesChanged.tryEmit(Unit)
             "session.invalidated" -> account.endSession()
         }
@@ -598,3 +760,6 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         const val NAME_MAX = 200
     }
 }
+
+/** A YouTube video id (API §1.6 `VideoId`): local files and other keys are not. */
+private val String.isVideoId get() = length == VIDEO_ID_LENGTH && !startsWith(LOCAL_KEY_PREFIX)

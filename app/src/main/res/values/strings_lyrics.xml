@@ -11,6 +11,7 @@
     <string name="lyrics_source_kugou">Lyrics: KuGou</string>
     <string name="lyrics_source_file">Lyrics imported from a file</string>
     <string name="lyrics_source_user">Your lyrics</string>
+    <string name="lyrics_source_melogold">Lyrics from the Melogold community</string>
 
     <!-- The lyrics menu -->
     <string name="lyrics_show_plain">Show plain lyrics</string>

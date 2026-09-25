@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.melogold.android.Database
+import app.melogold.android.Dependencies
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.data.repo.PendingMutation
@@ -69,13 +70,16 @@ import app.melogold.android.utils.forcePlayAtIndex
 import app.melogold.android.utils.playWithRadio
 import app.melogold.android.utils.playingSong
 import app.melogold.compose.routing.RouteHandler
+import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -92,6 +96,16 @@ private const val KEEP_WHILE_HIDDEN_MS = 5_000L
 
 enum class HistoryMode { Recent, MostPlayed }
 
+/** Whose plays History shows: every device of the account, this one, or another one by its id on the server. */
+sealed interface HistoryDevice {
+    data object All : HistoryDevice
+    data object Here : HistoryDevice
+    data class Other(val id: String) : HistoryDevice
+}
+
+/** Another device with plays here; [name] is null for one no longer in the account. */
+data class HistoryDeviceEntry(val id: String, val name: String?)
+
 /** The periods of "Most played" (REWRITE §3.2.4); null days: all time. */
 enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
     Week(7, R.string.history_week),
@@ -106,14 +120,36 @@ enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryModel : ScreenModel() {
-    val period = MutableStateFlow(HistoryPeriod.Month)
+    private val account = Dependencies.application.container.account
+    private val names = MutableStateFlow<Map<String, String>>(emptyMap())
 
-    val recent: StateFlow<List<SongWithLastPlayed>?> = Database.recentlyPlayed()
+    val period = MutableStateFlow(HistoryPeriod.Month)
+    val device = MutableStateFlow<HistoryDevice>(HistoryDevice.All)
+
+    /** This device on the server: its plays that came back from there carry this id. */
+    private val me: String? get() = account.session?.deviceId
+
+    /** The other devices of the account with plays here (API §4.8 history); none without an account. */
+    val devices: StateFlow<ImmutableList<HistoryDeviceEntry>> = combine(Database.historyDevices(), names) { ids, names ->
+        ids.filter { it != me }
+            .map { HistoryDeviceEntry(id = it, name = names[it]) }
+            .sortedBy { it.name == null }
+            .toImmutableList()
+    }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), persistentListOf())
+
+    val recent: StateFlow<List<SongWithLastPlayed>?> = device
+        .flatMapLatest { device ->
+            when (device) {
+                HistoryDevice.All -> Database.recentlyPlayed()
+                HistoryDevice.Here -> Database.recentlyPlayedHere(me)
+                is HistoryDevice.Other -> Database.recentlyPlayedOn(device.id)
+            }
+        }
         .withPending { applyingHistory(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
-    val mostPlayed: StateFlow<List<SongWithPlayTime>?> = period
-        .flatMapLatest { period -> mostPlayedIn(period) }
+    val mostPlayed: StateFlow<List<SongWithPlayTime>?> = combine(period, device) { period, device -> period to device }
+        .flatMapLatest { (period, device) -> mostPlayedIn(period, device) }
         .withPending { applyingHistory(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
 
@@ -121,9 +157,24 @@ class HistoryModel : ScreenModel() {
         .withPending { applyingPlays(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), 0)
 
-    private fun mostPlayedIn(period: HistoryPeriod): Flow<List<SongWithPlayTime>> = Database.mostPlayed(
-        since = period.days?.let { System.currentTimeMillis() - TimeUnit.DAYS.toMillis(it) } ?: 0L
-    )
+    /** Whether "Clear history" also goes to the other devices of the account. */
+    val signedIn: Boolean get() = account.session != null
+
+    init {
+        // The names of the account's devices; a device gone from the account stays "Another device"
+        if (account.session != null) scope.launch {
+            runCatching { account.devices() }.onSuccess { list -> names.value = list.associate { it.id to it.name } }
+        }
+    }
+
+    private fun mostPlayedIn(period: HistoryPeriod, device: HistoryDevice): Flow<List<SongWithPlayTime>> {
+        val since = period.days?.let { System.currentTimeMillis() - TimeUnit.DAYS.toMillis(it) } ?: 0L
+        return when (device) {
+            HistoryDevice.All -> Database.mostPlayed(since = since)
+            HistoryDevice.Here -> Database.mostPlayedHere(since = since, me = me)
+            is HistoryDevice.Other -> Database.mostPlayedOn(since = since, deviceId = device.id)
+        }
+    }
 
     /** Forgets every play of [song] so far (likes and playlists stay), with "Undo". */
     fun forget(song: Song, snackbar: AppSnackbar, message: String) = scope.launch {
@@ -160,6 +211,8 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
         val recent by model.recent.collectAsState()
         val mostPlayed by model.mostPlayed.collectAsState()
         val playCount by model.playCount.collectAsState()
+        val device by model.device.collectAsState()
+        val devices by model.devices.collectAsState()
 
         var menu by remember { mutableStateOf(false) }
         var clearing by rememberSaveable { mutableStateOf(false) }
@@ -221,6 +274,16 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
                     )
                 }
 
+                // Plays of other devices of the account are here: whose to show
+                if (devices.isNotEmpty() || device != HistoryDevice.All) item(key = "device") {
+                    DeviceFilter(
+                        selected = device,
+                        devices = devices,
+                        onSelect = { model.device.value = it },
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+
                 when (mode) {
                     HistoryMode.Recent -> recentItems(
                         songs = recent,
@@ -265,7 +328,14 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
 
         if (clearing) AlertDialog(
             onDismissRequest = { clearing = false },
-            text = { Text(text = stringResource(R.string.history_clear_prompt, playCount)) },
+            text = {
+                Text(
+                    text = stringResource(
+                        if (model.signedIn) R.string.history_clear_prompt_everywhere else R.string.history_clear_prompt,
+                        playCount
+                    )
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -345,6 +415,68 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
                     .padding(horizontal = 8.dp)
                     .animateItem()
             )
+        }
+    }
+}
+
+/**
+ * The device whose plays History shows, as an M3 filter chip with a menu: all devices, this one, or another one of
+ * the account.
+ */
+@Composable
+private fun DeviceFilter(
+    selected: HistoryDevice,
+    devices: ImmutableList<HistoryDeviceEntry>,
+    onSelect: (HistoryDevice) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val other = stringResource(R.string.history_device_other)
+    fun label(device: HistoryDevice): String? = when (device) {
+        HistoryDevice.All -> null
+        HistoryDevice.Here -> null
+        is HistoryDevice.Other -> devices.firstOrNull { it.id == device.id }?.name ?: other
+    }
+
+    Box(modifier = modifier) {
+        FilterChip(
+            selected = selected != HistoryDevice.All,
+            onClick = { expanded = true },
+            label = {
+                Text(
+                    text = label(selected) ?: stringResource(
+                        if (selected == HistoryDevice.Here) R.string.history_device_this else R.string.history_device_all
+                    )
+                )
+            },
+            leadingIcon = { Icon(painter = painterResource(R.drawable.ms_devices), contentDescription = null) },
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ms_arrow_drop_down),
+                    contentDescription = stringResource(R.string.history_device_choose)
+                )
+            }
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            val options = listOf(HistoryDevice.All, HistoryDevice.Here) + devices.map { HistoryDevice.Other(it.id) }
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = label(option) ?: stringResource(
+                                if (option == HistoryDevice.Here) R.string.history_device_this else R.string.history_device_all
+                            )
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelect(option)
+                    },
+                    trailingIcon = if (option == selected) {
+                        { Icon(painter = painterResource(R.drawable.ms_check), contentDescription = null) }
+                    } else null
+                )
+            }
         }
     }
 }

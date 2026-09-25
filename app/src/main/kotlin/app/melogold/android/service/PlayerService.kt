@@ -124,6 +124,7 @@ import app.melogold.providers.sponsorblock.SponsorBlock
 import app.melogold.providers.sponsorblock.models.Action
 import app.melogold.providers.sponsorblock.models.Category
 import app.melogold.providers.sponsorblock.requests.segments
+import java.util.UUID
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
@@ -440,7 +441,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                         Event(
                             songId = mediaItem.mediaId,
                             timestamp = System.currentTimeMillis(),
-                            playTime = totalPlayTimeMs
+                            playTime = totalPlayTimeMs,
+                            syncId = UUID.randomUUID().toString()
                         )
                     )
                 }

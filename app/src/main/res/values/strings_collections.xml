@@ -16,6 +16,11 @@
     <string name="favorites_empty">Tap ♡ — tracks will show up here</string>
 
     <string name="history_recent">Recent</string>
+    <string name="history_device_all">All devices</string>
+    <string name="history_device_this">This device</string>
+    <string name="history_device_other">Another device</string>
+    <string name="history_device_choose">Whose plays to show</string>
+    <string name="history_clear_prompt_everywhere">Delete all plays (%1$d) on every device of the account? Favorites and playlists won\'t change.</string>
     <string name="history_most_played">Most played</string>
     <string name="history_week">7 days</string>
     <string name="history_month">30 days</string>

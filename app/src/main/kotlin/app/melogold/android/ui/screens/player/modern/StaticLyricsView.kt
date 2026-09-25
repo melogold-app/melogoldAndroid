@@ -116,6 +116,7 @@ fun LyricsSourceFooter(
         LyricsSource.KuGou -> stringResource(R.string.lyrics_source_kugou)
         LyricsSource.File -> stringResource(R.string.lyrics_source_file)
         LyricsSource.User -> stringResource(R.string.lyrics_source_user)
+        LyricsSource.Melogold -> stringResource(R.string.lyrics_source_melogold)
         null -> if (synced) stringResource(R.string.provided_lyrics_by) else return
     }
 

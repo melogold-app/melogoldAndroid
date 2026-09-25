@@ -4,6 +4,7 @@ import android.util.Log
 import app.melogold.android.Database
 import app.melogold.android.Dependencies
 import app.melogold.android.internal
+import app.melogold.android.models.HistoryForget
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.models.Song
@@ -58,12 +59,18 @@ sealed interface PendingMutation {
         override fun commit() = Database.internal.runInTransaction {
             Database.deleteEventsOf(songId, before)
             Database.setTotalPlayTime(songId, 0L)
+            // On every device of the account too (API §4.8 history.forget)
+            Database.upsert(HistoryForget(songId, eventsBefore = before, resetTotal = true))
         }
     }
 
     /** "Clear history": every play up to [before]. */
     data class ClearHistory(val before: Long) : PendingMutation {
-        override fun commit() = Database.deleteEventsBefore(before)
+        override fun commit() = Database.internal.runInTransaction {
+            Database.deleteEventsBefore(before)
+            // On every device of the account too (API §4.8 history.clear)
+            Database.upsert(HistoryForget(HistoryForget.ALL, eventsBefore = before, resetTotal = false))
+        }
     }
 
     /** "Don't show this track"; the row of the track must exist. */

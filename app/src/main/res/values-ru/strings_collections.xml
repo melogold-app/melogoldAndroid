@@ -15,6 +15,11 @@
     <string name="favorites_empty">Нажимайте ♡ — треки появятся здесь</string>
 
     <string name="history_recent">Недавние</string>
+    <string name="history_device_all">Все устройства</string>
+    <string name="history_device_this">Это устройство</string>
+    <string name="history_device_other">Другое устройство</string>
+    <string name="history_device_choose">Чьи прослушивания показать</string>
+    <string name="history_clear_prompt_everywhere">Удалить все прослушивания (%1$d) на всех устройствах аккаунта? Избранное и плейлисты не изменятся.</string>
     <string name="history_most_played">Чаще всего</string>
     <string name="history_week">7 дней</string>
     <string name="history_month">30 дней</string>

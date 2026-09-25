@@ -29,6 +29,40 @@ data class SyncedPlaylist(
     val items: List<String> get() = if (videoIds.isEmpty()) emptyList() else videoIds.split('\n')
 }
 
+/**
+ * The user's own lyrics of a track as the server had them after the last sync (API §4.10): the next sync sends what
+ * changed here since, and a track played for the first time on this device finds them here. Sources and the format
+ * are the server's words (`user`, `lrc`, …).
+ */
+@Entity
+data class SyncedLyrics(
+    @PrimaryKey val videoId: String,
+    val rev: Long,
+    /** A hash of the lyrics as the server has them ([app.melogold.android.sync.LyricsSync]), to tell a local change. */
+    val hash: String,
+    val plain: String?,
+    val plainSource: String?,
+    val synced: String?,
+    val syncedFormat: String?,
+    val syncedSource: String?,
+    val startTimeMs: Long?
+)
+
+/**
+ * "Forget this track" or, with [ALL], "clear the history", done here and not sent to the server yet (API §4.8
+ * `history.forget`, `history.clear`): the plays before [eventsBefore] go on every device.
+ */
+@Entity
+data class HistoryForget(
+    @PrimaryKey val videoId: String,
+    val eventsBefore: Long,
+    val resetTotal: Boolean
+) {
+    companion object {
+        const val ALL = "*"
+    }
+}
+
 /** A saved album or artist the server had after the last sync (`type` is `album` or `artist`). */
 @Entity(primaryKeys = ["type", "browseId"])
 data class SyncedBookmark(

@@ -18,8 +18,14 @@ enum class LyricsSource {
     File,
 
     /** Typed or synced by the user. */
-    User
+    User,
+
+    /** Shared by another user of the Melogold server (API §4.10); never sent back as the user's own. */
+    Melogold
 }
+
+/** Lyrics the user made or brought themselves: they are kept on the Melogold server and follow the user. */
+val LyricsSource?.isOwn get() = this == LyricsSource.User || this == LyricsSource.File
 
 /**
  * @param fixedSource where [fixed] came from, null for rows cached before the database kept it

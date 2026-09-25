@@ -8,9 +8,11 @@ import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -58,7 +60,8 @@ data class ServerFeatures(
     val sync: SyncFeature? = null,
     val playback: FeatureVersion? = null,
     val recoveryCode: FeatureVersion? = null,
-    val registrationPow: FeatureVersion? = null
+    val registrationPow: FeatureVersion? = null,
+    val lyrics: FeatureVersion? = null
 )
 
 @Serializable
@@ -167,6 +170,7 @@ data class OpResult(
     val status: String,
     val code: String? = null,
     val playlistId: String? = null,
+    val retryAfterSeconds: Int? = null,
     val replayed: Boolean = false
 )
 
@@ -223,8 +227,20 @@ data class SyncResponse(
     val playlists: List<PlaylistRow> = emptyList(),
     val items: List<PlaylistItemRow> = emptyList(),
     val likes: List<LikeRow> = emptyList(),
-    val bookmarks: List<BookmarkRow> = emptyList()
+    val bookmarks: List<BookmarkRow> = emptyList(),
+    val plays: List<PlayRow> = emptyList(),
+    val playStats: List<PlayStatRow> = emptyList(),
+    val playForgets: List<PlayForgetRow> = emptyList()
 )
+
+@Serializable
+data class PlayRow(val eventId: String, val videoId: String, val playedAt: String, val playTimeMs: Long, val deviceId: String? = null)
+
+@Serializable
+data class PlayStatRow(val videoId: String, val totalPlayTimeMs: Long, val lastPlayedAt: String? = null)
+
+@Serializable
+data class PlayForgetRow(val videoId: String, val eventsBefore: String, val totalBefore: String? = null)
 
 @Serializable
 data class MergePlanInput(val localKey: String, val syncId: String? = null, val name: String, val browseId: String? = null)
@@ -237,6 +253,53 @@ data class MergePlanEntry(val localKey: String, val action: String, val playlist
 
 @Serializable
 data class MergePlanResponse(val plan: List<MergePlanEntry>)
+// endregion
+
+// region Lyrics (API §4.10)
+@Serializable
+data class LyricsText(
+    val plain: String? = null,
+    val plainSource: String? = null,
+    val synced: String? = null,
+    val syncedFormat: String? = null,
+    val syncedSource: String? = null,
+    val startTimeMs: Long? = null,
+    val language: String? = null
+)
+
+/** `PUT /lyrics/{videoId}`: absent fields are omitted (`explicitNulls = false`). */
+@Serializable
+data class LyricsPut(
+    val plain: String? = null,
+    val plainSource: String? = null,
+    val synced: String? = null,
+    val syncedFormat: String? = null,
+    val syncedSource: String? = null,
+    val startTimeMs: Long? = null,
+    val language: String? = null
+)
+
+@Serializable
+data class MyLyrics(
+    val id: String,
+    val videoId: String,
+    val rev: Long,
+    val deleted: Boolean,
+    val text: LyricsText? = null,
+    val updatedAt: String
+)
+
+@Serializable
+data class SharedLyrics(val id: String, val videoId: String, val text: LyricsText, val updatedAt: String)
+
+@Serializable
+data class LyricsResponse(val mine: MyLyrics? = null, val shared: SharedLyrics? = null, val serverTime: String)
+
+@Serializable
+data class LyricsChangesRequest(val after: Long, val limit: Int? = null)
+
+@Serializable
+data class MyLyricsPage(val items: List<MyLyrics>, val rev: Long, val more: Boolean)
 // endregion
 
 /**
@@ -319,6 +382,28 @@ class MelogoldApi(private val baseUrl: String) {
             bearerAuth(token)
             header(SYNC_PROTOCOL_HEADER, SYNC_PROTOCOL.toString())
             jsonBody(body)
+        }
+    }
+
+    suspend fun lyrics(token: String, videoId: String): LyricsResponse = call {
+        client.get("$baseUrl/lyrics/$videoId") { bearerAuth(token) }
+    }
+
+    suspend fun putLyrics(token: String, videoId: String, body: LyricsPut): MyLyrics = call {
+        client.put("$baseUrl/lyrics/$videoId") {
+            bearerAuth(token)
+            jsonBody(body)
+        }
+    }
+
+    suspend fun deleteLyrics(token: String, videoId: String) = callUnit {
+        client.delete("$baseUrl/lyrics/$videoId") { bearerAuth(token) }
+    }
+
+    suspend fun lyricsChanges(token: String, request: LyricsChangesRequest): MyLyricsPage = call {
+        client.post("$baseUrl/auth/me/lyrics/changes") {
+            bearerAuth(token)
+            jsonBody(request)
         }
     }
 

@@ -100,7 +100,7 @@ fun rememberPlayerLyrics(
                                     songId = mediaId,
                                     fixed = result.fixed,
                                     synced = result.synced,
-                                    startTime = row?.startTime,
+                                    startTime = result.startTime ?: row?.startTime,
                                     fixedSource = result.fixedSource,
                                     syncedSource = result.syncedSource
                                 ).toContent(preferSynced = preferSynced, fetchEnabled = false)
@@ -120,7 +120,7 @@ fun rememberPlayerLyrics(
                                             songId = mediaId,
                                             fixed = result.fixed.orEmpty(),
                                             synced = result.synced.orEmpty(),
-                                            startTime = row?.startTime,
+                                            startTime = result.startTime ?: row?.startTime,
                                             fixedSource = result.fixedSource,
                                             syncedSource = result.syncedSource
                                         )

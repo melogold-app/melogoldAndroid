@@ -1,6 +1,7 @@
 package app.melogold.android.debug
 
 import android.content.Context
+import app.melogold.android.BuildConfig
 import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
@@ -35,7 +36,7 @@ class DebugReceiverTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
         assertEquals(
-            "pong app.melogold.android.debug 0.1.0-DEBUG hello",
+            "pong app.melogold.android.debug ${BuildConfig.VERSION_NAME} hello",
             PingCommand.run(context, "hello", Bundle.EMPTY)
         )
     }

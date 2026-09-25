@@ -42,6 +42,7 @@ import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
 import app.melogold.android.models.Event
 import app.melogold.android.models.Format
+import app.melogold.android.models.HistoryForget
 import app.melogold.android.models.Info
 import app.melogold.android.models.Lyrics
 import app.melogold.android.models.LyricsSource
@@ -61,6 +62,7 @@ import app.melogold.android.models.SongWithDownload
 import app.melogold.android.models.SyncState
 import app.melogold.android.models.SyncedBookmark
 import app.melogold.android.models.SyncedLike
+import app.melogold.android.models.SyncedLyrics
 import app.melogold.android.models.SyncedPlaylist
 import app.melogold.android.models.TrackDownload
 import app.melogold.android.models.DownloadCollection
@@ -275,6 +277,32 @@ interface DatabaseAccessor {
     )
     fun recentlyPlayed(limit: Int = 500): Flow<List<SongWithLastPlayed>>
 
+    /** [recentlyPlayed] of this device: its own plays ([me] is its id on the server, null without an account). */
+    @Query(
+        """
+        SELECT Song.*, MAX(Event.timestamp) AS lastPlayed FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Event.deviceId IS NULL OR Event.deviceId = :me
+        GROUP BY Event.songId
+        ORDER BY lastPlayed DESC
+        LIMIT :limit
+        """
+    )
+    fun recentlyPlayedHere(me: String?, limit: Int = 500): Flow<List<SongWithLastPlayed>>
+
+    /** [recentlyPlayed] of another device of the account. */
+    @Query(
+        """
+        SELECT Song.*, MAX(Event.timestamp) AS lastPlayed FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Event.deviceId = :deviceId
+        GROUP BY Event.songId
+        ORDER BY lastPlayed DESC
+        LIMIT :limit
+        """
+    )
+    fun recentlyPlayedOn(deviceId: String, limit: Int = 500): Flow<List<SongWithLastPlayed>>
+
     /** Songs by how long they played since [since], longest first. */
     @Query(
         """
@@ -287,6 +315,30 @@ interface DatabaseAccessor {
         """
     )
     fun mostPlayed(since: Long, limit: Int = 100): Flow<List<SongWithPlayTime>>
+
+    @Query(
+        """
+        SELECT Song.*, SUM(Event.playTime) AS playTime FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Event.timestamp >= :since AND (Event.deviceId IS NULL OR Event.deviceId = :me)
+        GROUP BY Event.songId
+        ORDER BY playTime DESC
+        LIMIT :limit
+        """
+    )
+    fun mostPlayedHere(since: Long, me: String?, limit: Int = 100): Flow<List<SongWithPlayTime>>
+
+    @Query(
+        """
+        SELECT Song.*, SUM(Event.playTime) AS playTime FROM Event
+        JOIN Song ON Song.id = Event.songId
+        WHERE Event.timestamp >= :since AND Event.deviceId = :deviceId
+        GROUP BY Event.songId
+        ORDER BY playTime DESC
+        LIMIT :limit
+        """
+    )
+    fun mostPlayedOn(since: Long, deviceId: String, limit: Int = 100): Flow<List<SongWithPlayTime>>
 
     @Query("SELECT COUNT(*) FROM Event")
     fun eventCount(): Flow<Int>
@@ -1049,6 +1101,93 @@ interface DatabaseAccessor {
     @Query("DELETE FROM SyncedBookmark")
     fun clearSyncedBookmarks()
 
+    /** Lyrics the user made or imported ([app.melogold.android.models.isOwn]): they are kept on the server. */
+    @Query("SELECT * FROM Lyrics WHERE fixedSource IN ('User', 'File') OR syncedSource IN ('User', 'File')")
+    fun ownLyricsNow(): List<Lyrics>
+
+    @Query("SELECT * FROM Lyrics WHERE fixedSource IN ('User', 'File') OR syncedSource IN ('User', 'File')")
+    fun ownLyrics(): Flow<List<Lyrics>>
+
+    @Query("SELECT * FROM Lyrics WHERE songId = :songId")
+    fun lyricsNow(songId: String): Lyrics?
+
+    @Query("DELETE FROM Lyrics WHERE songId = :songId")
+    fun deleteLyrics(songId: String)
+
+    @Query("SELECT * FROM SyncedLyrics")
+    fun syncedLyricsNow(): List<SyncedLyrics>
+
+    @Query("SELECT * FROM SyncedLyrics WHERE videoId = :videoId")
+    fun syncedLyricsNow(videoId: String): SyncedLyrics?
+
+    @Upsert
+    fun upsert(lyrics: SyncedLyrics)
+
+    @Query("DELETE FROM SyncedLyrics WHERE videoId = :videoId")
+    fun deleteSyncedLyrics(videoId: String)
+
+    @Query("DELETE FROM SyncedLyrics")
+    fun clearSyncedLyrics()
+
+    // History on the server (API §4.8, stream `history`)
+    /** Plays of this device the server does not have yet, newest first. */
+    @Query("SELECT * FROM Event WHERE sent = 0 AND deviceId IS NULL ORDER BY timestamp DESC LIMIT :limit")
+    fun unsentEvents(limit: Int): List<Event>
+
+    @Query("SELECT COUNT(*) FROM Event WHERE sent = 0 AND deviceId IS NULL")
+    fun unsentEventCount(): Flow<Int>
+
+    @Query("UPDATE Event SET syncId = :syncId WHERE id = :id")
+    fun setEventSyncId(id: Long, syncId: String)
+
+    @Query("UPDATE Event SET sent = 1 WHERE id = :id")
+    fun markEventSent(id: Long)
+
+    @Query("UPDATE Event SET sent = 1 WHERE syncId = :syncId")
+    fun markEventSent(syncId: String)
+
+    /** The first sync of the history sends at most the newest [keep] plays (API §11 `mergeUploadMax`). */
+    @Query(
+        """
+        UPDATE Event SET sent = 1 WHERE sent = 0 AND deviceId IS NULL AND id NOT IN (
+            SELECT id FROM Event WHERE sent = 0 AND deviceId IS NULL ORDER BY timestamp DESC LIMIT :keep
+        )
+        """
+    )
+    fun keepNewestUnsentEvents(keep: Int)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM Event WHERE syncId = :syncId)")
+    fun eventExists(syncId: String): Boolean
+
+    /** Another account or server: this device's plays go to it again, the other devices' plays of the old one go. */
+    @Query("UPDATE Event SET sent = 0 WHERE deviceId IS NULL")
+    fun markOwnEventsUnsent()
+
+    @Query("DELETE FROM Event WHERE deviceId IS NOT NULL")
+    fun deleteOtherDevicesEvents()
+
+    @Query("SELECT * FROM HistoryForget")
+    fun historyForgets(): List<HistoryForget>
+
+    @Query("SELECT COUNT(*) FROM HistoryForget")
+    fun historyForgetCount(): Flow<Int>
+
+    @Upsert
+    fun upsert(forget: HistoryForget)
+
+    @Query("DELETE FROM HistoryForget WHERE videoId = :videoId AND eventsBefore <= :eventsBefore")
+    fun deleteHistoryForget(videoId: String, eventsBefore: Long)
+
+    @Query("DELETE FROM HistoryForget")
+    fun clearHistoryForgets()
+
+    @Query("SELECT * FROM Song WHERE totalPlayTimeMs > 0")
+    fun playedSongsNow(): List<Song>
+
+    /** The devices of the account that have plays here besides this one. */
+    @Query("SELECT DISTINCT deviceId FROM Event WHERE deviceId IS NOT NULL")
+    fun historyDevices(): Flow<List<String>>
+
     /**
      * Changes whenever the Favorites, the playlists or the saved albums and artists could have: a sync may be due. The
      * tracks of playlists count with their places, so a move changes it too.
@@ -1160,10 +1299,12 @@ interface DatabaseAccessor {
         SyncState::class,
         SyncedLike::class,
         SyncedPlaylist::class,
-        SyncedBookmark::class
+        SyncedBookmark::class,
+        SyncedLyrics::class,
+        HistoryForget::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 34,
+    version = 36,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -1194,7 +1335,9 @@ interface DatabaseAccessor {
         AutoMigration(from = 30, to = 31),
         AutoMigration(from = 31, to = 32),
         AutoMigration(from = 32, to = 33),
-        AutoMigration(from = 33, to = 34)
+        AutoMigration(from = 33, to = 34),
+        AutoMigration(from = 34, to = 35),
+        AutoMigration(from = 35, to = 36)
     ]
 )
 @TypeConverters(Converters::class)
