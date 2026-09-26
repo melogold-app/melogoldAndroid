@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    What the functions Gemini calls are for (tasks/0006-gemini-app-functions.md). The description is
+    one literal string an agent reads, so it says everything in English and Russian, with the names
+    Gemini hears instead of «Melogold»; displayDescription is for the person and is localized.
+-->
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:description="Melogold (also heard as 'Mellow Gold', 'Melo Gold', 'Мелоголд', 'Мело Голд', 'Мелогольд') is a music player for YouTube Music and YouTube with the user's own library: liked songs (Favorites), playlists, saved artists and albums. / Melogold — музыкальный плеер для YouTube Music и YouTube с библиотекой пользователя: Избранное, плейлисты, исполнители и альбомы.
+Operational patterns: for 'play X in Melogold' call playSong with what the user said; when the request is ambiguous call searchSongs, let the user choose, then playSong with the chosen videoId. playPlaylist looks in the user's own playlists first; for Favorites / liked songs use playFavorites or shuffleFavorites. / «Включи X в Melogold» — playSong с тем, что сказал пользователь; если неоднозначно — searchSongs, пусть пользователь выберет, затем playSong с videoId. playPlaylist сначала ищет среди плейлистов пользователя; Избранное — playFavorites или shuffleFavorites.
+Constraints: every play function replaces the current queue; after a single song similar songs continue automatically. If the result has openApp, Android did not let Melogold play in the background: offer to open Melogold with it. / Каждая функция play заменяет текущую очередь; после одной песни автоматически играют похожие. Если в ответе есть openApp, Android не дал играть в фоне: предложите открыть Melogold."
+    appfn:displayDescription="@string/app_functions_display_description" />

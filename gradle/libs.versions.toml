@@ -16,6 +16,8 @@ workmanager = "2.11.2"
 coil = "3.6.3"
 camerax = "1.6.2"
 aboutlibraries = "15.2.0"
+# Alpha: every alpha may break the API (alpha10, alpha12 did); needs compileSdk 37 and AGP 9.1+
+appfunctions = "1.0.0-alpha12"
 
 [plugins]
 android_application = { id = "com.android.application", version.ref = "agp" }
@@ -59,6 +61,10 @@ coil_ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coi
 
 room = { module = "androidx.room:room-ktx", version.ref = "room" }
 room_compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# Gemini calls the app's functions (tasks/0006-gemini-app-functions.md)
+appfunctions = { module = "androidx.appfunctions:appfunctions", version.ref = "appfunctions" }
+appfunctions_compiler = { module = "androidx.appfunctions:appfunctions-compiler", version.ref = "appfunctions" }
 
 sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 sqlite_framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "sqlite" }

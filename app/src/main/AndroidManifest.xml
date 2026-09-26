@@ -263,5 +263,38 @@
             android:name=".update.UpdateInstallReceiver"
             android:exported="false" />
 
+        <!--
+            The functions Gemini calls: find and play (tasks/0006-gemini-app-functions.md). KSP generates
+            the service from BaseMelogoldAppFunctionService and the XML index next to the schema of the
+            library in assets. Only the system binds it (BIND_APP_FUNCTION_SERVICE is a signature
+            permission); below Android 16 nothing does, so it is inert there.
+        -->
+        <service
+            android:name=".appfunctions.MelogoldAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+
+            <property
+                android:name="android.app.appfunctions.schema"
+                android:value="app_functions_schema.xsd" />
+            <property
+                android:name="android.app.appfunctions.v2"
+                android:value="melogold_app_functions.xml" />
+            <!-- The legacy index of Android 16 reads the v1 file -->
+            <property
+                android:name="android.app.appfunctions"
+                android:value="melogold_app_functions-v1.xml" />
+
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+
+        <!-- What the functions let an agent do, and the names it may hear instead of Melogold -->
+        <property
+            android:name="android.app.appfunctions.app_metadata"
+            android:resource="@xml/app_metadata" />
+
     </application>
 </manifest>

@@ -956,6 +956,21 @@ interface DatabaseAccessor {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(song: Song): Long
 
+    /**
+     * Gives the row of [id] the cover, artists and length it lacks (null or empty) and keeps those it has: a track
+     * first saved without them (played from a link) gets them when it comes again with them.
+     */
+    @Query(
+        """
+        UPDATE Song SET
+            thumbnailUrl = COALESCE(NULLIF(thumbnailUrl, ''), NULLIF(:thumbnailUrl, ''), thumbnailUrl),
+            artistsText = COALESCE(NULLIF(artistsText, ''), NULLIF(:artistsText, ''), artistsText),
+            durationText = COALESCE(NULLIF(durationText, ''), NULLIF(:durationText, ''), durationText)
+        WHERE id = :id
+        """
+    )
+    fun fillMissing(id: String, thumbnailUrl: String?, artistsText: String?, durationText: String?): Int
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     fun insert(queuedMediaItems: List<QueuedMediaItem>)
 
@@ -979,8 +994,8 @@ interface DatabaseAccessor {
             thumbnailUrl = mediaItem.mediaMetadata.artworkUri?.toString(),
             explicit = extras?.explicit == true
         ).let(block)
-        // A row that exists stays as it is, but still gets the album and the artists the item knows
-        insert(song)
+        // A row that exists keeps what it has, but gets what it lacks, the album and the artists the item knows
+        if (insert(song) == -1L) fillMissing(song.id, song.thumbnailUrl, song.artistsText, song.durationText)
 
         extras?.albumId?.let { albumId ->
             insert(

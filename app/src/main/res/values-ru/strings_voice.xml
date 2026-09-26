@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_functions_display_description">Найти и включить песню, исполнителя, альбом, ваш плейлист или Избранное в Melogold; пауза, продолжение, следующий трек</string>
+    <string name="voice_not_found">Не удалось найти «%1$s»</string>
+    <string name="voice_unavailable">Нет сети: не удалось найти «%1$s»</string>
+    <string name="voice_nothing_to_resume">Нечего продолжить: очередь пуста</string>
+</resources>

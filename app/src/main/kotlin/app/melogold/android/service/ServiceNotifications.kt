@@ -71,15 +71,22 @@ abstract class NotificationChannels {
             }
         }
 
+        /**
+         * Puts the service in the foreground on the main thread. A refusal of the system (started from the
+         * background, Android 12+) goes to [onFailure] instead of crashing the app.
+         */
         context(s: Service)
         fun startForeground(
             context: Context,
-            notification: NotificationCompat.Builder.() -> NotificationCompat.Builder
+            notification: NotificationCompat.Builder.() -> NotificationCompat.Builder,
+            onFailure: (Throwable) -> Unit = {}
         ) = runCatching {
             handler.post {
-                upsertChannel(context)
-                val [id, notif] = createNotification(context, notification)
-                s.startForeground(id, notif)
+                runCatching {
+                    upsertChannel(context)
+                    val [id, notif] = createNotification(context, notification)
+                    s.startForeground(id, notif)
+                }.onFailure(onFailure)
             }
         }
 

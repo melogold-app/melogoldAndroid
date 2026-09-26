@@ -10,6 +10,7 @@ import app.melogold.android.models.Playlist
 import app.melogold.android.models.SearchQuery
 import app.melogold.android.models.Song
 import app.melogold.android.ui.model.ScreenModel
+import app.melogold.android.utils.likePatterns
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.links.LinkTarget
 import app.melogold.providers.innertube.links.YouTubeLinkParser
@@ -77,7 +78,7 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
         .debounce(LIBRARY_DELAY)
         .flatMapLatest { text ->
             if (text.isEmpty()) flowOf(emptyList())
-            else patterns(text).let { (asTyped, lower, capitalized) ->
+            else likePatterns(text).let { (asTyped, lower, capitalized) ->
                 Database.searchSongs(asTyped, lower, capitalized, LIBRARY_SONGS).withPending { applyingHidden(it) }
             }
         }
@@ -87,7 +88,7 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
         .debounce(LIBRARY_DELAY)
         .flatMapLatest { text ->
             if (text.isEmpty()) flowOf(emptyList())
-            else patterns(text).let { (asTyped, lower, capitalized) ->
+            else likePatterns(text).let { (asTyped, lower, capitalized) ->
                 Database.searchPlaylists(asTyped, lower, capitalized, LIBRARY_PLAYLISTS).withPending { applying(it) }
             }
         }
@@ -108,14 +109,5 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
 
     fun onQueryChange(text: String) {
         query.value = text
-    }
-
-    private fun patterns(text: String): Triple<String, String, String> {
-        val escaped = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-        return Triple(
-            "%$escaped%",
-            "%${escaped.lowercase()}%",
-            "%${escaped.replaceFirstChar { it.uppercase() }}%"
-        )
     }
 }

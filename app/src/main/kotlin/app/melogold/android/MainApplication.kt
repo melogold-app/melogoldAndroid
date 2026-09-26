@@ -348,31 +348,10 @@ class MainActivity : ComponentActivity() {
                 awaitShell().linkHandler.open(uri)
             }
 
-            MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> {
-                val query = when (extras?.mediaFocus) {
-                    null, "vnd.android.cursor.item/*" -> extras?.query ?: extras?.text
-
-                    MediaStore.Audio.Genres.ENTRY_CONTENT_TYPE -> extras.genre
-
-                    MediaStore.Audio.Artists.ENTRY_CONTENT_TYPE -> extras.artist
-
-                    MediaStore.Audio.Albums.ENTRY_CONTENT_TYPE -> extras.album
-
-                    "vnd.android.cursor.item/audio" -> listOfNotNull(
-                        extras.album,
-                        extras.artist,
-                        extras.genre,
-                        extras.title
-                    ).joinToString(separator = " ")
-
-                    @Suppress("deprecation")
-                    MediaStore.Audio.Playlists.ENTRY_CONTENT_TYPE -> extras.playlist
-
-                    else -> null
-                }
-
-                if (!query.isNullOrBlank()) vm.awaitBinder().playFromSearch(query)
-            }
+            // «включи X» from Google Assistant and cars, and «Open Melogold» of the functions Gemini calls: the
+            // voice rule (REWRITE §3.14.3); nothing to search for continues the last queue
+            MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH ->
+                vm.awaitBinder().playFromSearch(query = null, extras = intent.extras)
         }
     }
     // endregion R2.9

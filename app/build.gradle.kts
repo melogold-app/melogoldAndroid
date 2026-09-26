@@ -217,6 +217,10 @@ kotlin {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+    // AppFunctions (tasks/0006-gemini-app-functions.md): the app module collects the functions, and the legacy
+    // index of Android 16 reads the v1 XML next to the v2 one
+    arg("appfunctions:aggregateAppFunctions", "true")
+    arg("appfunctions:generateV1Xml", "true")
 }
 
 tasks.withType<Test>().configureEach {
@@ -298,6 +302,10 @@ dependencies {
 
     implementation(libs.room)
     ksp(libs.room.compiler)
+
+    // Functions Gemini calls: find and play (tasks/0006-gemini-app-functions.md); inert below Android 16
+    implementation(libs.appfunctions)
+    ksp(libs.appfunctions.compiler)
     implementation(libs.sqlite.framework)
 
     implementation(libs.log4j)

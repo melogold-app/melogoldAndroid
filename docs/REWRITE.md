@@ -1862,6 +1862,8 @@ Release                                          Debug / nightly (ACCOUNT_UI)
   3. лучший результат `searchMusic(Songs)`; если песен нет — первое видео `searchYouTube(Videos)`;
   4. `playSingle` с автоплеем; таймаут поиска 8 с, затем ошибка сессии «Не удалось найти».
 
+  Правила — в `:core:domain` (`app.melogold.domain.voice.VoiceCommands`, тесты на фиктивном каталоге). Фокус «исполнитель», «альбом», «плейлист» включает микс исполнителя, альбом, плейлист (свои из Библиотеки — первыми); без сети песня ищется в Библиотеке. Тем же правилам следуют функции, которые вызывает Gemini (AppFunctions, `tasks/0006-gemini-app-functions.md`).
+
   Онлайн-дерево и поиск в интерфейсе машины — в 0.2.
 - `CallValidator` и `allowed_media_browser_callers.xml` удаляются: Media3 сам проверяет контроллеры.
 

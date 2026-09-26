@@ -76,6 +76,7 @@ import app.melogold.android.models.Event
 import app.melogold.android.models.Format
 import app.melogold.android.models.QueuedMediaItem
 import app.melogold.android.models.Song
+import app.melogold.android.playback.session.VoiceQueryResolver
 import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.PlayerPreferences
@@ -117,10 +118,7 @@ import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import app.melogold.providers.innertube.models.bodies.PlayerBody
-import app.melogold.providers.innertube.models.bodies.SearchBody
 import app.melogold.providers.innertube.requests.player
-import app.melogold.providers.innertube.requests.searchPage
-import app.melogold.providers.innertube.utils.from
 import app.melogold.providers.sponsorblock.SponsorBlock
 import app.melogold.providers.sponsorblock.models.Action
 import app.melogold.providers.sponsorblock.models.Category
@@ -242,6 +240,13 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     private val binder = Binder()
 
     private var isNotificationStarted = false
+
+    /**
+     * The system refused the foreground: playback was started while the app is in the background (by an agent
+     * such as Gemini, Android 12+). The voice commands then ask the person to open the app.
+     */
+    @Volatile
+    private var foregroundRefused = false
     private val notificationActionReceiver = NotificationActionReceiver()
 
     private val mediaItemState = MutableStateFlow<MediaItem?>(null)
@@ -602,9 +607,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                     )
                     player.prepare()
 
-                    isNotificationStarted = true
-                    startForegroundService(this@PlayerService, intent<PlayerService>())
-                    startForeground()
+                    goForeground()
                 }
             }
         }
@@ -877,9 +880,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
 
         if (player.shouldBePlaying && !isNotificationStarted) {
-            isNotificationStarted = true
-            startForegroundService(this@PlayerService, intent<PlayerService>())
-            startForeground()
+            goForeground()
             openEqualizer()
         } else {
             if (!player.shouldBePlaying) {
@@ -975,7 +976,25 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
      */
     private fun startForeground() {
         notification()
-            ?.let { ServiceNotifications.default.startForeground(this, it) }
+            ?.let { ServiceNotifications.default.startForeground(this, it, onFailure = ::refuseForeground) }
+    }
+
+    /**
+     * Starts the service and puts it in the foreground with its notification. Started from the background (an
+     * agent, Android 12+), the system refuses: that must not crash the app, the voice commands report it.
+     */
+    private fun goForeground() {
+        isNotificationStarted = true
+        foregroundRefused = false
+        runCatching { startForegroundService(this@PlayerService, intent<PlayerService>()) }
+            .onSuccess { startForeground() }
+            .onFailure(::refuseForeground)
+    }
+
+    private fun refuseForeground(error: Throwable) {
+        Log.w(TAG, "The system refused the foreground service", error)
+        foregroundRefused = true
+        isNotificationStarted = false
     }
 
     private fun createMediaSourceFactory() = DefaultMediaSourceFactory(
@@ -1125,23 +1144,18 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             radio = null
         }
 
+        /** Whether the system refused to play in the foreground: the app was in the background (an agent). */
+        val foregroundRefused: Boolean
+            get() = this@PlayerService.foregroundRefused
 
-        fun playFromSearch(query: String) {
-            coroutineScope.launch {
-                Innertube.searchPage(
-                    body = SearchBody(
-                        query = query,
-                        params = Innertube.SearchFilter.Song.value
-                    ),
-                    fromMusicShelfRendererContent = Innertube.SongItem.Companion::from
-                )
-                    ?.getOrNull()
-                    ?.items
-                    ?.firstOrNull()
-                    ?.info
-                    ?.endpoint
-                    ?.let { playRadio(it) }
-            }
+        /**
+         * «включи X» from the system (REWRITE §3.14.3): Google Assistant, Android Auto, a media controller.
+         * [extras] may say what the query is (`android.intent.extra.focus`); nothing to search for continues the
+         * last queue. The same rule as the functions Gemini calls ([VoiceQueryResolver]).
+         */
+        fun playFromSearch(query: String?, extras: Bundle? = null) {
+            val request = VoiceQueryResolver.request(query, extras)
+            coroutineScope.launch { VoiceQueryResolver.playFromSystem(this@PlayerService, this@Binder, request) }
         }
     }
 
@@ -1175,10 +1189,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             PlayerPreferences.speed = speed.coerceIn(0.01f..2f)
         }
 
-        override fun onPlayFromSearch(query: String?, extras: Bundle?) {
-            if (query.isNullOrBlank()) return
-            binder.playFromSearch(query)
-        }
+        override fun onPlayFromSearch(query: String?, extras: Bundle?) = binder.playFromSearch(query, extras)
 
         override fun onCustomAction(action: String, extras: Bundle?) {
             super.onCustomAction(action, extras)

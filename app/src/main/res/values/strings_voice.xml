@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Voice commands: «play X» from the system and the functions Gemini calls (tasks/0006-gemini-app-functions.md) -->
+<resources>
+    <!-- What the functions let an agent do, shown to the person by the system -->
+    <string name="app_functions_display_description">Find and play songs, artists, albums, your playlists and Favorites in Melogold; pause, resume and skip</string>
+    <string name="voice_not_found">Couldn’t find “%1$s”</string>
+    <string name="voice_unavailable">No network: couldn’t search for “%1$s”</string>
+    <string name="voice_nothing_to_resume">Nothing to resume: the queue is empty</string>
+</resources>
