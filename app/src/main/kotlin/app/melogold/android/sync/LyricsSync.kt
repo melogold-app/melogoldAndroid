@@ -1,13 +1,13 @@
 package app.melogold.android.sync
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import app.melogold.android.Database
 import app.melogold.android.internal
 import app.melogold.android.models.Lyrics
 import app.melogold.android.models.LyricsSource
 import app.melogold.android.models.SyncState
 import app.melogold.android.models.SyncedLyrics
-import app.melogold.android.models.isOwn
 import app.melogold.android.sync.api.ApiException
 import app.melogold.android.sync.api.LyricsChangesRequest
 import app.melogold.android.sync.api.LyricsPut
@@ -28,7 +28,8 @@ private const val FETCH_TIMEOUT_MS = 5_000L
 /**
  * The user's own lyrics on the Melogold server (API §4.10) and the ones other users share.
  *
- * Own lyrics are rows of `Lyrics` with a side the user made or imported ([isOwn]). Like the library (REWRITE §4.12a),
+ * Own lyrics are rows of `Lyrics` the user made, imported or chose ([Lyrics.isOwn]; a chosen LrcLib text goes up as
+ * `lrclib`). Like the library (REWRITE §4.12a),
  * they are compared with a snapshot of what the server had after the last sync ([SyncedLyrics]): new and changed ones
  * go up with `PUT`, ones that are no longer own with `DELETE`; then the changes of the other devices come down
  * (`POST /auth/me/lyrics/changes` after the last `rev`). A tombstone removes the lyrics here only if they did not change
@@ -76,14 +77,18 @@ class LyricsSync(private val account: Account) {
     /** The version pulled into the snapshot for a track this device has not stored lyrics of yet. */
     fun ownFromSnapshot(videoId: String): Lyrics? = Database.syncedLyricsNow(videoId)?.toLyrics()
 
-    private sealed interface Upload {
+    internal sealed interface Upload {
         val videoId: String
 
-        class Put(override val videoId: String, val content: Content) : Upload
+        class Put(override val videoId: String, val content: Content) : Upload {
+            val body: LyricsPut get() = content.toPut()
+        }
+
         class Delete(override val videoId: String) : Upload
     }
 
-    private fun pendingUploads(): List<Upload> {
+    @VisibleForTesting
+    internal fun pendingUploads(): List<Upload> {
         val own = Database.ownLyricsNow().mapNotNull { row -> row.ownContent()?.let { row.songId to it } }.toMap()
         val snapshot = Database.syncedLyricsNow().associateBy { it.videoId }
         val puts = own.filter { (videoId, content) -> snapshot[videoId]?.hash != content.hash }
@@ -132,7 +137,8 @@ class LyricsSync(private val account: Account) {
     }
 
     /** One change from the server; runs in a transaction. */
-    private fun apply(version: MyLyrics) {
+    @VisibleForTesting
+    internal fun apply(version: MyLyrics) {
         val local = Database.lyricsNow(version.videoId)
         val snapshot = Database.syncedLyricsNow(version.videoId)
         val localHash = local?.ownContent()?.hash
@@ -155,7 +161,7 @@ class LyricsSync(private val account: Account) {
     }
 
     /** What the server keeps of own lyrics, with sources in the words of API §4.10. */
-    private data class Content(
+    internal data class Content(
         val plain: String?,
         val plainSource: String?,
         val synced: String?,
@@ -196,13 +202,15 @@ class LyricsSync(private val account: Account) {
             startTimeMs = startTimeMs
         )
 
+        /** A version of the user's own from the server: chosen, whatever its source (it is theirs on every device). */
         fun toLyrics(videoId: String) = Lyrics(
             songId = videoId,
             fixed = plain,
             synced = synced,
             startTime = startTimeMs,
             fixedSource = plainSource.toSource(),
-            syncedSource = syncedSource.toSource()
+            syncedSource = syncedSource.toSource(),
+            chosen = true
         )
 
         companion object {
@@ -221,7 +229,7 @@ class LyricsSync(private val account: Account) {
 
     /** The part of a row the server keeps, or `null` when the row holds no lyrics of the user's own. */
     private fun Lyrics.ownContent(): Content? {
-        if (!fixedSource.isOwn && !syncedSource.isOwn) return null
+        if (!isOwn) return null
         val plain = fixed?.takeIf { it.isNotEmpty() }
         val synced = synced?.takeIf { it.isNotEmpty() }
         if (plain == null && synced == null) return null

@@ -655,7 +655,9 @@ fun ModernPlayer(
                                     synced = synced.orEmpty(),
                                     startTime = lyrics.raw?.startTime,
                                     fixedSource = plain?.let { LyricsSource.LrcLib },
-                                    syncedSource = synced?.let { LyricsSource.LrcLib }
+                                    syncedSource = synced?.let { LyricsSource.LrcLib },
+                                    // Chosen by the user: it follows them to their other devices
+                                    chosen = true
                                 )
                             )
                         }

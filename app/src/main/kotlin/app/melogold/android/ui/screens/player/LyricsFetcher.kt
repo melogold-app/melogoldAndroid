@@ -38,7 +38,9 @@ data class LyricsFetchResult(
     val anyFailure: Boolean,
     val fixedSource: LyricsSource? = null,
     val syncedSource: LyricsSource? = null,
-    val startTime: Long? = null
+    val startTime: Long? = null,
+    /** Taken from the user's own version on the server: chosen, it stays theirs (tasks/0009). */
+    val chosen: Boolean = false
 )
 
 /**
@@ -167,7 +169,8 @@ suspend fun fetchLyrics(
             anyFailure = anyFailure,
             fixedSource = if (fixed != null) fixedSource else text.plain?.let { source(text.plainSource) },
             syncedSource = source(text.syncedSource),
-            startTime = text.startTimeMs
+            startTime = text.startTimeMs,
+            chosen = mine != null
         )
     }
 
@@ -177,7 +180,10 @@ suspend fun fetchLyrics(
         anyFailure = anyFailure,
         fixedSource = fixedSource,
         syncedSource = syncedSource,
-        startTime = if (ownSynced) own?.startTime else null
+        startTime = if (ownSynced) own?.startTime else null,
+        // A side taken from the user's own version on the server: the row stays their chosen lyrics
+        chosen = current?.chosen == true ||
+            (own != null && ((fixed != null && fixed == own.fixed) || (synced != null && synced == own.synced)))
     )
 }
 

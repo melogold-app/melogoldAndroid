@@ -122,7 +122,8 @@ fun rememberPlayerLyrics(
                                             synced = result.synced.orEmpty(),
                                             startTime = result.startTime ?: row?.startTime,
                                             fixedSource = result.fixedSource,
-                                            syncedSource = result.syncedSource
+                                            syncedSource = result.syncedSource,
+                                            chosen = result.chosen || row?.chosen == true
                                         )
                                     )
                                 }.onFailure {

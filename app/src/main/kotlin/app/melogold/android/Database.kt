@@ -1158,11 +1158,11 @@ interface DatabaseAccessor {
     @Query("DELETE FROM SyncedBookmark")
     fun clearSyncedBookmarks()
 
-    /** Lyrics the user made or imported ([app.melogold.android.models.isOwn]): they are kept on the server. */
-    @Query("SELECT * FROM Lyrics WHERE fixedSource IN ('User', 'File') OR syncedSource IN ('User', 'File')")
+    /** Lyrics the user made, imported or chose ([Lyrics.isOwn]): they are kept on the server. */
+    @Query("SELECT * FROM Lyrics WHERE fixedSource IN ('User', 'File') OR syncedSource IN ('User', 'File') OR chosen = 1")
     fun ownLyricsNow(): List<Lyrics>
 
-    @Query("SELECT * FROM Lyrics WHERE fixedSource IN ('User', 'File') OR syncedSource IN ('User', 'File')")
+    @Query("SELECT * FROM Lyrics WHERE fixedSource IN ('User', 'File') OR syncedSource IN ('User', 'File') OR chosen = 1")
     fun ownLyrics(): Flow<List<Lyrics>>
 
     @Query("SELECT * FROM Lyrics WHERE songId = :songId")
@@ -1386,7 +1386,7 @@ interface DatabaseAccessor {
         HistoryForget::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 36,
+    version = 37,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -1419,7 +1419,8 @@ interface DatabaseAccessor {
         AutoMigration(from = 32, to = 33),
         AutoMigration(from = 33, to = 34),
         AutoMigration(from = 34, to = 35),
-        AutoMigration(from = 35, to = 36)
+        AutoMigration(from = 35, to = 36),
+        AutoMigration(from = 36, to = 37)
     ]
 )
 @TypeConverters(Converters::class)

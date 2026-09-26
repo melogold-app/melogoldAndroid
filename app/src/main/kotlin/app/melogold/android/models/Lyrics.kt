@@ -1,6 +1,7 @@
 package app.melogold.android.models
 
 import androidx.compose.runtime.Immutable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
@@ -30,6 +31,9 @@ val LyricsSource?.isOwn get() = this == LyricsSource.User || this == LyricsSourc
 /**
  * @param fixedSource where [fixed] came from, null for rows cached before the database kept it
  * @param syncedSource where [synced] came from, null for rows cached before the database kept it
+ * @param chosen the user chose these lyrics over the ones found automatically (in "Find other lyrics", or on another
+ *   device: every version of their own the server sends): they are the user's own whatever the provider, so they go
+ *   to the server with their real source (API §4.10, tasks/0009-chosen-lyrics-sync.md)
  */
 @Immutable
 @Entity(
@@ -48,5 +52,11 @@ data class Lyrics(
     val synced: String?,
     val startTime: Long? = null,
     val fixedSource: LyricsSource? = null,
-    val syncedSource: LyricsSource? = null
-)
+    val syncedSource: LyricsSource? = null,
+    @ColumnInfo(defaultValue = "0")
+    val chosen: Boolean = false
+) {
+    /** The user's own lyrics (typed, imported or chosen): kept on the Melogold server, they follow the user. */
+    val isOwn: Boolean
+        get() = fixedSource.isOwn || syncedSource.isOwn || chosen
+}
