@@ -34,7 +34,7 @@
     <string name="lyrics_editor_mark">Отметить</string>
     <string name="lyrics_editor_end_line">Конец строки</string>
     <string name="lyrics_editor_rewind">Назад на 3 с</string>
-    <string name="lyrics_editor_next">Далее: %1$s</string>
+    <string name="lyrics_editor_next_label">Далее</string>
     <string name="lyrics_editor_all_marked">Всё отмечено</string>
     <string name="lyrics_editor_side">Сторона исполнителя</string>
     <string name="lyrics_editor_side_start">Слева</string>

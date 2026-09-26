@@ -9,13 +9,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,7 +54,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
@@ -59,6 +61,7 @@ import app.melogold.android.R
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
 import app.melogold.android.ui.kit.TextInputDialog
+import app.melogold.android.ui.screens.player.modern.LyricsAnchor
 import app.melogold.android.ui.screens.player.modern.LyricsContent
 import app.melogold.android.ui.screens.player.modern.PlayerMode
 import app.melogold.android.ui.screens.player.modern.PlayerModeState
@@ -80,6 +83,9 @@ private const val NUDGE_MS = 100L
 
 /** Tapping a marked line plays from a little before it. */
 private const val REPLAY_LEAD_MS = 2_000L
+
+/** Beyond this the line to mark scrolls instead of pushing "Mark" off the screen (it is never cut). */
+private val NEXT_MAX_HEIGHT = 200.dp
 
 /**
  * Tap to sync: the lines with their times, the line (or word) the next mark times highlighted, and
@@ -199,7 +205,8 @@ private fun SyncRow(
                 modifier = Modifier.widthIn(min = 56.dp)
             )
         },
-        supportingContent = line.backing?.let { { Text(text = it, maxLines = 1, overflow = TextOverflow.Ellipsis) } },
+        // Everything as it was written, never cut: the eye follows the song while marking
+        supportingContent = line.backing?.let { { Text(text = it) } },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onToggleSide) {
@@ -297,8 +304,9 @@ private fun SyncRow(
 }
 
 /**
- * The transport (back 3 s, play or pause), the position and what the next mark times, then "End
- * line" and the big "Mark" under the thumb.
+ * The transport (back 3 s, play or pause) with the position, what the next mark times — the whole
+ * line as it was written, never cut, so the eye can follow the song (in word mode the next word
+ * underlined) — then "End line" and the big "Mark" under the thumb.
  */
 @Composable
 private fun SyncControls(
@@ -309,11 +317,27 @@ private fun SyncControls(
 ) = Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
     val playing by rememberPlaying(player)
     val line = draft.lines.getOrNull(draft.cursor)
-    val next = when {
-        line == null -> null
-        draft.timing == LyricsTiming.Word && line.words.isNotEmpty() ->
-            line.words.getOrNull(draft.wordCursor) ?: line.words.first()
-        else -> line.text
+    val timedColor = MaterialTheme.colorScheme.primary
+    val next = line?.let {
+        if (draft.timing == LyricsTiming.Word && it.words.isNotEmpty()) buildAnnotatedString {
+            val words = it.words
+            val cursor = draft.wordCursor.coerceIn(0, words.lastIndex)
+            words.forEachIndexed { index, word ->
+                val isNext = index == cursor
+                withStyle(
+                    SpanStyle(
+                        color = if (it.wordStarts.getOrNull(index) != null && !isNext) timedColor else Color.Unspecified,
+                        fontWeight = if (isNext) FontWeight.Bold else null,
+                        textDecoration = if (isNext) TextDecoration.Underline else null
+                    )
+                ) { append(word) }
+                if (index < words.lastIndex) append(" ")
+            }
+            it.backing?.let { backing -> append("\n$backing") }
+        } else buildAnnotatedString {
+            append(it.text)
+            it.backing?.let { backing -> append("\n$backing") }
+        }
     }
 
     Column(
@@ -345,15 +369,34 @@ private fun SyncControls(
                 )
             }
             PositionText(player = player, modifier = Modifier.padding(horizontal = 8.dp))
-            Text(
-                text = next?.let { stringResource(R.string.lyrics_editor_next, it) }
-                    ?: stringResource(R.string.lyrics_editor_all_marked),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+        }
+
+        // The whole line; only a very long one scrolls, from its start at every new line
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = NEXT_MAX_HEIGHT)
+                .verticalScroll(remember(draft.cursor) { ScrollState(0) })
+                .testTag("lyrics_editor_next")
+        ) {
+            if (next == null) Text(
+                text = stringResource(R.string.lyrics_editor_all_marked),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            ) else {
+                Text(
+                    text = stringResource(R.string.lyrics_editor_next_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = next,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = if (line.side == VocalSide.End) TextAlign.End else TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
 
         Row(
@@ -424,7 +467,7 @@ internal fun PreviewTab(draft: LyricsDraft, mediaId: String, binder: PlayerServi
             mediaId = mediaId,
             player = player,
             shouldBePlaying = playing,
-            anchor = 96.dp,
+            anchor = LyricsAnchor,
             controlsVisible = false,
             controlsOverlapPx = { 0 },
             reduceMotion = rememberReduceMotion(),

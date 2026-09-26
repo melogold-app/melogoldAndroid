@@ -130,8 +130,11 @@ import kotlinx.coroutines.launch
 
 private const val AUTO_HIDE_DELAY_MS = 4_000L
 
-/** Where the top of the active synced line sits, below the top of the lyrics viewport. */
-private val LyricsAnchor = 88.dp
+/**
+ * Where the top of the active synced line sits, below the top of the lyrics viewport: at the very top, right under
+ * the 24 dp the top edge fades over, on every layout (the user, 2026-09-26: the words sung now go first).
+ */
+internal val LyricsAnchor = 24.dp
 
 /** Used for the first frame, before the controls have been measured. */
 private val DefaultControlsHeight = 330.dp
@@ -845,7 +848,6 @@ private fun LandscapeLayout(
                 .weight(0.5f)
                 .fillMaxHeight()
         ) {
-            val paneHeight = maxHeight
             val artSize = (min(maxWidth, maxHeight) - 32.dp).coerceAtLeast(64.dp)
 
             transition.AnimatedContent(
@@ -863,7 +865,7 @@ private fun LandscapeLayout(
                     reduceMotion = reduceMotion
                 )
 
-                if (stageMode == PlayerMode.Lyrics) lyricsArea(Modifier.fillMaxSize(), paneHeight / 4, false)
+                if (stageMode == PlayerMode.Lyrics) lyricsArea(Modifier.fillMaxSize(), LyricsAnchor, false)
                 else Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.fillMaxSize()
@@ -949,7 +951,6 @@ private fun TabletopLayout(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                val paneHeight = maxHeight
                 val artSize = (min(maxWidth, maxHeight) - 16.dp).coerceAtLeast(64.dp)
 
                 transition.AnimatedContent(
@@ -963,7 +964,7 @@ private fun TabletopLayout(
                         reduceMotion = reduceMotion
                     )
 
-                    if (stageMode == PlayerMode.Lyrics) lyricsArea(Modifier.fillMaxSize(), paneHeight / 3, false)
+                    if (stageMode == PlayerMode.Lyrics) lyricsArea(Modifier.fillMaxSize(), LyricsAnchor, false)
                     else Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         artwork(artSize, scopes)
                     }

@@ -38,7 +38,7 @@
     <string name="lyrics_editor_mark">Mark</string>
     <string name="lyrics_editor_end_line">End line</string>
     <string name="lyrics_editor_rewind">Back 3 s</string>
-    <string name="lyrics_editor_next">Next: %1$s</string>
+    <string name="lyrics_editor_next_label">Next</string>
     <string name="lyrics_editor_all_marked">Everything is marked</string>
     <string name="lyrics_editor_side">Singer side</string>
     <string name="lyrics_editor_side_start">Left</string>
