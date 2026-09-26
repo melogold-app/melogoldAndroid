@@ -106,6 +106,7 @@ fun DetailScaffold(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = { },
+    contextualBar: (@Composable () -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val barColor by animateColorAsState(
@@ -115,7 +116,7 @@ fun DetailScaffold(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            if (contextualBar != null) contextualBar() else TopAppBar(
                 title = {
                     AnimatedVisibility(
                         visible = showTitle,

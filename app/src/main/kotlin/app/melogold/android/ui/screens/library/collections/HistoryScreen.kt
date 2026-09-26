@@ -58,7 +58,10 @@ import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
 import app.melogold.android.ui.components.menu.NonQueuedMediaItemMenu
 import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
+import app.melogold.android.ui.kit.SelectionTopBar
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.TrackSelection
+import app.melogold.android.ui.kit.rememberTrackSelection
 import app.melogold.android.ui.kit.deviceIcon
 import app.melogold.android.ui.kit.formatListeningTime
 import app.melogold.android.ui.model.ScreenModel
@@ -225,6 +228,14 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
         val removedMessage = stringResource(R.string.history_removed)
         val clearedMessage = stringResource(R.string.history_cleared)
 
+        val selection = rememberTrackSelection()
+        val selectable = remember(mode, recent, mostPlayed) {
+            when (mode) {
+                HistoryMode.Recent -> recent?.map { it.song.asMediaItem }
+                HistoryMode.MostPlayed -> mostPlayed?.map { it.song.asMediaItem }
+            }.orEmpty()
+        }
+
         fun showMenu(song: Song) = menuState.display {
             NonQueuedMediaItemMenu(
                 onDismiss = menuState::hide,
@@ -240,6 +251,9 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
             title = stringResource(R.string.library_history),
             subtitle = null,
             onBack = pop,
+            contextualBar = if (selection.active) {
+                { SelectionTopBar(selection = selection, tracks = selectable) }
+            } else null,
             actions = {
                 Box {
                     IconButton(onClick = { menu = true }) {
@@ -296,7 +310,8 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
                         playingId = playingId,
                         onPlay = { song -> binder?.playWithRadio(song.asMediaItem) },
                         onMenu = ::showMenu,
-                        onFindMusic = { nav.openSearch() }
+                        onFindMusic = { nav.openSearch() },
+                        selection = selection
                     )
 
                     HistoryMode.MostPlayed -> {
@@ -325,7 +340,8 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
                                 binder?.stopRadio()
                                 binder?.player?.forcePlayAtIndex(list.map { it.song.asMediaItem }, index)
                             },
-                            onMenu = ::showMenu
+                            onMenu = ::showMenu,
+                            selection = selection
                         )
                     }
                 }
@@ -362,7 +378,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.recentItems(
     playingId: String?,
     onPlay: (Song) -> Unit,
     onMenu: (Song) -> Unit,
-    onFindMusic: () -> Unit
+    onFindMusic: () -> Unit,
+    selection: TrackSelection
 ) {
     when {
         songs == null -> item(key = "loading") { Loading() }
@@ -384,6 +401,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.recentItems(
                         isPlaying = song.id == playingId,
                         explicit = song.explicit,
                         duration = timeOfDay(lastPlayed),
+                        selection = selection.row(song.id),
                         modifier = Modifier
                             .padding(horizontal = 8.dp)
                             .animateItem()
@@ -398,7 +416,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
     songs: List<SongWithPlayTime>?,
     playingId: String?,
     onPlay: (List<SongWithPlayTime>, Int) -> Unit,
-    onMenu: (Song) -> Unit
+    onMenu: (Song) -> Unit,
+    selection: TrackSelection
 ) {
     when {
         songs == null -> item(key = "loading") { Loading() }
@@ -417,6 +436,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
                 showArtwork = false,
                 isPlaying = song.id == playingId,
                 explicit = song.explicit,
+                selection = selection.row(song.id),
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .animateItem()

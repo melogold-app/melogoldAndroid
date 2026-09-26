@@ -29,9 +29,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.melogold.android.R
 import app.melogold.android.ui.components.MusicBars
@@ -42,6 +44,10 @@ private val RowShape = RoundedCornerShape(16.dp)
  * A track in a list (REWRITE §3.11.1): cover (or a chart [number] in front of it), title,
  * "Artist · Album", marks, duration and ⋮. Tap plays, long tap and ⋮ open the menu; without
  * [onMenu] (e.g. inside focused search, a dialog of its own) there is no menu.
+ *
+ * In a list that can select ([selection], task 0011) a long tap selects instead; while selecting,
+ * a tap checks and unchecks, a checked row is tinted and shows a check instead of its cover, and ⋮
+ * is gone.
  */
 @Composable
 fun TrackRow(
@@ -58,24 +64,37 @@ fun TrackRow(
     duration: String? = null,
     leading: (@Composable () -> Unit)? = null,
     accessibilityActions: List<CustomAccessibilityAction> = emptyList(),
-    videoId: String? = null
+    videoId: String? = null,
+    selection: RowSelection? = null
 ) {
     val playLabel = stringResource(R.string.kit_play)
     val menuLabel = stringResource(R.string.kit_menu)
+    val selectLabel = stringResource(R.string.selection_select)
 
     // One line without a cover is a one-line list item (56 dp), the rest are two-line ones
     val minHeight = if (showArtwork || !subtitle.isNullOrBlank()) 72.dp else 56.dp
+
+    val selecting = selection?.selecting == true
+    val checked = selection?.selected == true
+    val menu = onMenu.takeUnless { selecting }
 
     Row(
         modifier = modifier
             .heightIn(min = minHeight)
             .clip(RowShape)
-            .background(if (isPlaying) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
-            .combinedClickable(onClick = onClick, onLongClick = onMenu)
+            .background(
+                if (isPlaying || checked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+            )
+            .combinedClickable(
+                onClick = if (selecting) selection.onToggle else onClick,
+                onLongClick = selection?.onToggle ?: onMenu
+            )
             .semantics(mergeDescendants = true) {
+                if (selection != null) selected = checked
                 customActions = listOfNotNull(
-                    CustomAccessibilityAction(playLabel) { onClick(); true },
-                    onMenu?.let { CustomAccessibilityAction(menuLabel) { it(); true } }
+                    CustomAccessibilityAction(playLabel) { onClick(); true }.takeUnless { selecting },
+                    menu?.let { CustomAccessibilityAction(menuLabel) { it(); true } },
+                    selection?.let { CustomAccessibilityAction(selectLabel) { it.onToggle(); true } }
                 ) + accessibilityActions
             }
             .padding(start = if (number != null || leading != null) 4.dp else 12.dp, end = 4.dp),
@@ -86,7 +105,15 @@ fun TrackRow(
 
         leading?.invoke()
 
-        if (number != null) Box(
+        // Checked without a cover or a number: the check goes in front
+        if (checked && !showArtwork && number == null) SelectionCheck(size = 40.dp)
+
+        if (checked && !showArtwork && number != null) Box(
+            modifier = Modifier.width(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            SelectionCheck(size = 32.dp)
+        } else if (number != null) Box(
             modifier = Modifier.width(32.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -104,7 +131,8 @@ fun TrackRow(
             )
         }
 
-        if (showArtwork) Box {
+        if (showArtwork && checked) SelectionCheck(size = 56.dp)
+        else if (showArtwork) Box {
             Artwork(url = artworkUrl, size = 56.dp)
             if (isPlaying) Box(
                 modifier = Modifier
@@ -161,7 +189,7 @@ fun TrackRow(
             maxLines = 1
         )
 
-        if (onMenu != null) IconButton(onClick = onMenu) {
+        if (menu != null) IconButton(onClick = menu) {
             Icon(
                 painter = painterResource(R.drawable.ms_more_vert),
                 contentDescription = menuLabel,
@@ -169,4 +197,20 @@ fun TrackRow(
             )
         } else Spacer(modifier = Modifier.width(12.dp))
     }
+}
+
+/** The check a selected row shows instead of its cover (like the selection in Google's Files). */
+@Composable
+private fun SelectionCheck(size: Dp) = Box(
+    modifier = Modifier
+        .size(size)
+        .clip(RoundedCornerShape(12.dp))
+        .background(MaterialTheme.colorScheme.primary),
+    contentAlignment = Alignment.Center
+) {
+    Icon(
+        painter = painterResource(R.drawable.ms_check),
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onPrimary
+    )
 }

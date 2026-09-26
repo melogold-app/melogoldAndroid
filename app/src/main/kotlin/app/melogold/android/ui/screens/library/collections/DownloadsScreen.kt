@@ -55,7 +55,9 @@ import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.PlayShuffleButtons
 import app.melogold.android.ui.kit.SortChip
+import app.melogold.android.ui.kit.SelectionTopBar
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.rememberTrackSelection
 import app.melogold.android.ui.model.ScreenModel
 import app.melogold.android.ui.model.rememberScreenModel
 import app.melogold.android.ui.screens.GlobalRoutes
@@ -170,12 +172,19 @@ fun DownloadsScreen() = RouteHandler {
             binder?.player?.forcePlayAtIndex(list.map { it.song.asMediaItem }, index)
         }
 
+        // The downloaded tracks can be selected (task 0011)
+        val selection = rememberTrackSelection()
+        val doneItems = remember(done) { done.map { it.song.asMediaItem } }
+
         fun showMenu(track: SongWithDownload) = menuState.display {
             NonQueuedMediaItemMenu(onDismiss = menuState::hide, mediaItem = track.song.asMediaItem)
         }
 
         CollectionScaffold(
             title = stringResource(R.string.library_downloads),
+            contextualBar = if (selection.active) {
+                { SelectionTopBar(selection = selection, tracks = doneItems) }
+            } else null,
             subtitle = if (doneCount > 0) {
                 "${pluralStringResource(R.plurals.library_tracks_count, doneCount, doneCount)} · ${context.formatSize(bytes)}"
             } else null,
@@ -280,6 +289,7 @@ fun DownloadsScreen() = RouteHandler {
                             isPlaying = track.song.id == playingId,
                             explicit = track.song.explicit,
                             duration = track.song.durationText,
+                            selection = selection.row(track.song.id),
                             modifier = Modifier
                                 .padding(horizontal = 8.dp)
                                 .animateItem()

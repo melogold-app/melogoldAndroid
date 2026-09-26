@@ -425,6 +425,10 @@ interface DatabaseAccessor {
     @Query("UPDATE Song SET likedAt = :likedAt WHERE id = :songId")
     fun like(songId: String, likedAt: Long?): Int
 
+    /** Likes the [songIds] that are not liked yet; the others keep when they were liked. */
+    @Query("UPDATE Song SET likedAt = :likedAt WHERE id IN (:songIds) AND likedAt IS NULL")
+    fun likeAll(songIds: List<String>, likedAt: Long): Int
+
     @Query("UPDATE Song SET durationText = :durationText WHERE id = :songId")
     fun updateDurationText(songId: String, durationText: String): Int
 

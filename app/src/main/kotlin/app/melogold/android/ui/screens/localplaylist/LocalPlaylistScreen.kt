@@ -71,7 +71,9 @@ import app.melogold.android.ui.kit.DetailScaffold
 import app.melogold.android.ui.kit.MosaicArtwork
 import app.melogold.android.ui.kit.SortChip
 import app.melogold.android.ui.kit.TextInputDialog
+import app.melogold.android.ui.kit.SelectionTopBar
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.rememberTrackSelection
 import app.melogold.android.ui.kit.detailTwoPane
 import app.melogold.android.ui.kit.formatListeningTime
 import app.melogold.android.ui.kit.iconAction
@@ -259,10 +261,18 @@ private fun LocalPlaylistContent(
         }
     )
 
+    val selection = rememberTrackSelection()
+    val selectable = remember(canReorder, ordered, shown) {
+        (if (canReorder) ordered else shown).orEmpty().map { it.asMediaItem }
+    }
+
     DetailScaffold(
         title = playlist.name,
         showTitle = showTitle,
         onBack = onBack,
+        contextualBar = if (selection.active) {
+            { SelectionTopBar(selection = selection, tracks = selectable) }
+        } else null,
         actions = {
             if (!songs.isNullOrEmpty()) IconButton(
                 onClick = {
@@ -410,7 +420,8 @@ private fun LocalPlaylistContent(
                             isPlaying = song.id == playingId,
                             explicit = song.explicit,
                             duration = song.durationText,
-                            leading = if (canReorder) {
+                            selection = selection.row(song.id),
+                            leading = if (canReorder && !selection.active) {
                                 {
                                     IconButton(
                                         onClick = { },

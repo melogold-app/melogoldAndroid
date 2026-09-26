@@ -13,4 +13,17 @@
     <string name="kit_explicit">Откровенный текст</string>
     <string name="kit_show_all">Все</string>
     <string name="kit_back">Назад</string>
+    <!-- Выделение треков в списке (задание 0011) -->
+    <string name="selection_count">Выбрано: %d</string>
+    <string name="selection_clear">Снять выделение</string>
+    <string name="selection_select">Выбрать</string>
+    <string name="selection_select_all">Выбрать все</string>
+    <string name="selection_play">Слушать</string>
+    <string name="selection_new_playlist">Новый плейлист…</string>
+    <string name="selection_favorited">В Избранное: %s</string>
+    <string name="selection_enqueued">В конец очереди: %s</string>
+    <string name="selection_downloading">Скачивается: %s</string>
+    <string name="selection_already_downloaded">Выделенное уже скачано</string>
+    <string name="selection_playlist_created">Плейлист «%1$s»: %2$s</string>
+    <string name="selection_open">Открыть</string>
 </resources>

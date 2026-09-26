@@ -54,7 +54,9 @@ import app.melogold.android.ui.kit.HeaderArtwork
 import app.melogold.android.ui.kit.LoadableContent
 import app.melogold.android.ui.kit.SectionHeader
 import app.melogold.android.ui.kit.StaleChip
+import app.melogold.android.ui.kit.SelectionTopBar
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.rememberTrackSelection
 import app.melogold.android.ui.kit.detailTwoPane
 import app.melogold.android.ui.kit.formatListeningTime
 import app.melogold.android.ui.kit.iconAction
@@ -146,10 +148,16 @@ private fun AlbumContent(
         )
     }
 
+    val selection = rememberTrackSelection()
+    val selectable = remember(details) { details?.songs.orEmpty().map(Song::asMediaItem) }
+
     DetailScaffold(
         title = details?.album?.title.orEmpty(),
         showTitle = showTitle,
         onBack = onBack,
+        contextualBar = if (selection.active) {
+            { SelectionTopBar(selection = selection, tracks = selectable) }
+        } else null,
         actions = {
             AnimatedVisibility(visible = showTitle && details != null, enter = fadeIn(), exit = fadeOut()) {
                 IconButton(onClick = { details?.let(::openMenu) }) {
@@ -251,6 +259,7 @@ private fun AlbumContent(
                         isPlaying = song.id == playingId,
                         explicit = song.explicit,
                         duration = song.durationText,
+                        selection = selection.row(song.id),
                         modifier = Modifier.padding(horizontal = 8.dp)
                     )
                 }

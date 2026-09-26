@@ -39,9 +39,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.MediaItem
 import app.melogold.android.LocalPlayerAwareWindowInsets
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
@@ -67,7 +71,11 @@ import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.ErrorState
 import app.melogold.android.ui.kit.SectionError
 import app.melogold.android.ui.kit.SectionHeader
+import app.melogold.android.ui.kit.RowSelection
+import app.melogold.android.ui.kit.SelectionTopBar
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.TrackSelection
+import app.melogold.android.ui.kit.rememberTrackSelection
 import app.melogold.android.ui.kit.VideoThumbnail
 import app.melogold.android.ui.kit.centeredIn
 import app.melogold.android.ui.model.Loadable
@@ -121,12 +129,17 @@ fun SearchResultsScreen(
             val insets = LocalPlayerAwareWindowInsets.current
             val contentPadding = insets.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal).asPaddingValues()
 
-            Column(
+            // Songs and videos can be selected (task 0011): collecting a lost album from fan uploads
+            val selection = rememberTrackSelection()
+            val (selectable, liveIds) = selectableResults(model, source)
+
+            CompositionLocalProvider(LocalResultsSelection provides selection) { Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surface)
             ) {
-                QueryBar(
+                if (selection.active) SelectionTopBar(selection = selection, tracks = selectable, liveIds = liveIds)
+                else QueryBar(
                     query = query,
                     onBack = pop,
                     onEdit = onEditQuery,
@@ -173,10 +186,54 @@ fun SearchResultsScreen(
                         SearchSource.YouTube -> YouTubeResults(model = model, contentPadding = centeredPadding)
                     }
                 }
-            }
+            } }
         }
     }
 }
+
+/** The selection of the results, for the rows wherever they are. */
+private val LocalResultsSelection = compositionLocalOf<TrackSelection?> { null }
+
+/**
+ * The tracks of the results the selection works on, in their order, and which of them are live:
+ * the songs and videos of what [source] shows.
+ */
+@Composable
+private fun selectableResults(model: SearchResultsModel, source: SearchSource): Pair<List<MediaItem>, Set<String>> =
+    when (source) {
+        SearchSource.All -> {
+            val all by model.all.collectAsState()
+            val results = (all as? Loadable.Content)?.value
+            remember(results) {
+                val songs = results?.songs.orEmpty().map { it.asMediaItem }
+                val videos = results?.videos.orEmpty()
+                (songs + videos.map { it.asMediaItem }) to videos.filter { it.isLive }.mapTo(HashSet()) { it.videoId }
+            }
+        }
+
+        SearchSource.Music -> {
+            val filter by model.musicFilter.collectAsState()
+            val state by model.music(filter).state.collectAsState()
+            remember(state.items) {
+                state.items.mapNotNull { item ->
+                    when (item) {
+                        is Innertube.SongItem -> item.asMediaItem
+                        is Innertube.VideoItem -> item.asMediaItem
+                        else -> null
+                    }
+                } to emptySet()
+            }
+        }
+
+        SearchSource.YouTube -> {
+            val filter by model.youTubeFilter.collectAsState()
+            val state by model.youTube(filter).state.collectAsState()
+            remember(state.items) {
+                val videos = state.items.filterIsInstance<YouTubeItem.Video>()
+                videos.map { it.asMediaItem } to videos.filter { it.isLive }.mapTo(HashSet()) { it.videoId }
+            }
+        }
+    }
 
 /**
  * The query, collapsed into a search bar: visible but not focused (M3 search guidelines).
@@ -502,6 +559,7 @@ private fun <T> PagedList(
 private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
+    val selection = LocalResultsSelection.current
 
     when (item) {
         is Innertube.SongItem -> TrackRow(
@@ -515,6 +573,7 @@ private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
             onMenu = {
                 menuState.display { NonQueuedMediaItemMenu(onDismiss = menuState::hide, mediaItem = item.asMediaItem) }
             },
+            selection = selection?.row(item.key),
             modifier = Modifier.padding(horizontal = 4.dp)
         )
 
@@ -547,7 +606,8 @@ private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
             onClick = { binder?.playWithRadio(item.asMediaItem) },
             onLongClick = {
                 menuState.display { NonQueuedMediaItemMenu(onDismiss = menuState::hide, mediaItem = item.asMediaItem) }
-            }
+            },
+            selection = selection?.row(item.key)
         )
 
         is Innertube.PlaylistItem -> ResultRow(
@@ -568,6 +628,7 @@ private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
 private fun RouteHandlerScope.YouTubeItemRow(item: YouTubeItem) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
+    val selection = LocalResultsSelection.current
 
     when (item) {
         is YouTubeItem.Video -> ResultRow(
@@ -584,7 +645,8 @@ private fun RouteHandlerScope.YouTubeItemRow(item: YouTubeItem) {
             onClick = { binder?.playWithRadio(item.asMediaItem) },
             onLongClick = {
                 menuState.display { NonQueuedMediaItemMenu(onDismiss = menuState::hide, mediaItem = item.asMediaItem) }
-            }
+            },
+            selection = selection?.row(item.videoId)
         )
 
         is YouTubeItem.Channel -> ResultRow(
@@ -614,17 +676,40 @@ private fun ResultRow(
     leading: @Composable () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
-    titleLines: Int = 1
+    titleLines: Int = 1,
+    selection: RowSelection? = null
 ) = Row(
     modifier = Modifier
         .fillMaxWidth()
         .heightIn(min = 72.dp)
-        .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+        .background(
+            if (selection?.selected == true) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent
+        )
+        .combinedClickable(
+            onClick = if (selection?.selecting == true) selection.onToggle else onClick,
+            onLongClick = selection?.onToggle ?: onLongClick
+        )
         .padding(horizontal = 16.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(12.dp)
 ) {
-    leading()
+    Box {
+        leading()
+        // A checked result keeps its preview, with the check over it
+        if (selection?.selected == true) Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ms_check),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
     Column(modifier = Modifier.weight(1f)) {
         Text(
             text = title,

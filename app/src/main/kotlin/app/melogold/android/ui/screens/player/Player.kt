@@ -43,6 +43,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -68,8 +69,11 @@ import app.melogold.android.ui.components.menu.MenuEntryTextStart
 import app.melogold.android.ui.components.menu.MenuSectionTitle
 import app.melogold.android.ui.components.menu.TrackMenuEntries
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
+import app.melogold.android.ui.screens.player.modern.rememberArtworkBitmap
 import app.melogold.android.ui.shell.AppSnackbar
 import app.melogold.android.ui.shell.LocalAppSnackbar
+import app.melogold.android.ui.theme.rememberArtworkColorScheme
+import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.seamlessPlay
@@ -161,6 +165,17 @@ fun Player(
     val metadata = remember(mediaItem) { mediaItem?.mediaMetadata }
     val extras = remember(metadata) { metadata?.extras?.songBundle }
 
+    // The colors of the expanded player come from the artwork. They are computed as soon as the
+    // track changes, also while the player is collapsed, so they are ready when it opens instead
+    // of arriving after the lyrics
+    val artworkScheme = rememberArtworkColorScheme(
+        key = mediaItem?.mediaId,
+        bitmap = rememberArtworkBitmap(metadata?.artworkUri),
+        isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
+        contrastLevel = rememberContrastLevel(),
+        delayMillis = 150L
+    )
+
     val horizontalBottomPaddingValues = windowInsets
         .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
         .asPaddingValues()
@@ -216,7 +231,8 @@ fun Player(
                 likedAt = likedAt,
                 setLikedAt = { likedAt = it },
                 shouldBePlaying = shouldBePlaying,
-                openPlayerMenu = { extras -> openPlayerMenu(extras) }
+                openPlayerMenu = { extras -> openPlayerMenu(extras) },
+                artworkScheme = artworkScheme
             )
         }
     }

@@ -38,7 +38,8 @@ private const val TOP_TINT_ALPHA = 0.35f
 @Composable
 fun rememberArtworkBitmap(uri: Uri?): Bitmap? {
     val context = LocalContext.current
-    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+    // A new artwork starts empty: the old one must not be taken for it (its seed is cached per track)
+    var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(uri) {
         bitmap = uri?.let {

@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -110,8 +111,6 @@ import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.sleepTimerLeft
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.SearchSource
-import app.melogold.android.ui.theme.rememberArtworkColorScheme
-import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
@@ -163,6 +162,7 @@ fun ModernPlayer(
     setLikedAt: (Long?) -> Unit,
     shouldBePlaying: Boolean,
     openPlayerMenu: (PlayerMenuExtras) -> Unit,
+    artworkScheme: ColorScheme?,
     modifier: Modifier = Modifier
 ) {
     val appearance = LocalAppearance.current
@@ -261,18 +261,11 @@ fun ModernPlayer(
         }
     )
 
-    // The player follows the app theme (REWRITE §3.10): its colors come from the artwork, its
-    // darkness from the app; system bar icons follow the same darkness
+    // The player follows the app theme (REWRITE §3.10): its colors come from the artwork (computed
+    // by the host while collapsed too, so they are ready when it opens), its darkness from the
+    // app; system bar icons follow the same darkness
     val appScheme = MaterialTheme.colorScheme
     val appIsDark = appScheme.surface.luminance() < 0.5f
-    val artworkBitmap = rememberArtworkBitmap(mediaItem.mediaMetadata.artworkUri)
-    val artworkScheme = rememberArtworkColorScheme(
-        key = mediaId,
-        bitmap = artworkBitmap,
-        isDark = appIsDark,
-        contrastLevel = rememberContrastLevel(),
-        delayMillis = 150L
-    )
     val activity = remember(context) { context.findActivityNullable() }
     val currentAppIsDark by rememberUpdatedState(appearance.colorPalette.isDark)
     LaunchedEffect(layoutState.expanded, appIsDark) {
@@ -489,7 +482,8 @@ fun ModernPlayer(
                     controlsOverlapPx = overlapPx,
                     reduceMotion = reduceMotion,
                     modeState = modeState,
-                    onLineLongPress = onLineLongPress
+                    onLineLongPress = onLineLongPress,
+                    pillColor = lyricsPillColor(artworkScheme = artworkScheme, isDark = appIsDark)
                 )
 
                 is LyricsContent.Plain -> StaticLyricsView(

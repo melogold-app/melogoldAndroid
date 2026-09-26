@@ -45,7 +45,9 @@ import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
 import app.melogold.android.ui.kit.PlayShuffleButtons
 import app.melogold.android.ui.kit.SortChip
+import app.melogold.android.ui.kit.SelectionTopBar
 import app.melogold.android.ui.kit.TrackRow
+import app.melogold.android.ui.kit.rememberTrackSelection
 import app.melogold.android.ui.kit.formatListeningTime
 import app.melogold.android.ui.kit.parseDuration
 import app.melogold.android.ui.model.ScreenModel
@@ -215,10 +217,16 @@ private fun SongCollection(
         binder?.player?.forcePlayAtIndex(list.map { it.asMediaItem }, index)
     }
 
+    val selection = rememberTrackSelection()
+    val mediaItems = remember(shown) { shown?.map { it.asMediaItem }.orEmpty() }
+
     CollectionScaffold(
         title = title,
         subtitle = subtitle,
         onBack = onBack,
+        contextualBar = if (selection.active) {
+            { SelectionTopBar(selection = selection, tracks = mediaItems) }
+        } else null,
         actions = {
             if (!songs.isNullOrEmpty()) IconButton(onClick = { filtering = !filtering; if (!filtering) filter = "" }) {
                 Icon(painter = painterResource(R.drawable.ms_search), contentDescription = stringResource(R.string.collection_filter))
@@ -308,6 +316,7 @@ private fun SongCollection(
                         isPlaying = song.id == playingId,
                         explicit = song.explicit,
                         duration = song.durationText,
+                        selection = selection.row(song.id),
                         modifier = Modifier
                             .padding(horizontal = 8.dp)
                             .animateItem()

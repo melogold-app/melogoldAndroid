@@ -14,4 +14,17 @@
     <string name="kit_explicit">Explicit</string>
     <string name="kit_show_all">All</string>
     <string name="kit_back">Back</string>
+    <!-- Selecting tracks in a list (task 0011) -->
+    <string name="selection_count">%d selected</string>
+    <string name="selection_clear">Clear selection</string>
+    <string name="selection_select">Select</string>
+    <string name="selection_select_all">Select all</string>
+    <string name="selection_play">Play</string>
+    <string name="selection_new_playlist">New playlist…</string>
+    <string name="selection_favorited">Added to Favorites: %s</string>
+    <string name="selection_enqueued">Added to queue: %s</string>
+    <string name="selection_downloading">Downloading: %s</string>
+    <string name="selection_already_downloaded">The selection is already downloaded</string>
+    <string name="selection_playlist_created">Playlist “%1$s”: %2$s</string>
+    <string name="selection_open">Open</string>
 </resources>

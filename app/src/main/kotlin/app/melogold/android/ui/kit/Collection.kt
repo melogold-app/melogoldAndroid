@@ -83,6 +83,7 @@ fun PaddingValues.centeredIn(width: Dp, layoutDirection: LayoutDirection): Paddi
  * ("312 tracks · 18 h 40 min"), Back and [actions], collapsing into a small bar as the list
  * scrolls. The content gets the padding of the bar and of the mini player; a [centered] one (a
  * list, not a grid) also the side insets that keep it at most 840dp wide on wide windows.
+ * A [contextualBar] (the selection's, task 0011) takes the place of the app bar while it is there.
  */
 @Composable
 fun CollectionScaffold(
@@ -92,6 +93,7 @@ fun CollectionScaffold(
     modifier: Modifier = Modifier,
     centered: Boolean = true,
     actions: @Composable RowScope.() -> Unit = { },
+    contextualBar: (@Composable () -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
 ) = BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -100,7 +102,7 @@ fun CollectionScaffold(
 
     Scaffold(
         topBar = {
-            MediumFlexibleTopAppBar(
+            if (contextualBar != null) contextualBar() else MediumFlexibleTopAppBar(
                 title = { Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 subtitle = subtitle?.let { { Text(text = it, maxLines = 1, overflow = TextOverflow.Ellipsis) } },
                 navigationIcon = {

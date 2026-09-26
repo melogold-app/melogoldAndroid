@@ -1,5 +1,6 @@
 package app.melogold.android.ui.screens.player.modern
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -24,16 +26,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
@@ -57,6 +63,9 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -93,6 +102,8 @@ import kotlinx.coroutines.flow.first
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
 
 /** The lyrics lead the audio a little, so a word lights up right when it is sung. */
 private const val LEAD_MS = 60L
@@ -110,6 +121,105 @@ private const val SCROLLING_ALPHA = 0.6f
 private const val UNSUNG_ALPHA = 0.4f
 
 private val lineEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
+
+/**
+ * The pill under the active line (the same on every client): 16 × 10 around the text and a 12
+ * corner radius at the base text size 28, scaled with the text.
+ */
+private const val PILL_BASE_TEXT_SP = 28f
+private const val PILL_PADDING_H = 16f
+private const val PILL_PADDING_V = 10f
+private const val PILL_RADIUS = 12f
+
+/** The pill moves to the next line quickly, with a barely visible settle (period ≈ 70 ms). */
+private const val PILL_DAMPING = 0.78f
+private const val PILL_STIFFNESS = 8000f
+private const val PILL_FADE_MS = 200
+
+/**
+ * The color of the pill under the active line: the secondary container of the artwork's scheme,
+ * or, without one, white 16 % on dark and black 8 % on light.
+ */
+fun lyricsPillColor(artworkScheme: ColorScheme?, isDark: Boolean): Color =
+    artworkScheme?.secondaryContainer ?: if (isDark) Color.White.copy(alpha = 0.16f) else Color.Black.copy(alpha = 0.08f)
+
+/**
+ * The pill under the active line. The active row reports the box of its text in the coordinates
+ * of the list ([container]) whenever it is laid out, so the pill follows scrolling directly; a
+ * move to another line only animates [offset] from where the pill was to zero.
+ */
+@Stable
+private class LinePill {
+    var container: LayoutCoordinates? = null
+
+    /** The box of the active line; `null` while no line is active. */
+    var target by mutableStateOf<Rect?>(null)
+        private set
+
+    /** Counts moves to another line. */
+    var moves by mutableIntStateOf(0)
+        private set
+
+    /**
+     * The offset from the new line to where the pill was drawn, set when it moves to another line
+     * and taken over by [offset] on the next frame; `null` when the pill was hidden.
+     */
+    var jump: Rect? = null
+
+    /** The last box, kept for fading out. */
+    var last: Rect? = null
+        private set
+
+    val offset = Animatable(Rect.Zero, Rect.VectorConverter)
+
+    /** The index of the row that reported [target]. */
+    private var owner = -1
+
+    fun shown(): Rect? = target?.let { it + (jump ?: offset.value) }
+
+    fun report(index: Int, box: Rect) {
+        if (index != owner) {
+            jump = shown()?.let { it - box }
+            owner = index
+            moves++
+        }
+        target = box
+        last = box
+    }
+
+    fun hide(index: Int? = null) {
+        if (index != null && index != owner) return
+        target = null
+        owner = -1
+    }
+}
+
+private operator fun Rect.plus(other: Rect) =
+    Rect(left + other.left, top + other.top, right + other.right, bottom + other.bottom)
+
+private operator fun Rect.minus(other: Rect) =
+    Rect(left - other.left, top - other.top, right - other.right, bottom - other.bottom)
+
+/** A text of a row: where it is and how its lines are laid out. */
+private class TextPart {
+    var coordinates: LayoutCoordinates? = null
+    var layout: TextLayoutResult? = null
+}
+
+/** The box of the lines of this layout, as wide as the longest line (not the whole width). */
+private fun TextLayoutResult.linesBox(): Rect? {
+    if (lineCount == 0) return null
+    var left = Float.MAX_VALUE
+    var right = -Float.MAX_VALUE
+    for (line in 0 until lineCount) {
+        left = min(left, getLineLeft(line))
+        right = max(right, getLineRight(line))
+    }
+    return Rect(left, getLineTop(0), right, getLineBottom(lineCount - 1))
+}
+
+private fun Rect.union(other: Rect) =
+    Rect(min(left, other.left), min(top, other.top), max(right, other.right), max(bottom, other.bottom))
 
 /**
  * The full-screen, time-synced lyrics (REWRITE §3.10.3, docs/spec/lyrics.md): the active line is
@@ -137,7 +247,11 @@ fun SyncedLyricsView(
     reduceMotion: Boolean,
     modeState: PlayerModeState,
     onLineLongPress: (SyncedLine) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pillColor: Color = lyricsPillColor(
+        artworkScheme = null,
+        isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    )
 ) {
     val haptic = LocalHapticFeedback.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
@@ -224,6 +338,39 @@ fun SyncedLyricsView(
         onDispose { modeState.userScrolling = false }
     }
 
+    // The pill under the active line: drawn once behind the list, so it moves from line to line
+    val pill = remember(mediaId) { LinePill() }
+    val pillAlpha = remember(mediaId) { Animatable(0f) }
+
+    LaunchedEffect(content, pill) {
+        snapshotFlow { activeIndex.value }.collect { index ->
+            if (content.rows.getOrNull(index) !is LyricRow.Sung) pill.hide()
+        }
+    }
+
+    LaunchedEffect(pill) {
+        snapshotFlow { pill.target != null }.collectLatest { visible ->
+            val fade = if (currentReduceMotion) snap() else tween<Float>(PILL_FADE_MS)
+            pillAlpha.animateTo(if (visible) 1f else 0f, fade)
+        }
+    }
+
+    LaunchedEffect(pill) {
+        snapshotFlow { pill.moves }.collectLatest {
+            val jump = pill.jump
+            pill.jump = null
+            // Nothing was shown: the pill appears in place, without moving there
+            if (jump == null || currentReduceMotion) pill.offset.snapTo(Rect.Zero)
+            else {
+                pill.offset.snapTo(jump)
+                pill.offset.animateTo(
+                    targetValue = Rect.Zero,
+                    animationSpec = spring(dampingRatio = PILL_DAMPING, stiffness = PILL_STIFFNESS)
+                )
+            }
+        }
+    }
+
     val colors = MaterialTheme.colorScheme
     val lineStyle = MaterialTheme.typography.headlineMedium.copy(
         fontWeight = FontWeight.Bold,
@@ -245,6 +392,10 @@ fun SyncedLyricsView(
                 fontScale = density.fontScale.coerceAtMost(1.3f)
             )
         ) {
+            val pillUnit = with(LocalDensity.current) { lineStyle.fontSize.toPx() } / PILL_BASE_TEXT_SP
+            val pillPadding = Offset(PILL_PADDING_H * pillUnit, PILL_PADDING_V * pillUnit)
+            val pillRadius = CornerRadius(PILL_RADIUS * pillUnit)
+
             LazyColumn(
                 state = listState,
                 contentPadding = PaddingValues(
@@ -259,6 +410,18 @@ fun SyncedLyricsView(
                         drawFadeMask(
                             controlsFraction = controlsFraction.value,
                             controlsOverlap = controlsOverlapPx().toFloat()
+                        )
+                    }
+                    .onGloballyPositioned { pill.container = it }
+                    .drawBehind {
+                        val alpha = pillAlpha.value
+                        if (alpha <= 0f) return@drawBehind
+                        val rect = pill.shown() ?: pill.last ?: return@drawBehind
+                        drawRoundRect(
+                            color = pillColor.copy(alpha = pillColor.alpha * alpha),
+                            topLeft = rect.topLeft,
+                            size = rect.size,
+                            cornerRadius = pillRadius
                         )
                     }
                     .testTag("lyrics_list")
@@ -306,7 +469,9 @@ fun SyncedLyricsView(
                             secondaryColor = colors.onSurfaceVariant,
                             clickLabel = jumpLabel,
                             onClick = onClick,
-                            onLongClick = { onLineLongPress(row.line) }
+                            onLongClick = { onLineLongPress(row.line) },
+                            pill = pill,
+                            pillPadding = pillPadding
                         )
                     }
                 }
@@ -370,12 +535,56 @@ private fun LyricLineRow(
     clickLabel: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    pill: LinePill,
+    pillPadding: Offset,
     modifier: Modifier = Modifier
 ) {
     val distance by remember(index, activeIndex) {
         derivedStateOf { (index - activeIndex.value).coerceIn(-1, 1) }
     }
     val active = distance == 0
+
+    // The texts of the row; while active, their lines give the pill its place and size
+    val parts = remember { Array(3) { TextPart() } }
+    val currentActive by rememberUpdatedState(active)
+    val currentPadding by rememberUpdatedState(pillPadding)
+    val report = remember(index, pill) {
+        {
+            val container = pill.container
+            if (currentActive && container != null && container.isAttached) {
+                var box: Rect? = null
+                for (part in parts) {
+                    val coordinates = part.coordinates?.takeIf { it.isAttached } ?: continue
+                    val lines = part.layout?.linesBox() ?: continue
+                    val placed = Rect(
+                        container.localPositionOf(coordinates, lines.topLeft),
+                        container.localPositionOf(coordinates, lines.bottomRight)
+                    )
+                    box = box?.union(placed) ?: placed
+                }
+                box?.let {
+                    pill.report(
+                        index = index,
+                        box = Rect(
+                            left = it.left - currentPadding.x,
+                            top = it.top - currentPadding.y,
+                            right = it.right + currentPadding.x,
+                            bottom = it.bottom + currentPadding.y
+                        )
+                    )
+                }
+            }
+        }
+    }
+    LaunchedEffect(active, pillPadding) { if (active) report() }
+    DisposableEffect(index, pill) {
+        onDispose {
+            // A row scrolled away takes its pill with it
+            pill.hide(index)
+        }
+    }
+    val placed = { part: TextPart -> Modifier.onGloballyPositioned { part.coordinates = it; report() } }
+    val laidOut = { part: TextPart -> { layout: TextLayoutResult -> part.layout = layout; report() } }
 
     val alpha = animateFloatAsState(
         targetValue = when {
@@ -415,7 +624,9 @@ private fun LyricLineRow(
             active = active,
             position = position,
             style = lineStyle.copy(textAlign = align),
-            color = color
+            color = color,
+            onLayout = laidOut(parts[0]),
+            modifier = placed(parts[0])
         )
 
         line.background?.let { background ->
@@ -425,7 +636,9 @@ private fun LyricLineRow(
                 active = active,
                 position = position,
                 style = backingStyle.copy(textAlign = align),
-                color = color.copy(alpha = 0.8f)
+                color = color.copy(alpha = 0.8f),
+                onLayout = laidOut(parts[1]),
+                modifier = placed(parts[1])
             )
         }
 
@@ -433,7 +646,9 @@ private fun LyricLineRow(
             Text(
                 text = translation,
                 style = translationStyle.copy(textAlign = align),
-                color = secondaryColor
+                color = secondaryColor,
+                onTextLayout = laidOut(parts[2]),
+                modifier = placed(parts[2])
             )
         }
     }
@@ -454,6 +669,7 @@ private fun FilledText(
     position: () -> Long,
     style: TextStyle,
     color: Color,
+    onLayout: (TextLayoutResult) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // The words joined give the text the layout is measured with
@@ -469,7 +685,10 @@ private fun FilledText(
         text = shown,
         style = style,
         color = if (fill) color.copy(alpha = color.alpha * UNSUNG_ALPHA) else color,
-        onTextLayout = { layout = it },
+        onTextLayout = {
+            layout = it
+            onLayout(it)
+        },
         modifier = modifier.drawWithContent {
             drawContent()
             val result = layout

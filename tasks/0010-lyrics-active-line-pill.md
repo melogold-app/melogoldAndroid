@@ -1,6 +1,6 @@
 # Синхронный текст: подложка под текущей строкой по размеру строки
 
-Статус: открыто
+Статус: сделано
 
 Те же задания: `melogoldiOSmacOS/tasks/0012-lyrics-active-line-pill.md`, `melogoldLinux/tasks/0003-lyrics-active-line-pill.md`.
 Образец — Windows (`melogoldWindows/src/Melogold.App/Controls/SyncedLyricsView.cs`, сделано).

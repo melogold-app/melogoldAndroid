@@ -1,6 +1,6 @@
 # Действия с выделенными треками: скачать, в Избранное, собрать плейлист
 
-Статус: открыто
+Статус: сделано
 
 Те же задания: `melogoldiOSmacOS/tasks/0013-selection-actions.md`, `melogoldLinux/tasks/0004-selection-actions.md`.
 Образец — Windows (сделано, Windows 0.1.10: `Controls/SelectionBar.cs`, `Services/TrackActions.cs`).
