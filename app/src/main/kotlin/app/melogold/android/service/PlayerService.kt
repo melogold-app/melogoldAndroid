@@ -121,6 +121,7 @@ import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import app.melogold.providers.innertube.models.bodies.PlayerBody
+import app.melogold.providers.innertube.requests.playability
 import app.melogold.providers.innertube.requests.player
 import app.melogold.providers.sponsorblock.SponsorBlock
 import app.melogold.providers.sponsorblock.models.Action
@@ -130,6 +131,7 @@ import java.util.UUID
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -159,6 +161,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 
 const val LOCAL_KEY_PREFIX = "local:"
@@ -1334,6 +1337,30 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
 
         /**
+         * What to tell the person when no stream came for [mediaId]: YouTube's own reason when it gives one
+         * ([unavailability]: the track is closed in the country YouTube placed the device in, age, removed), else
+         * the generic "couldn't get the stream". The reason is logged with the country, for bug reports.
+         */
+        internal fun whyUnavailable(mediaId: String, ytDlpMessage: String?): PlaybackException {
+            val playability = runCatching {
+                runBlocking(Dispatchers.IO) {
+                    withTimeoutOrNull(PLAYABILITY_TIMEOUT) { Innertube.playability(mediaId)?.getOrNull() }
+                }
+            }.getOrNull()
+            val error = unavailability(playability, ytDlpMessage)
+            Log.w(
+                TAG,
+                "No stream for $mediaId: ${error?.message ?: "no reason given"}; YouTube: ${playability?.status} " +
+                    "${playability?.reason}, placed in ${playability?.country}, open in " +
+                    "${playability?.availableCountries?.size} countries; yt-dlp: ${ytDlpMessage?.lineSequence()?.lastOrNull()}"
+            )
+            return error ?: VideoIdMismatchException()
+        }
+
+        /** The playability check waits at most this long; the error is shown anyway. */
+        private val PLAYABILITY_TIMEOUT = 8.seconds
+
+        /**
          * Resolves a video id into its stream. With [cache], what it reads is cached there; without
          * one (downloads, which have a cache of their own) it reads the network only.
          */
@@ -1406,12 +1433,11 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                     }?.getOrNull()
                     val youtubeFormat = body?.streamingData?.highestQualityFormat
 
-                    val info = runCatching {
-                        Dependencies.runDownload(mediaId)
-                    }.mapCatching {
+                    val download = runCatching { Dependencies.runDownload(mediaId) }
+                    val info = download.mapCatching {
                         YouTubeDLResponse.fromString(it)
                     }.also { it.exceptionOrNull()?.printStackTrace() }.getOrNull()
-                    if (info?.id != mediaId) throw VideoIdMismatchException()
+                    if (info?.id != mediaId) throw whyUnavailable(mediaId, download.exceptionOrNull()?.message)
                     val format = info.formats?.firstOrNull { it.formatId == info.formatId }
 
                     val uri =

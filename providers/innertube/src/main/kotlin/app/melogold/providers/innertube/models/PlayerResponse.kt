@@ -9,6 +9,10 @@ data class PlayerResponse(
     val playerConfig: PlayerConfig?,
     val streamingData: StreamingData?,
     val videoDetails: VideoDetails?,
+    /** Carries `visitorData`, in which YouTube writes the country it placed the request in ([visitorCountry]). */
+    val responseContext: ResponseContext? = null,
+    /** The countries the rights holder opened the video in (web clients only). */
+    val microformat: Microformat? = null,
     @Transient
     val context: Context? = null,
     @Transient
@@ -69,6 +73,26 @@ data class PlayerResponse(
     data class VideoDetails(
         val videoId: String?
     )
+
+    @Serializable
+    data class ResponseContext(
+        val visitorData: String? = null
+    )
+
+    /** `WEB` answers with `playerMicroformatRenderer`, `WEB_REMIX` with `microformatDataRenderer`. */
+    @Serializable
+    data class Microformat(
+        val playerMicroformatRenderer: Renderer? = null,
+        val microformatDataRenderer: Renderer? = null
+    ) {
+        @Serializable
+        data class Renderer(
+            val availableCountries: List<String>? = null
+        )
+
+        val availableCountries: List<String>?
+            get() = playerMicroformatRenderer?.availableCountries ?: microformatDataRenderer?.availableCountries
+    }
 }
 
 @Serializable

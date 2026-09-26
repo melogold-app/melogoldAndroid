@@ -1,6 +1,6 @@
 # Хранилище: понятно, что будет, когда кэш заполнится
 
-Статус: открыто
+Статус: сделано
 
 Те же задания: `melogoldWindows/tasks/0009-storage-explained.md` (сделано, Windows 0.1.8) и `melogoldiOSmacOS/tasks/0009-downloads-save-file-storage.md`.
 

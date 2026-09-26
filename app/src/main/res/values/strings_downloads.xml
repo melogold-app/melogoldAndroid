@@ -43,7 +43,7 @@
 
     <!-- Settings -->
     <string name="settings_storage">Storage</string>
-    <string name="settings_storage_description">Downloads stay until you remove them. Caches free themselves: what went unused the longest goes first.</string>
+    <string name="settings_storage_description">Caches free themselves: once full, new tracks and artwork take the place of those unused the longest. There is nothing to do. Downloads are not part of the cache and are never removed on their own.</string>
     <string name="settings_downloads">Downloads</string>
     <string name="settings_downloads_wifi_only">Only over Wi‑Fi</string>
     <string name="settings_downloads_wifi_only_description">Downloads wait for Wi‑Fi and don\'t use mobile data</string>

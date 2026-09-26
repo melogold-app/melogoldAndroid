@@ -6,7 +6,14 @@
 
     <!-- The error card (REWRITE §3.10.9) -->
     <string name="player_error_network">No connection. Check your network or VPN</string>
-    <string name="player_error_geo">Unavailable in your region</string>
+    <string name="player_error_geo">Unavailable in your country</string>
+    <!-- %1$s: the country YouTube places the device in (behind a VPN too) -->
+    <string name="player_error_geo_country">Unavailable in %1$s: YouTube places you there, and the rights holder closed this track for it. With a VPN, pick a server in another country: YouTube counts some VPN servers as %1$s too.</string>
+    <!-- %1$s: the country YouTube places the device in; %2$d: how many countries the track is open in -->
+    <plurals name="player_error_geo_country_open">
+        <item quantity="one">Unavailable in %1$s: YouTube places you there, and the rights holder opened this track in %2$d other country only. With a VPN, pick a server in another country: YouTube counts some VPN servers as %1$s too.</item>
+        <item quantity="other">Unavailable in %1$s: YouTube places you there, and the rights holder opened this track in %2$d other countries. With a VPN, pick a server in another country: YouTube counts some VPN servers as %1$s too.</item>
+    </plurals>
     <string name="player_error_unavailable">The video was removed or made private</string>
     <string name="player_error_age">Age verification is needed — not supported yet</string>
     <string name="player_error_timeout">YouTube takes too long to answer</string>

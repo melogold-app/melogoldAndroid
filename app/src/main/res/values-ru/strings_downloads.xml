@@ -43,7 +43,7 @@
 
     <!-- Settings -->
     <string name="settings_storage">Хранилище</string>
-    <string name="settings_storage_description">Загрузки хранятся, пока вы их не удалите. Кэш освобождается сам: первым уходит то, что дольше всего не использовалось.</string>
+    <string name="settings_storage_description">Кэш освобождается сам: когда он заполнится, новые треки и обложки займут место тех, что дольше всех не слушали и не показывали. Делать ничего не нужно. Скачанное в кэш не входит и само не удаляется.</string>
     <string name="settings_downloads">Загрузки</string>
     <string name="settings_downloads_wifi_only">Только по Wi‑Fi</string>
     <string name="settings_downloads_wifi_only_description">Загрузки ждут Wi‑Fi, мобильная сеть не тратится</string>

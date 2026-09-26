@@ -20,8 +20,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -44,6 +46,7 @@ import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.nio.channels.UnresolvedAddressException
+import java.util.Locale
 
 /**
  * The error of the playing track in place of the artwork (REWRITE §3.10.9): what went wrong and
@@ -115,12 +118,23 @@ fun playbackErrorMessage(mediaItem: MediaItem, error: PlaybackException?): Strin
     val causes = generateSequence<Throwable>(error) { it.cause }.take(8).toList()
     fun has(predicate: (Throwable) -> Boolean) = causes.any(predicate)
 
+    // Closed in the country YouTube places the device in: say which country, and that a VPN may be counted as it
+    causes.firstNotNullOfOrNull { it as? RestrictedVideoException }?.let { geo ->
+        val locale = LocalConfiguration.current.locales[0]
+        val country = geo.country?.let { countryName(it, locale) }
+        val open = geo.availableCountries
+        return when {
+            country == null -> stringResource(R.string.player_error_geo)
+            open != null -> pluralStringResource(R.plurals.player_error_geo_country_open, open, country, open)
+            else -> stringResource(R.string.player_error_geo_country, country)
+        }
+    }
+
     return stringResource(
         when {
             has { it is SocketTimeoutException } -> R.string.player_error_timeout
             has { it is UnresolvedAddressException || it is UnknownHostException || it is ConnectException } ->
                 R.string.player_error_network
-            has { it is RestrictedVideoException } -> R.string.player_error_geo
             has { it is LoginRequiredException } -> R.string.player_error_age
             has { it is UnplayableException } -> R.string.player_error_unavailable
             // An expired stream URL or a bot check answers 403/410: not the user's network
@@ -136,3 +150,8 @@ fun playbackErrorMessage(mediaItem: MediaItem, error: PlaybackException?): Strin
         }
     )
 }
+
+/** The name of the country with ISO code [code] in [locale] («Россия» for `RU`), or the code itself. */
+fun countryName(code: String, locale: Locale): String = runCatching {
+    Locale.Builder().setRegion(code).build().getDisplayCountry(locale)
+}.getOrNull()?.takeIf { it.isNotBlank() && it != code } ?: code
