@@ -16,10 +16,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.SQLiteMode
 import org.w3c.dom.Element
 import org.xmlpull.v1.XmlPullParser
 import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -93,19 +96,44 @@ class AppFunctionsRegistrationTest {
         assertEquals(ids.sorted(), functions.map { it.text("function_id").orEmpty() }.sorted())
     }
 
+    private val component = ComponentName(context, MelogoldAppFunctionService::class.java)
+
     @Test
     fun `only the system can bind the service, and it finds it by its action`() {
-        val component = ComponentName(context, MelogoldAppFunctionService::class.java)
         val service = context.packageManager.getServiceInfo(component, PackageManager.GET_META_DATA)
 
         assertEquals("android.permission.BIND_APP_FUNCTION_SERVICE", service.permission)
         assertTrue(service.exported)
+        assertTrue(service.enabled)
 
         val found = context.packageManager.queryIntentServices(
             Intent("android.app.appfunctions.AppFunctionService").setPackage(context.packageName),
             0
         )
         assertEquals(listOf(component.className), found.map { it.serviceInfo.name })
+    }
+
+    /**
+     * Below Android 16 the permission is not the system's and the base class of the service does not exist. The
+     * native SQLite and graphics of Robolectric load once per process for one Android version, so this test on
+     * another version uses the legacy ones: with the native ones every later test of the database or of images
+     * would fail.
+     */
+    @Test
+    @Config(sdk = [33])
+    @SQLiteMode(SQLiteMode.Mode.LEGACY)
+    @GraphicsMode(GraphicsMode.Mode.LEGACY)
+    fun `below Android 16 the service is disabled`() {
+        val service = context.packageManager.getServiceInfo(component, PackageManager.MATCH_DISABLED_COMPONENTS)
+
+        assertFalse(service.enabled)
+        assertEquals(
+            emptyList(),
+            context.packageManager.queryIntentServices(
+                Intent("android.app.appfunctions.AppFunctionService").setPackage(context.packageName),
+                0
+            )
+        )
     }
 
     @Test
@@ -115,7 +143,10 @@ class AppFunctionsRegistrationTest {
         assertEquals("AppFunctionAppMetadata", parser.name)
 
         val description = parser.getAttributeValue(NAMESPACE, "description")
-        listOf("Melogold", "Mellow Gold", "Мелоголд", "playSong", "searchSongs", "playFavorites").forEach {
+        listOf(
+            "Melogold", "Mellow Gold", "Мелоголд",
+            "playSong", "searchSongs", "playArtist", "playAlbum", "playPlaylist", "playFavorites"
+        ).forEach {
             assertTrue(it in description, "no «$it» in the description")
         }
         assertBilingual(description, "the app")

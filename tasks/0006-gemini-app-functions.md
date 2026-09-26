@@ -33,7 +33,7 @@ AppFunctions (Android 16+, `androidx.appfunctions`): приложение объ
 
 ## 4. Что сделано
 
-- **Библиотека.** `androidx.appfunctions:appfunctions` и `appfunctions-compiler` (KSP) 1.0.0-alpha12. Ей нужны compileSdk 37 и AGP 9.1+, у проекта уже compileSdk 37 и AGP 9.4.1, так что менять сборку не пришлось. minSdk остался 24: ниже Android 16 сервис никто не привязывает (разрешение `BIND_APP_FUNCTION_SERVICE` есть только у системы), функции там ничего не делают. KSP собирает `MelogoldAppFunctionService` из `appfunctions/BaseMelogoldAppFunctionService.kt` и кладёт в assets индекс `melogold_app_functions.xml` (v2, Android 17) и `melogold_app_functions-v1.xml` (индекс Android 16). Сервис и `res/xml/app_metadata.xml` объявлены в манифесте.
+- **Библиотека.** `androidx.appfunctions:appfunctions` и `appfunctions-compiler` (KSP) 1.0.0-alpha12. Ей нужны compileSdk 37 и AGP 9.1+, у проекта уже compileSdk 37 и AGP 9.4.1, так что менять сборку не пришлось. minSdk остался 24: ниже Android 16 сервис выключен в манифесте (`@bool/enablePlatformAppFunctionService` библиотеки, `true` только в `values-v36`): там нет ни разрешения `BIND_APP_FUNCTION_SERVICE`, ни базового класса сервиса. KSP собирает `MelogoldAppFunctionService` из `appfunctions/BaseMelogoldAppFunctionService.kt` и кладёт в assets индекс `melogold_app_functions.xml` (v2, Android 17) и `melogold_app_functions-v1.xml` (индекс Android 16). Сервис и `res/xml/app_metadata.xml` объявлены в манифесте.
 - **Описания.** KDoc каждой функции и параметра — описание для агента, по-английски и по-русски в одной строке: локализовать их нельзя. В `app_metadata.xml` — что умеет приложение, порядок вызовов («неоднозначно — `searchSongs`, затем `playSong` с `videoId`») и имена, которые Gemini слышит вместо Melogold: «Mellow Gold», «Melo Gold», «Мелоголд», «Мело Голд», «Мелогольд». Описание для человека (`displayDescription`) локализовано в `strings_voice.xml`.
 - **Одно правило для всех входов.** `:core:domain` → `app.melogold.domain.voice.VoiceCommands` (правила), `VoiceQuery` (разбор `mediaFocus`), `NameMatch` (сравнение названий: регистр, «ё», пунктуация не важны; точное > целые слова > часть). Приложение даёт каталог и плеер: `playback/session/VoiceQueryResolver.kt` (Room + Innertube + `PlayerService`). Туда же теперь идут `MEDIA_PLAY_FROM_SEARCH` активити, `onPlayFromSearch` обеих медиасессий и AppFunctions:
   - песня — лучший результат YouTube Music, иначе первое видео YouTube, дальше похожие; без сети — из Библиотеки; поиск ограничен 8 с;
@@ -57,6 +57,17 @@ AppFunctions (Android 16+, `androidx.appfunctions`): приложение объ
   - `dumpsys app_function` перечисляет все 10 функций `app.melogold.android.debug` — и у debug, и у staging (R8);
   - `AppFunction list`: система знает все 10, все включены; `searchAppFunctions` на этой сборке пуст — полного индекса v2 для агентов в Android 16 нет;
   - `playSong("Звезда по имени Солнце")` через систему вернул `PlaybackResult{title: Звезда по имени Солнце, artists: Кино, source: youtube_music}`, без `openApp` (сервис переднего плана разрешён), трек сразу на паузе, звук 0; `pause` через систему — тоже; неизвестный исполнитель — код 1500, `searchSongs` без `query` — 1001.
+
+- **После ревью** (8 подтверждённых замечаний, все исправлены):
+  - `playArtist` отвечает, когда микс уже в очереди: в ответе первый трек, а не имя исполнителя; пустой или неудачный микс — «не найдено» или «нет связи», а не «играет»; `openApp` известен до ответа;
+  - холодный старт: функция ждёт, пока сервис вернёт сохранённую очередь (до 2 с), и сохранённая очередь не перебивает ту, что поставила функция; «Продолжи» после холодного старта продолжает сохранённую;
+  - после отказа в переднем плане сервис не просит его на каждом событии плеера — только при новой очереди, новом «играть» или когда приложение открыли;
+  - «ё» и «е» в Библиотеке равны и в запросе SQLite («еще» находит «Ещё раз»);
+  - свой плейлист не выигрывает, если его короткое имя — часть другого слова («Ска» ≠ «русская классика»);
+  - в описании приложения для агента — какая функция на песню, исполнителя, альбом, плейлист, Избранное;
+  - дозаполнение трека берёт и название, если было только id (трек из ссылки);
+  - ниже Android 16 сервис выключен.
+  Эмулятор (debug через `AppFunction`, звук 0): `playArtist("Кино")` → «Спокойная ночь», Кино; после `force-stop` `playSong("Группа крови")` → «Группа крови» остаётся в плеере и через 3 с; после `force-stop` `resume` → «Группа крови»; неизвестная группа → 1500. Staging (R8) запускается, `dumpsys app_function` видит функции.
 
 ## 5. Как проверить на Pixel (Android 17)
 

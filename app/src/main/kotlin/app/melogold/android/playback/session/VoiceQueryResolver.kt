@@ -55,9 +55,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 private const val TAG = "VoiceQueryResolver"
 
@@ -145,7 +147,8 @@ internal class AppVoiceCatalog(private val network: NetworkMonitor) : VoiceCatal
 
     // region The library
     override suspend fun libraryTracks(query: String, limit: Int): List<VoiceTrack> {
-        val (asTyped, lower, capitalized) = likePatterns(query)
+        // SQLite tells «е» from «ё»: either stands for both, «еще» finds «Ещё раз»
+        val (asTyped, lower, capitalized) = likePatterns(query, yoAsYe = true)
         return Database.searchSongs(asTyped, lower, capitalized, limit).first().visible().map { it.track() }
     }
 
@@ -306,9 +309,8 @@ internal class BinderVoicePlayer(
         }
     }
 
-    override suspend fun playRadio(radio: VoiceRadio) = onPlayer {
-        stopRadio()
-        playRadio(
+    override suspend fun playRadio(radio: VoiceRadio): VoiceTrack? = restored()
+        .playRadioNow(
             NavigationEndpoint.Endpoint.Watch(
                 params = radio.params,
                 playlistId = radio.playlistId,
@@ -316,28 +318,19 @@ internal class BinderVoicePlayer(
                 playlistSetVideoId = radio.playlistSetVideoId
             )
         )
-    }
+        ?.track()
 
     override suspend fun pause(): VoiceTrack? = onPlayer {
         player.currentMediaItem?.also { player.pause() }?.track()
     }
 
-    override suspend fun resume(): VoiceTrack? {
-        val binder = binder()
-        // A service that has just started restores the last queue in a moment
-        repeat(RESTORE_TRIES) {
-            val track = withContext(Dispatchers.Main) {
-                binder.player.currentMediaItem?.let { item ->
-                    if (binder.player.playbackState == Player.STATE_IDLE) binder.player.prepare()
-                    if (binder.player.playbackState == Player.STATE_ENDED) binder.player.seekToDefaultPosition()
-                    binder.player.play()
-                    item.track()
-                }
-            }
-            if (track != null) return track
-            delay(RESTORE_WAIT)
+    override suspend fun resume(): VoiceTrack? = onPlayer {
+        player.currentMediaItem?.let { item ->
+            if (player.playbackState == Player.STATE_IDLE) player.prepare()
+            if (player.playbackState == Player.STATE_ENDED) player.seekToDefaultPosition()
+            player.play()
+            item.track()
         }
-        return null
     }
 
     override suspend fun next(): VoiceTrack? = onPlayer {
@@ -358,8 +351,18 @@ internal class BinderVoicePlayer(
     }
 
     private suspend fun <T> onPlayer(block: PlayerService.Binder.() -> T): T {
-        val binder = binder()
+        val binder = restored()
         return withContext(Dispatchers.Main) { binder.block() }
+    }
+
+    /**
+     * The player service once the queue saved at the last stop is back: a service that has just started restores
+     * it in a moment, and it must neither replace the queue a command sets nor be missing for resume and next.
+     */
+    private suspend fun restored(): PlayerService.Binder {
+        val binder = binder()
+        withTimeoutOrNull(RESTORE_TIMEOUT) { binder.awaitQueueRestored() }
+        return binder
     }
 
     private fun MediaItem.track() = VoiceTrack(
@@ -369,8 +372,7 @@ internal class BinderVoicePlayer(
     )
 
     private companion object {
-        const val RESTORE_TRIES = 20
-        val RESTORE_WAIT = 100.milliseconds
+        val RESTORE_TIMEOUT = 2.seconds
         val FOREGROUND_WAIT = 400.milliseconds
     }
 }

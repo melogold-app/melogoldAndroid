@@ -17,8 +17,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * A track first saved without its cover, artists or length (played from a link: dQw4w9WgXcQ, jNQXAC9IVRw) gets
- * them when it comes again with them, and a row keeps what it already has.
+ * A track first saved without its title, cover, artists or length (played from a link: dQw4w9WgXcQ, jNQXAC9IVRw)
+ * gets them when it comes again with them, and a row keeps what it already has.
  */
 @RunWith(RobolectricTestRunner::class)
 class SongFillMissingTest {
@@ -35,7 +35,7 @@ class SongFillMissingTest {
     fun emptyLibrary() = io { Database.internal.clearAllTables() }
 
     @Test
-    fun `a track played from a link gets its cover, artists and length when it comes again`() = io {
+    fun `a track played from a link gets its title, cover, artists and length when it comes again`() = io {
         Database.insert(item(LINK))
         assertEquals(null, song(LINK).thumbnailUrl, "a link knows only the id")
 
@@ -46,7 +46,17 @@ class SongFillMissingTest {
         assertEquals(COVER, row.thumbnailUrl)
         assertEquals("Rick Astley", row.artistsText)
         assertEquals("3:34", row.durationText)
-        assertEquals(LINK, row.title, "the title the row has stays")
+        assertEquals("Never Gonna Give You Up", row.title, "the video id was only a placeholder")
+    }
+
+    @Test
+    fun `an empty title counts as missing, a queue item without one fills nothing`() = io {
+        Database.insert(Song(id = OTHER, title = "", durationText = null, thumbnailUrl = null))
+        Database.insert(item(OTHER, title = ""))
+        assertEquals("", song(OTHER).title)
+
+        Database.insert(item(OTHER, title = "Me at the zoo"))
+        assertEquals("Me at the zoo", song(OTHER).title)
     }
 
     @Test
@@ -77,8 +87,10 @@ class SongFillMissingTest {
 
         Database.insert(item(LINK, artists = "Someone else", duration = "9:99", cover = "https://example.com/other.jpg"))
         Database.insert(item(LINK))
+        Database.insert(item(LINK, title = "Never Gonna Give You Up (Remastered)"))
 
         val row = song(LINK)
+        assertEquals("Never Gonna Give You Up", row.title)
         assertEquals(COVER, row.thumbnailUrl)
         assertEquals("Rick Astley", row.artistsText)
         assertEquals("3:34", row.durationText)

@@ -25,7 +25,8 @@ import kotlinx.coroutines.withContext
  * the agent. Those texts cannot be localized, so each says it in English and Russian.
  *
  * Every function follows the voice rule of the app ([VoiceQueryResolver], REWRITE §3.14.3). Below Android 16 the
- * system never binds the service, so it is inert there.
+ * service is disabled in the manifest (`@bool/enablePlatformAppFunctionService` of the library): its base class is
+ * a platform class of Android 16.
  */
 @RequiresApi(Build.VERSION_CODES.BAKLAVA)
 @AppFunctionServiceEntryPoint(
@@ -75,9 +76,11 @@ abstract class BaseMelogoldAppFunctionService : AppFunctionService() {
 
     /**
      * Plays an artist in Melogold: YouTube Music's shuffled mix of their songs; without a network, their songs from
-     * the user's library. Artists the user saved come first. Replaces what is playing.
+     * the user's library. Artists the user saved come first. Replaces what is playing. For requests like "play
+     * <artist or band> in Melogold".
      * Включает исполнителя в Melogold: перемешанный микс его песен из YouTube Music; без сети — его песни из
-     * библиотеки. Сохранённые пользователем исполнители — в первую очередь. Заменяет то, что играет.
+     * библиотеки. Сохранённые пользователем исполнители — в первую очередь. Заменяет то, что играет. Для просьб
+     * вроде «включи <исполнителя или группу> в Melogold».
      *
      * @param name Artist or band, e.g. "Кино". / Исполнитель или группа, например «Кино».
      * @return What started playing and where it was found. / Что включилось и где найдено.
@@ -87,9 +90,9 @@ abstract class BaseMelogoldAppFunctionService : AppFunctionService() {
 
     /**
      * Plays an album in Melogold from its first track: albums saved in the user's library first, then YouTube Music.
-     * Replaces what is playing.
+     * Replaces what is playing. For requests like "play the album <album> in Melogold".
      * Включает альбом в Melogold с первого трека: сначала сохранённые в библиотеке, затем YouTube Music. Заменяет
-     * то, что играет.
+     * то, что играет. Для просьб вроде «включи альбом <название> в Melogold».
      *
      * @param name Album title, optionally with the artist, e.g. "Группа крови Кино". / Название альбома, можно с
      *   исполнителем.

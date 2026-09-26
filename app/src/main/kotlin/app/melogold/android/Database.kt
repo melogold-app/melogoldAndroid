@@ -957,19 +957,28 @@ interface DatabaseAccessor {
     fun insert(song: Song): Long
 
     /**
-     * Gives the row of [id] the cover, artists and length it lacks (null or empty) and keeps those it has: a track
-     * first saved without them (played from a link) gets them when it comes again with them.
+     * Gives the row of [id] the title, cover, artists and length it lacks (null or empty; a title that is only the
+     * video id is a placeholder too) and keeps those it has: a track first saved without them (played from a link,
+     * a stub of the sync) gets them when it comes again with them.
      */
     @Query(
         """
         UPDATE Song SET
+            title = CASE WHEN title = '' OR title = id THEN COALESCE(NULLIF(NULLIF(:title, ''), id), title)
+                ELSE title END,
             thumbnailUrl = COALESCE(NULLIF(thumbnailUrl, ''), NULLIF(:thumbnailUrl, ''), thumbnailUrl),
             artistsText = COALESCE(NULLIF(artistsText, ''), NULLIF(:artistsText, ''), artistsText),
             durationText = COALESCE(NULLIF(durationText, ''), NULLIF(:durationText, ''), durationText)
         WHERE id = :id
         """
     )
-    fun fillMissing(id: String, thumbnailUrl: String?, artistsText: String?, durationText: String?): Int
+    fun fillMissing(
+        id: String,
+        title: String?,
+        thumbnailUrl: String?,
+        artistsText: String?,
+        durationText: String?
+    ): Int
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     fun insert(queuedMediaItems: List<QueuedMediaItem>)
@@ -995,7 +1004,9 @@ interface DatabaseAccessor {
             explicit = extras?.explicit == true
         ).let(block)
         // A row that exists keeps what it has, but gets what it lacks, the album and the artists the item knows
-        if (insert(song) == -1L) fillMissing(song.id, song.thumbnailUrl, song.artistsText, song.durationText)
+        if (insert(song) == -1L) {
+            fillMissing(song.id, song.title, song.thumbnailUrl, song.artistsText, song.durationText)
+        }
 
         extras?.albumId?.let { albumId ->
             insert(

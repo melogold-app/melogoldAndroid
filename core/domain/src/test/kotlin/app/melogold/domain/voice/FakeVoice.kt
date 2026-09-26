@@ -1,7 +1,9 @@
 package app.melogold.domain.voice
 
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import java.io.IOException
+import kotlin.time.Duration
 
 /** A catalog in memory: the library and what YouTube Music and YouTube answer, without a network. */
 class FakeCatalog : VoiceCatalog {
@@ -34,9 +36,12 @@ class FakeCatalog : VoiceCatalog {
         if (failing) throw IOException("YouTube is down")
     }
 
+    /** As the library query: any case, «ё» as «е». */
     override suspend fun libraryTracks(query: String, limit: Int) = librarySongs
-        .filter { query.lowercase() in "${it.title} ${it.artists.orEmpty()}".lowercase() }
+        .filter { query.folded() in "${it.title} ${it.artists.orEmpty()}".folded() }
         .take(limit)
+
+    private fun String.folded() = lowercase().replace('ё', 'е')
 
     override suspend fun libraryTrack(videoId: String) = librarySongs.firstOrNull { it.id == videoId }
     override suspend fun favorites() = favorites
@@ -85,6 +90,18 @@ class FakePlayer : VoicePlayer {
     /** The system does not let the app play in the background. */
     var refusesBackground = false
 
+    /** The first tracks YouTube Music gives for a radio, by its playlist id; none when missing. */
+    val radios = mutableMapOf<String?, List<VoiceTrack>>()
+
+    /** How long YouTube Music takes to give the first tracks of a radio. */
+    var radioDelay = Duration.ZERO
+
+    /** YouTube fails when asked for a radio. */
+    var radioFails = false
+
+    /** What had been started when [needsApp] was asked. */
+    var startedWhenAskedForApp: List<String>? = null
+
     override suspend fun playWithSimilar(track: VoiceTrack) {
         started += "similar ${track.id}"
         queue = listOf(track)
@@ -99,9 +116,15 @@ class FakePlayer : VoicePlayer {
         isPlaying = true
     }
 
-    override suspend fun playRadio(radio: VoiceRadio) {
+    override suspend fun playRadio(radio: VoiceRadio): VoiceTrack? {
+        delay(radioDelay)
+        if (radioFails) throw IOException("YouTube is down")
+        val tracks = radios[radio.playlistId].orEmpty().ifEmpty { return null }
         started += "radio ${radio.playlistId}"
+        queue = tracks
+        index = 0
         isPlaying = true
+        return tracks.first()
     }
 
     override suspend fun pause() = queue.getOrNull(index)?.also { isPlaying = false }
@@ -114,5 +137,8 @@ class FakePlayer : VoicePlayer {
         return queue[index]
     }
 
-    override suspend fun needsApp() = refusesBackground
+    override suspend fun needsApp(): Boolean {
+        startedWhenAskedForApp = started.toList()
+        return refusesBackground
+    }
 }

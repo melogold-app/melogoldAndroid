@@ -35,6 +35,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -127,6 +130,7 @@ import java.util.UUID
 import java.io.IOException
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -243,10 +247,28 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     /**
      * The system refused the foreground: playback was started while the app is in the background (by an agent
-     * such as Gemini, Android 12+). The voice commands then ask the person to open the app.
+     * such as Gemini, Android 12+). The voice commands then ask the person to open the app. Until a new queue, a
+     * new play or the app coming to the front, the foreground is not asked for again: every event of the player
+     * would ask and be refused.
      */
     @Volatile
     private var foregroundRefused = false
+
+    /** The app came to the front: a foreground the system refused before is allowed now. */
+    private val appVisibility = LifecycleEventObserver { _, event ->
+        if (event != Lifecycle.Event.ON_START || !foregroundRefused) return@LifecycleEventObserver
+        foregroundRefused = false
+        if (player.shouldBePlaying && !isNotificationStarted) {
+            goForeground()
+            openEqualizer()
+        }
+    }
+
+    /**
+     * Done once the queue saved at the last stop is back in the player, or there was none: a command that sets a
+     * queue waits for it, or the saved queue would replace it ([Binder.awaitQueueRestored]).
+     */
+    private val queueRestored = CompletableDeferred<Unit>()
     private val notificationActionReceiver = NotificationActionReceiver()
 
     private val mediaItemState = MutableStateFlow<MediaItem?>(null)
@@ -321,6 +343,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
         updateRepeatMode()
         maybeRestorePlayerQueue()
+        ProcessLifecycleOwner.get().lifecycle.addObserver(appVisibility)
 
         mediaSession = MediaSession(baseContext, TAG).apply {
             setCallback(SessionCallback())
@@ -389,13 +412,17 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         super.onTaskRemoved(rootIntent)
     }
 
-    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) =
+    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        // A new play may ask for the foreground again
+        if (playWhenReady) foregroundRefused = false
         maybeSavePlayerQueue()
+    }
 
     override fun onDestroy() {
         runCatching {
             maybeSavePlayerQueue()
 
+            ProcessLifecycleOwner.get().lifecycle.removeObserver(appVisibility)
             player.removeListener(this)
             player.stop()
             player.release()
@@ -457,6 +484,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        // A new queue may ask for the foreground again
+        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) foregroundRefused = false
+
         // The track that ended may be whole in the cache now: "available offline"
         Dependencies.application.container.cachedTracks.refresh()
 
@@ -582,33 +612,43 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     private fun maybeRestorePlayerQueue() {
         transaction {
-            val queue = Database.queue()
-            if (queue.isEmpty()) return@transaction
-            Database.clearQueue()
+            var posted = false
+            try {
+                val queue = Database.queue()
+                if (queue.isEmpty()) return@transaction
+                Database.clearQueue()
 
-            val index = queue
-                .indexOfFirst { it.position != null }
-                .coerceAtLeast(0)
+                val index = queue
+                    .indexOfFirst { it.position != null }
+                    .coerceAtLeast(0)
 
-            handler.post {
-                runCatching {
-                    player.setMediaItems(
-                        /* mediaItems = */
-                        queue.map { item ->
-                            item.mediaItem.buildUpon()
-                                .setUri(item.mediaItem.mediaId)
-                                .setCustomCacheKey(item.mediaItem.mediaId)
-                                .build()
-                        },
-                        /* startIndex = */
-                        index,
-                        /* startPositionMs = */
-                        queue[index].position ?: C.TIME_UNSET
-                    )
-                    player.prepare()
+                posted = handler.post {
+                    try {
+                        // A queue set meanwhile (an agent, a voice command, a tap) wins over the saved one
+                        if (player.mediaItemCount == 0) runCatching {
+                            player.setMediaItems(
+                                /* mediaItems = */
+                                queue.map { item ->
+                                    item.mediaItem.buildUpon()
+                                        .setUri(item.mediaItem.mediaId)
+                                        .setCustomCacheKey(item.mediaItem.mediaId)
+                                        .build()
+                                },
+                                /* startIndex = */
+                                index,
+                                /* startPositionMs = */
+                                queue[index].position ?: C.TIME_UNSET
+                            )
+                            player.prepare()
 
-                    goForeground()
+                            goForeground()
+                        }
+                    } finally {
+                        queueRestored.complete(Unit)
+                    }
                 }
+            } finally {
+                if (!posted) queueRestored.complete(Unit)
             }
         }
     }
@@ -879,7 +919,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             return
         }
 
-        if (player.shouldBePlaying && !isNotificationStarted) {
+        // After a refusal only a new queue, a new play or the app coming to the front asks again (foregroundRefused)
+        if (player.shouldBePlaying && !isNotificationStarted && !foregroundRefused) {
             goForeground()
             openEqualizer()
         } else {
@@ -1119,10 +1160,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             ).let { radioData ->
                 isLoadingRadio = true
                 radioJob = coroutineScope.launch {
-                    val hiding = emptySet<String>().applyingHidden(pendingMutations.pending.value)
-                    val items = radioData.process()
-                        .let { Database.filterBlacklistedSongs(it) }
-                        .filter { it.mediaId !in hiding }
+                    val items = visible(radioData.process())
 
                     withContext(Dispatchers.Main) {
                         if (justAdd) {
@@ -1144,6 +1182,32 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             radio = null
         }
 
+        /**
+         * Plays the radio of [endpoint] as [playRadio] does, but waits for its first tracks (a voice command
+         * answers with what plays): the first one, or null when YouTube Music has none and the queue stays as it
+         * was. Throws when YouTube fails.
+         */
+        suspend fun playRadioNow(endpoint: NavigationEndpoint.Endpoint.Watch): MediaItem? {
+            val radioData = YouTubeRadio(
+                endpoint.videoId,
+                endpoint.playlistId,
+                endpoint.playlistSetVideoId,
+                endpoint.params
+            )
+            val items = visible(radioData.next().getOrThrow())
+            if (items.isEmpty()) return null
+
+            withContext(Dispatchers.Main) {
+                stopRadio()
+                player.forcePlayFromBeginning(items)
+                radio = radioData
+            }
+            return items.first()
+        }
+
+        /** Waits until the queue saved at the last stop is back in the player; at once when there was none. */
+        suspend fun awaitQueueRestored() = queueRestored.await()
+
         /** Whether the system refused to play in the foreground: the app was in the background (an agent). */
         val foregroundRefused: Boolean
             get() = this@PlayerService.foregroundRefused
@@ -1157,6 +1221,12 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             val request = VoiceQueryResolver.request(query, extras)
             coroutineScope.launch { VoiceQueryResolver.playFromSystem(this@PlayerService, this@Binder, request) }
         }
+    }
+
+    /** The tracks of a radio without those the person hid or blacklisted. */
+    private suspend fun visible(items: List<MediaItem>): List<MediaItem> {
+        val hiding = emptySet<String>().applyingHidden(pendingMutations.pending.value)
+        return Database.filterBlacklistedSongs(items).filter { it.mediaId !in hiding }
     }
 
     private fun likeAction() = mediaItemState.value?.let { mediaItem ->

@@ -7,7 +7,7 @@ enum class MatchLevel {
     /** Every word said is in the name or its authors, in any order: «кино солнце» for «Звезда по имени Солнце». */
     Words,
 
-    /** The name is inside what was said, or what was said is inside the name. */
+    /** The name is inside what was said as whole words, or what was said is inside the name. */
     Contains,
 
     /** Whole words: «Группа крови» for «группа крови кино», «Кино» for «кино 1988». */
@@ -22,9 +22,6 @@ enum class MatchLevel {
  * (SQLite folds only ASCII, so the library is matched here, not in a query).
  */
 object NameMatch {
-    /** A name shorter than this matches inside what was said only as a whole word. */
-    private const val MIN_INSIDE = 3
-
     fun normalize(text: String): String = text
         .lowercase(Locale.ROOT)
         .replace('ё', 'е')
@@ -49,7 +46,7 @@ object NameMatch {
                 form == said -> MatchLevel.Exact
                 form.startsWith("$said ") || said.startsWith("$form ") -> MatchLevel.Prefix
                 said in form -> MatchLevel.Contains
-                form.length >= MIN_INSIDE && form in said -> MatchLevel.Contains
+                // A name inside what was said only as whole words: «Ска» is not in «русская классика»
                 " $form " in " $said " -> MatchLevel.Contains
                 else -> null
             }

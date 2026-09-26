@@ -9,6 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The voice commands on a catalog and a player in memory (tasks/0006-gemini-app-functions.md): the same rule for
@@ -85,6 +86,17 @@ class VoiceCommandsTest {
         assertEquals(listOf("similar ${STAR.id}"), player.started)
         assertEquals(VoiceSource.Library, result.source)
         assertTrue(catalog.calls.isEmpty(), "no network, no calls")
+    }
+
+    @Test
+    fun `a library track with «ё» is found said with «е», and the other way round`() = runTest {
+        catalog.isOnline = false
+        catalog.librarySongs = listOf(PEREMEN, ONCE_MORE, STARS)
+
+        commands.playSong("еще раз", videoId = null)
+        commands.playSong("кино звезды", videoId = null)
+        assertEquals(listOf("similar ${ONCE_MORE.id}", "similar ${STARS.id}"), player.started)
+        assertEquals(listOf(ONCE_MORE.id), commands.search("Ещё раз").map { it.id })
     }
 
     @Test
@@ -206,11 +218,51 @@ class VoiceCommandsTest {
     fun `an artist plays as YouTube Music's mix of their songs`() = runTest {
         catalog.found[CollectionKind.Artist to "Кино"] = listOf(KINOLOG, KINO)
         catalog.mixes[KINO.id] = KINO_MIX
+        player.radios[KINO_MIX.playlistId] = listOf(PEREMEN, STAR)
 
         val result = commands.playArtist("Кино")
 
         assertEquals(listOf("radio ${KINO_MIX.playlistId}"), player.started, "the exact name, not the first result")
-        assertEquals(VoiceResult(title = "Кино", collection = "Кино", source = VoiceSource.YouTubeMusic), result)
+        assertEquals(
+            VoiceResult(PEREMEN.title, "Кино", collection = "Кино", source = VoiceSource.YouTubeMusic),
+            result,
+            "what plays first"
+        )
+    }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `the answer for an artist waits until the mix is in the queue`() = runTest {
+        catalog.found[CollectionKind.Artist to "Кино"] = listOf(KINO)
+        catalog.mixes[KINO.id] = KINO_MIX
+        player.radios[KINO_MIX.playlistId] = listOf(STAR)
+        player.radioDelay = 3.seconds
+        player.refusesBackground = true
+
+        val result = commands.playArtist("Кино")
+
+        assertEquals(3_000, currentTime, "YouTube Music took 3 s to give the mix")
+        assertEquals(listOf("radio ${KINO_MIX.playlistId}"), player.startedWhenAskedForApp, "asked once it plays")
+        assertTrue(result.needsApp)
+    }
+
+    @Test
+    fun `a mix YouTube Music gives nothing for is not found, a failing or slow one is unavailable`() = runTest {
+        catalog.found[CollectionKind.Artist to "Кино"] = listOf(KINO)
+        catalog.mixes[KINO.id] = KINO_MIX
+
+        assertEquals(VoiceException.Kind.NotFound, assertFailsWith<VoiceException> { commands.playArtist("Кино") }.kind)
+
+        player.radios[KINO_MIX.playlistId] = listOf(STAR)
+        player.radioFails = true
+        assertEquals(VoiceException.Kind.Unavailable, assertFailsWith<VoiceException> { commands.playArtist("Кино") }.kind)
+
+        player.radioFails = false
+        player.radioDelay = VoiceCommands.SEARCH_TIMEOUT + 1.seconds
+        assertEquals(VoiceException.Kind.Unavailable, assertFailsWith<VoiceException> { commands.playArtist("Кино") }.kind)
+
+        assertTrue(player.started.isEmpty(), "nothing was said to play")
+        assertEquals(null, player.startedWhenAskedForApp)
     }
 
     @Test
@@ -233,6 +285,8 @@ class VoiceCommandsTest {
         catalog.found[CollectionKind.Artist to "кино"] = listOf(KINO)
         catalog.mixes[KINO.id] = KINO_MIX
         catalog.mixes[KINOLOG.id] = VoiceRadio(playlistId = "RDkinolog")
+        player.radios[KINO_MIX.playlistId] = listOf(STAR)
+        player.radios["RDkinolog"] = listOf(STAR_COVER)
 
         commands.playArtist("кино")
 
@@ -336,6 +390,8 @@ class VoiceCommandsTest {
         val STAR_LIVE = VoiceTrack("liveAAAAAAA", "Кино — Звезда по имени Солнце (live 1990)", "Kino Live", "4:10")
         val PEREMEN = VoiceTrack("peremenAAAA", "Хочу перемен", "Кино", "4:50")
         val BLOOD = VoiceTrack("bloodAAAAAA", "Группа крови", "Кино", "4:46")
+        val ONCE_MORE = VoiceTrack("onceMoreAAA", "Ещё раз", "Кто-то", "3:10")
+        val STARS = VoiceTrack("starsAAAAAA", "Звёзды", "Кино", "3:20")
 
         val ROAD = VoiceCollection(CollectionKind.Playlist, id = "3", name = "Дорога на дачу")
         val ROAD_ONLINE = VoiceCollection(CollectionKind.Playlist, "VLroad", "Дорога", "Кто-то")

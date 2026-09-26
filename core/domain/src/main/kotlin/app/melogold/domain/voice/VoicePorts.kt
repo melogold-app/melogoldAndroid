@@ -8,7 +8,10 @@ interface VoiceCatalog {
     /** Whether the device has a network now: without one only the library answers. */
     val isOnline: Boolean
 
-    /** Tracks of the library whose title or artists contain [query], liked and most played first. */
+    /**
+     * Tracks of the library whose title or artists contain [query] (lowercase, «ё» as «е», so both spellings of a
+     * name match), liked and most played first.
+     */
     suspend fun libraryTracks(query: String, limit: Int): List<VoiceTrack>
 
     /** The track with [videoId] if the library has it. */
@@ -50,8 +53,12 @@ interface VoicePlayer {
     /** Plays [tracks] from the first. */
     suspend fun playTracks(tracks: List<VoiceTrack>)
 
-    /** Plays the queue YouTube Music makes from [radio]. */
-    suspend fun playRadio(radio: VoiceRadio)
+    /**
+     * Plays the queue YouTube Music makes from [radio] and keeps it going. Returns once its first tracks are in the
+     * queue: the first one, or null when YouTube Music has none (the queue stays as it was). Throws when YouTube
+     * fails.
+     */
+    suspend fun playRadio(radio: VoiceRadio): VoiceTrack?
 
     /** Pauses; what was playing, or null when the queue is empty. */
     suspend fun pause(): VoiceTrack?

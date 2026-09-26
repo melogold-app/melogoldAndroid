@@ -51,7 +51,7 @@ enum class VoiceSource(val code: String) {
 /**
  * The answer of a voice command.
  *
- * @property title what plays now, or the name of what was started when the first track is not known yet (a mix)
+ * @property title what plays now
  * @property collection the artist, album or playlist that plays, if any
  * @property needsApp the system did not let the app play in the background: the person has to open it
  */

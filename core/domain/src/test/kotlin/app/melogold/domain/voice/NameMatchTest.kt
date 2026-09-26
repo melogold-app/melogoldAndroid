@@ -31,10 +31,13 @@ class NameMatchTest {
     }
 
     @Test
-    fun `a short name matches inside only as a whole word`() {
+    fun `a name matches inside what was said only as whole words`() {
         assertEquals(MatchLevel.Contains, NameMatch.level("Би-2", null, "включи би 2 пожалуйста"))
         assertEquals(MatchLevel.Contains, NameMatch.level("Я", null, "это я и ты"))
         assertNull(NameMatch.level("Я", null, "яблоко"))
+        assertNull(NameMatch.level("Ска", null, "русская классика"))
+        assertNull(NameMatch.level("Рок", null, "роковые хиты"))
+        assertNull(NameMatch.level("Car", null, "Carpenters best"))
     }
 
     @Test

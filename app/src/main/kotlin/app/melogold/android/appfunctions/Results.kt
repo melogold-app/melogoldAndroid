@@ -38,7 +38,7 @@ data class TrackResult(
  */
 @AppFunctionSerializable(isDescribedByKDoc = true)
 data class PlaybackResult(
-    /** Title of the track that plays; for an artist's mix, the artist. / Название трека; для микса — исполнитель. */
+    /** Title of the track that plays. / Название трека, который играет. */
     val title: String,
     /** Artists of the track. / Исполнители трека. */
     val artists: String?,

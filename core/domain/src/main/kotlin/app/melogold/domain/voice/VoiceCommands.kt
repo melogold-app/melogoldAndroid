@@ -171,14 +171,12 @@ class VoiceCommands(
             plan.tracks.first().result(plan.source, collection = plan.collection.name)
         }
 
+        // The answer waits for the mix to be in the queue: a mix that fails or comes empty is not reported as
+        // playing, and whether the app has to be opened is known only once the queue is there
         is Plan.Mix -> {
-            player.playRadio(plan.radio)
-            VoiceResult(
-                title = plan.collection.name,
-                collection = plan.collection.name,
-                source = plan.source,
-                needsApp = player.needsApp()
-            )
+            val first = online { player.playRadio(plan.radio) }
+            val track = first.value ?: throw notFound(first, plan.collection.name)
+            track.result(plan.source, collection = plan.collection.name)
         }
     }
 

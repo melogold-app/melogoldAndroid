@@ -267,10 +267,13 @@
             The functions Gemini calls: find and play (tasks/0006-gemini-app-functions.md). KSP generates
             the service from BaseMelogoldAppFunctionService and the XML index next to the schema of the
             library in assets. Only the system binds it (BIND_APP_FUNCTION_SERVICE is a signature
-            permission); below Android 16 nothing does, so it is inert there.
+            permission of Android 16). Below Android 16 that permission does not exist and the base class
+            of the service is missing, so the service is disabled there: the library's bool is true only
+            in values-v36.
         -->
         <service
             android:name=".appfunctions.MelogoldAppFunctionService"
+            android:enabled="@bool/enablePlatformAppFunctionService"
             android:exported="true"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
             tools:targetApi="36">
