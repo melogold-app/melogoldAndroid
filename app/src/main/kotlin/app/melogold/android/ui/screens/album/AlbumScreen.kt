@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.album
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -156,7 +159,7 @@ private fun AlbumContent(
         showTitle = showTitle,
         onBack = onBack,
         contextualBar = if (selection.active) {
-            { SelectionTopBar(selection = selection, tracks = selectable) }
+            { SelectionTopBar(selection = selection, tracks = selectable, collectionName = details?.album?.title) }
         } else null,
         actions = {
             AnimatedVisibility(visible = showTitle && details != null, enter = fadeIn(), exit = fadeOut()) {
@@ -242,11 +245,12 @@ private fun AlbumContent(
                 }
             ) {
                 itemsIndexed(items = songs, key = { _, song -> song.id }) { index, song ->
+                    val override = rememberTrackOverrides()[song.id]
                     TrackRow(
-                        title = song.title,
+                        title = override.title(song.title),
                         videoId = song.id,
                         // The album's artists go without saying; features don't
-                        subtitle = song.artistsText?.takeIf { it != album.authorsText },
+                        subtitle = override.artists(song.artistsText)?.takeIf { it != album.authorsText },
                         artworkUrl = null,
                         showArtwork = false,
                         number = index + 1,

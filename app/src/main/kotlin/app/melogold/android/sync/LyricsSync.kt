@@ -6,6 +6,7 @@ import app.melogold.android.Database
 import app.melogold.android.internal
 import app.melogold.android.models.Lyrics
 import app.melogold.android.models.LyricsSource
+import app.melogold.android.models.serverName
 import app.melogold.android.models.SyncState
 import app.melogold.android.models.SyncedLyrics
 import app.melogold.android.sync.api.ApiException
@@ -244,15 +245,7 @@ class LyricsSync(private val account: Account) {
 }
 
 /** The word of API §4.10 for a source; the Melogold community is never sent as the user's own. */
-private val LyricsSource.wire: String?
-    get() = when (this) {
-        LyricsSource.User -> "user"
-        LyricsSource.File -> "file"
-        LyricsSource.YouTubeMusic -> "youtube_music"
-        LyricsSource.LrcLib -> "lrclib"
-        LyricsSource.KuGou -> "kugou"
-        LyricsSource.Melogold -> null
-    }
+private val LyricsSource.wire: String? get() = serverName
 
 private fun String?.toSource(): LyricsSource? = when (this) {
     "user" -> LyricsSource.User

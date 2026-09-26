@@ -35,16 +35,28 @@ private suspend fun Innertube.lyricsBrowseId(body: NextBody): String? = client.p
     ?.browseEndpoint
     ?.browseId
 
+/**
+ * The browse id (`MPLYt…`) of the lyrics YouTube Music shows for [body]'s video: what a pin of them refers to
+ * (tasks/0013); null when it has none.
+ */
+suspend fun Innertube.lyricsBrowseIdOf(body: NextBody) = runCatchingCancellable { lyricsBrowseId(body) }
+
 /** The plain lyrics YouTube Music shows for [body]'s video. */
 suspend fun Innertube.lyrics(body: NextBody) = runCatchingCancellable {
     val browseId = lyricsBrowseId(body) ?: return@runCatchingCancellable null
+    plainLyricsOf(browseId)
+}
 
+/** The plain lyrics of the lyrics browse id [browseId]. */
+suspend fun Innertube.lyricsOf(browseId: String) = runCatchingCancellable { plainLyricsOf(browseId) }
+
+private suspend fun Innertube.plainLyricsOf(browseId: String): String? {
     val response = client.post(BROWSE) {
         setBody(BrowseBody(browseId = browseId))
         mask("contents.sectionListRenderer.contents.musicDescriptionShelfRenderer.description")
     }.body<BrowseResponse>()
 
-    response.contents
+    return response.contents
         ?.sectionListRenderer
         ?.contents
         ?.firstOrNull()
@@ -60,6 +72,13 @@ suspend fun Innertube.lyrics(body: NextBody) = runCatchingCancellable {
  */
 suspend fun Innertube.timedLyrics(body: NextBody) = runCatchingCancellable {
     val browseId = lyricsBrowseId(body) ?: return@runCatchingCancellable null
+    timedLyricsFor(browseId)
+}
+
+/** The time-synced lyrics of the lyrics browse id [browseId], as LRC; null when it has none. */
+suspend fun Innertube.timedLyricsOf(browseId: String) = runCatchingCancellable { timedLyricsFor(browseId) }
+
+private suspend fun Innertube.timedLyricsFor(browseId: String): String? {
     val context = Context.DefaultAndroidMusic
 
     val response = client.post(BROWSE) {
@@ -79,9 +98,9 @@ suspend fun Innertube.timedLyrics(body: NextBody) = runCatchingCancellable {
             start to line["lyricLine"]?.jsonPrimitive?.contentOrNull.orEmpty()
         }
         ?.takeIf { it.isNotEmpty() }
-        ?: return@runCatchingCancellable null
+        ?: return null
 
-    lines.joinToString("\n") { (start, text) ->
+    return lines.joinToString("\n") { (start, text) ->
         val centis = start / 10
         "[%02d:%02d.%02d]%s".format(centis / 6000, centis / 100 % 60, centis % 100, text)
     }

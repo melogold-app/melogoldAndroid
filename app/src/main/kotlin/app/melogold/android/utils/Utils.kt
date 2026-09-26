@@ -22,6 +22,7 @@ import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.youtube.YouTubeItem
 import app.melogold.providers.innertube.models.bodies.ContinuationBody
 import app.melogold.providers.innertube.requests.playlistPage
+import app.melogold.android.data.overrides.withOverride
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
@@ -53,6 +54,7 @@ val Innertube.SongItem.asMediaItem: MediaItem
                 .build()
         )
         .build()
+        .withOverride()
 
 val Innertube.VideoItem.asMediaItem: MediaItem
     get() = MediaItem.Builder()
@@ -79,6 +81,7 @@ val Innertube.VideoItem.asMediaItem: MediaItem
                 .build()
         )
         .build()
+        .withOverride()
 
 val Song.asMediaItem: MediaItem
     get() = MediaItem.Builder()
@@ -104,6 +107,7 @@ val Song.asMediaItem: MediaItem
         )
         .setCustomCacheKey(id)
         .build()
+        .withOverride()
 
 val Duration.formatted
     @Composable get() = toComponents { hours, minutes, _, _ ->
@@ -258,3 +262,4 @@ val YouTubeItem.Video.asMediaItem: MediaItem
                 .build()
         )
         .build()
+        .withOverride()

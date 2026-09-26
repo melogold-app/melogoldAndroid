@@ -240,6 +240,28 @@ data class PlaylistItemRow(val playlistId: String, val videoId: String, val pres
 @Serializable
 data class LikeRow(val videoId: String, val liked: Boolean, val likedAt: String? = null)
 
+/** The user's own names of a track (API §4.8 `TrackOverrideRow`, tasks/0012). */
+@Serializable
+data class TrackOverrideRow(
+    val videoId: String,
+    val title: String? = null,
+    val artistsText: String? = null,
+    val albumTitle: String? = null,
+    val updatedAt: String,
+    val deleted: Boolean = false
+)
+
+/** Pinned lyrics found automatically (API §4.8 `LyricsPinRow`, tasks/0013). */
+@Serializable
+data class LyricsPinRow(
+    val videoId: String,
+    val source: String? = null,
+    val ref: String? = null,
+    val startTimeMs: Long? = null,
+    val updatedAt: String,
+    val deleted: Boolean = false
+)
+
 @Serializable
 data class BookmarkRow(
     val type: String,
@@ -263,6 +285,8 @@ data class SyncResponse(
     val items: List<PlaylistItemRow> = emptyList(),
     val likes: List<LikeRow> = emptyList(),
     val bookmarks: List<BookmarkRow> = emptyList(),
+    val overrides: List<TrackOverrideRow> = emptyList(),
+    val lyricsPins: List<LyricsPinRow> = emptyList(),
     val plays: List<PlayRow> = emptyList(),
     val playStats: List<PlayStatRow> = emptyList(),
     val playForgets: List<PlayForgetRow> = emptyList()

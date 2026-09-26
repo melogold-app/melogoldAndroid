@@ -49,7 +49,13 @@ object KuGou {
         }
     }
 
-    suspend fun lyrics(artist: String, title: String, duration: Long) = runCatchingCancellable {
+    suspend fun lyrics(artist: String, title: String, duration: Long) =
+        lyricsWithRef(artist, title, duration)?.map { it?.lyrics }
+
+    /**
+     * The lyrics of the track with where they are: `<id>:<accesskey>`, what a pin of them refers to (tasks/0013).
+     */
+    suspend fun lyricsWithRef(artist: String, title: String, duration: Long) = runCatchingCancellable {
         val keyword = keyword(artist, title)
         val infoByKeyword = searchSong(keyword)
 
@@ -60,10 +66,10 @@ object KuGou {
                 for (info in infoByKeyword) {
                     if (info.duration >= duration - tolerance && info.duration <= duration + tolerance) {
                         searchLyricsByHash(info.hash).firstOrNull()?.let { candidate ->
-                            return@runCatchingCancellable downloadLyrics(
-                                candidate.id,
-                                candidate.accessKey
-                            ).normalize()
+                            return@runCatchingCancellable Found(
+                                ref = "${candidate.id}:${candidate.accessKey}",
+                                lyrics = downloadLyrics(candidate.id, candidate.accessKey).normalize()
+                            )
                         }
                     }
                 }
@@ -73,14 +79,24 @@ object KuGou {
         }
 
         searchLyricsByKeyword(keyword).firstOrNull()?.let { candidate ->
-            return@runCatchingCancellable downloadLyrics(
-                candidate.id,
-                candidate.accessKey
-            ).normalize()
+            return@runCatchingCancellable Found(
+                ref = "${candidate.id}:${candidate.accessKey}",
+                lyrics = downloadLyrics(candidate.id, candidate.accessKey).normalize()
+            )
         }
 
         null
     }
+
+    /** The lyrics a pin refers to: `<id>:<accesskey>`; null for another form. */
+    suspend fun lyricsByRef(ref: String) = runCatchingCancellable {
+        val id = ref.substringBefore(':').toLongOrNull() ?: return@runCatchingCancellable null
+        val accessKey = ref.substringAfter(':', "").takeIf { it.isNotEmpty() } ?: return@runCatchingCancellable null
+        downloadLyrics(id, accessKey).normalize()
+    }
+
+    /** Lyrics found by a search, and `<id>:<accesskey>` to download them again. */
+    data class Found(val ref: String, val lyrics: Lyrics)
 
     private suspend fun downloadLyrics(id: Long, accessKey: String) = client
         .get("/download") {

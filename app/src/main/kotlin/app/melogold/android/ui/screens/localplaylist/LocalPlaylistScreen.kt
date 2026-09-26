@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.localplaylist
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import android.content.Context
 import android.content.Intent
 import android.text.format.DateUtils
@@ -271,7 +274,7 @@ private fun LocalPlaylistContent(
         showTitle = showTitle,
         onBack = onBack,
         contextualBar = if (selection.active) {
-            { SelectionTopBar(selection = selection, tracks = selectable) }
+            { SelectionTopBar(selection = selection, tracks = selectable, collectionName = playlist.name) }
         } else null,
         actions = {
             if (!songs.isNullOrEmpty()) IconButton(
@@ -395,10 +398,11 @@ private fun LocalPlaylistContent(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.padding(horizontal = 8.dp)
                     ) {
+                        val override = rememberTrackOverrides()[song.id]
                         TrackRow(
-                            title = song.title,
+                            title = override.title(song.title),
                             videoId = song.id,
-                            subtitle = song.artistsText,
+                            subtitle = override.artists(song.artistsText),
                             artworkUrl = song.thumbnailUrl,
                             onClick = { play(rows, index) },
                             onMenu = {

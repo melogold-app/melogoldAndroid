@@ -255,6 +255,15 @@ fun ColumnScope.TrackMenuEntries(
         }
     )
 
+    if (!isLocal) MenuEntry(
+        icon = R.drawable.ms_edit,
+        text = stringResource(R.string.menu_edit_details),
+        onClick = {
+            // In the same sheet: the menu becomes the editor
+            menuState.display { TrackDetailsMenu(mediaItem = mediaItem, onDone = menuState::hide) }
+        }
+    )
+
     if (!isLocal) {
         DownloadEntry(mediaItem = mediaItem, onDismiss = onDismiss)
         SaveFileEntry(mediaItem = mediaItem, onDismiss = onDismiss)

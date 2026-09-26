@@ -69,3 +69,21 @@ data class SyncedBookmark(
     val type: String,
     val browseId: String
 )
+
+/** A track override the server had after the last sync (tasks/0012): the next sync sends what changed here since. */
+@Entity
+data class SyncedOverride(
+    @PrimaryKey val videoId: String,
+    val title: String?,
+    val artistsText: String?,
+    val albumTitle: String?
+)
+
+/** A lyrics pin the server had after the last sync (tasks/0013). */
+@Entity
+data class SyncedLyricsPin(
+    @PrimaryKey val videoId: String,
+    val source: String,
+    val ref: String,
+    val startTimeMs: Long?
+)

@@ -83,6 +83,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import app.melogold.android.Database
 import app.melogold.android.R
+import app.melogold.android.data.lyrics.LyricsPins
 import app.melogold.android.models.Lyrics
 import app.melogold.android.models.LyricsSource
 import app.melogold.android.preferences.PlayerPreferences
@@ -316,7 +317,10 @@ fun ModernPlayer(
             onSetStartOffset = if (showingSynced && raw != null) {
                 {
                     val startTime = binder.player.currentPosition
-                    query { Database.upsert(raw.copy(startTime = startTime)) }
+                    query {
+                        Database.upsert(raw.copy(startTime = startTime))
+                        LyricsPins.shifted(raw, startTime)
+                    }
                 }
             } else null
         )

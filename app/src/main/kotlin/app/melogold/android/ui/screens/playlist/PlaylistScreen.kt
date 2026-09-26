@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.playlist
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -180,7 +183,7 @@ private fun PlaylistContent(
         showTitle = showTitle,
         onBack = onBack,
         contextualBar = if (selection.active) {
-            { SelectionTopBar(selection = selection, tracks = selectable) }
+            { SelectionTopBar(selection = selection, tracks = selectable, collectionName = details?.page?.title) }
         } else null,
         actions = {
             AnimatedVisibility(visible = showTitle && details != null, enter = fadeIn(), exit = fadeOut()) {
@@ -277,10 +280,11 @@ private fun PlaylistContent(
                 }
             ) {
                 itemsIndexed(items = songs.items, key = { _, song -> song.key }) { index, song ->
+                    val override = rememberTrackOverrides()[song.key]
                     TrackRow(
-                        title = song.info?.name.orEmpty(),
+                        title = override.title(song.info?.name.orEmpty()),
                         videoId = song.key,
-                        subtitle = song.authors?.joinToString("") { it.name.orEmpty() },
+                        subtitle = override.artists(song.authors?.joinToString("") { it.name.orEmpty() }),
                         artworkUrl = song.thumbnail?.url,
                         onClick = { binder?.let { model.play(it, index = index) } },
                         onMenu = {

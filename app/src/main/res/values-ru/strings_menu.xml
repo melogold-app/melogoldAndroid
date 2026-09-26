@@ -41,4 +41,16 @@
     <string name="player_speed">Скорость воспроизведения</string>
     <string name="player_speed_description">Для всех треков</string>
     <string name="player_nothing_playing">Сейчас ничего не играет</string>
+    <!-- Свои названия трека (задание 0012) -->
+    <string name="menu_edit_details">Изменить сведения…</string>
+    <string name="track_details_title">Сведения о треке</string>
+    <string name="track_details_name">Название</string>
+    <string name="track_details_artist">Исполнитель</string>
+    <string name="track_details_album">Альбом</string>
+    <string name="track_details_save">Сохранить</string>
+    <string name="track_details_reset">Как на YouTube</string>
+    <string name="selection_set_album">Указать альбом…</string>
+    <string name="selection_set_album_title">Указать альбом</string>
+    <string name="selection_album_set">Альбом указан: %s</string>
+    <string name="track_details_youtube">На YouTube: %s</string>
 </resources>

@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.library.collections
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import android.text.format.DateFormat
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -391,10 +394,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.recentItems(
             songs.groupBy { Instant.ofEpochMilli(it.lastPlayed).atZone(zone).toLocalDate() }.forEach { (day, group) ->
                 item(key = "day_$day") { DayHeader(day) }
                 items(items = group, key = { it.song.id }) { (song, lastPlayed) ->
+                    val override = rememberTrackOverrides()[song.id]
                     TrackRow(
-                        title = song.title,
+                        title = override.title(song.title),
                         videoId = song.id,
-                        subtitle = song.artistsText,
+                        subtitle = override.artists(song.artistsText),
                         artworkUrl = song.thumbnailUrl,
                         onClick = { onPlay(song) },
                         onMenu = { onMenu(song) },
@@ -425,10 +429,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
             EmptyCollection(text = R.string.history_period_empty, onFindMusic = null, modifier = Modifier.padding(top = 32.dp))
         }
         else -> itemsIndexed(items = songs, key = { _, it -> "top_${it.song.id}" }) { index, (song, playTime) ->
+            val override = rememberTrackOverrides()[song.id]
             TrackRow(
-                title = song.title,
+                title = override.title(song.title),
                 videoId = song.id,
-                subtitle = listOfNotNull(song.artistsText, formatListeningTime(playTime)).joinToString(" · "),
+                subtitle = listOfNotNull(override.artists(song.artistsText), formatListeningTime(playTime)).joinToString(" · "),
                 artworkUrl = song.thumbnailUrl,
                 onClick = { onPlay(songs, index) },
                 onMenu = { onMenu(song) },

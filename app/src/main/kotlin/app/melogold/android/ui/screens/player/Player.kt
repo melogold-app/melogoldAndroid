@@ -50,6 +50,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import app.melogold.android.Database
@@ -146,6 +147,11 @@ fun Player(
         object : Player.Listener {
             override fun onMediaItemTransition(newMediaItem: MediaItem?, reason: Int) {
                 mediaItem = newMediaItem
+            }
+
+            // The same track with new names (the user's own, tasks/0012)
+            override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+                mediaItem = player.currentMediaItem
             }
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {

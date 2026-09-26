@@ -2,6 +2,9 @@
 
 package app.melogold.android.ui.screens.search
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -502,10 +505,11 @@ private fun FocusedSearch(
                 if (songs.isNotEmpty() || playlists.isNotEmpty()) {
                     item(key = "library/header") { Label(text = stringResource(R.string.search_in_library)) }
                     items(items = songs, key = { "song/${it.id}" }) { song ->
+                        val override = rememberTrackOverrides()[song.id]
                         TrackRow(
-                            title = song.title,
+                            title = override.title(song.title),
                             videoId = song.id,
-                            subtitle = song.artistsText,
+                            subtitle = override.artists(song.artistsText),
                             artworkUrl = song.thumbnailUrl,
                             duration = song.durationText,
                             explicit = song.explicit,

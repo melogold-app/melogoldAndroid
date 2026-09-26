@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.artist
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
@@ -353,10 +356,11 @@ private fun ArtistContent(
                     }
                     val shown = favorites.take(LIBRARY_SONGS)
                     itemsIndexed(items = shown, key = { _, song -> "library_${song.id}" }) { index, song ->
+                        val override = rememberTrackOverrides()[song.id]
                         TrackRow(
-                            title = song.title,
+                            title = override.title(song.title),
                             videoId = song.id,
-                            subtitle = song.artistsText,
+                            subtitle = override.artists(song.artistsText),
                             artworkUrl = song.thumbnailUrl,
                             onClick = { play(favorites.map(Song::asMediaItem), index) },
                             onMenu = {
@@ -428,10 +432,12 @@ private fun LazyListScope.pageSections(
             )
         }
         itemsIndexed(items = items.take(TOP_SONGS), key = { _, song -> "popular_${song.key}" }) { index, song ->
+            val override = rememberTrackOverrides()[song.key]
             TrackRow(
-                title = song.info?.name.orEmpty(),
+                title = override.title(song.info?.name.orEmpty()),
                 videoId = song.key,
-                subtitle = song.album?.name ?: song.authors?.joinToString("") { it.name.orEmpty() },
+                subtitle = override?.albumTitle ?: song.album?.name
+                    ?: override.artists(song.authors?.joinToString("") { it.name.orEmpty() }),
                 artworkUrl = song.thumbnail?.url,
                 number = index + 1,
                 onClick = { onPlay(mediaItems, index) },

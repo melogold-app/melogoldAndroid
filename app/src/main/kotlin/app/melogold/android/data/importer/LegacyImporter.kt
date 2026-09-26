@@ -14,6 +14,7 @@ import app.melogold.android.models.Lyrics
 import app.melogold.android.models.LyricsSource
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.SearchQuery
+import app.melogold.android.models.TrackOverride
 import app.melogold.android.models.Song
 import app.melogold.android.models.SongAlbumMap
 import app.melogold.android.models.SongArtistMap
@@ -172,7 +173,8 @@ private class LegacyBundle(
     val songAlbums: List<SongAlbumMap>,
     val songArtists: List<SongArtistMap>,
     val playlists: List<LegacyPlaylist>,
-    val searches: List<String>
+    val searches: List<String>,
+    val overrides: List<TrackOverride>
 )
 
 /** Reads the tables of a backup by the columns it has; what is missing reads as null. */
@@ -301,7 +303,20 @@ private class LegacyReader(private val db: SQLiteDatabase, private val tables: S
 
         val searches = select("SearchQuery", listOf("query"), orderBy = "rowid DESC") { it.string("query") }.take(SEARCH_QUERIES)
 
-        return LegacyBundle(songs, localSkipped, events, lyrics, albums, artists, songAlbums, songArtists, playlists, searches)
+        // The user's own names of tracks (tasks/0012), in copies of Melogold
+        val overrides = select("TrackOverride", listOf("videoId", "title", "artistsText", "albumTitle", "updatedAt")) { row ->
+            TrackOverride(
+                videoId = row.string("videoId")?.takeIf(VIDEO_ID::matches) ?: return@select null,
+                title = TrackOverride.clean(row.string("title")),
+                artistsText = TrackOverride.clean(row.string("artistsText")),
+                albumTitle = TrackOverride.clean(row.string("albumTitle")),
+                updatedAt = row.long("updatedAt") ?: 0L
+            ).takeUnless { it.isEmpty }
+        }
+
+        return LegacyBundle(
+            songs, localSkipped, events, lyrics, albums, artists, songAlbums, songArtists, playlists, searches, overrides
+        )
     }
 
     class Row(private val cursor: Cursor, names: List<String>) {
@@ -453,6 +468,12 @@ private fun LegacyBundle.write(version: Int): ImportSummary = Database.internal.
     }
 
     Database.insertSearchQueries(searches.map { SearchQuery(query = it) })
+
+    // An override newer than the one here wins
+    overrides.forEach { imported ->
+        val local = Database.trackOverride(imported.videoId)
+        if (local == null || imported.updatedAt > local.updatedAt) Database.upsert(imported)
+    }
 
     ImportSummary(
         version = version,

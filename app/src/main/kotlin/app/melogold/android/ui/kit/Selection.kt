@@ -35,11 +35,13 @@ import app.melogold.android.Database
 import app.melogold.android.LocalAppContainer
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.data.overrides.TrackOverrides
 import app.melogold.android.data.repo.storedTrackLinks
 import app.melogold.android.models.DownloadState
 import app.melogold.android.models.Playlist
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.TrackDownload
+import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.isLocal
 import app.melogold.android.transaction
 import app.melogold.android.ui.components.LocalMenuState
@@ -136,13 +138,16 @@ internal fun toDownload(
  *
  * @param tracks every track of the list, in its order
  * @param liveIds the live streams among them, which are not downloaded
+ * @param collectionName the name of the playlist or album the tracks are in: "Set album…" suggests it when they
+ *   have no common album
  */
 @Composable
 fun SelectionTopBar(
     selection: TrackSelection,
     tracks: List<MediaItem>,
     modifier: Modifier = Modifier,
-    liveIds: Set<String> = emptySet()
+    liveIds: Set<String> = emptySet(),
+    collectionName: String? = null
 ) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
@@ -154,6 +159,7 @@ fun SelectionTopBar(
     val selected = remember(tracks, selection.ids) { selection.of(tracks) { it.mediaId } }
     var overflow by remember { mutableStateOf(false) }
     var naming by remember { mutableStateOf<String?>(null) }
+    var settingAlbum by remember { mutableStateOf<String?>(null) }
 
     BackHandler(onBack = selection::clear)
 
@@ -185,6 +191,21 @@ fun SelectionTopBar(
                     }
                     main.post { snackbar.show(message = message, actionLabel = open) { localPlaylistRoute.global(id) } }
                 }
+            }
+        )
+    }
+
+    settingAlbum?.let { initial ->
+        TextInputDialog(
+            title = stringResource(R.string.selection_set_album_title),
+            label = stringResource(R.string.track_details_album),
+            confirmLabel = stringResource(R.string.track_details_save),
+            initialValue = initial,
+            onDismiss = { settingAlbum = null },
+            onConfirm = { album ->
+                settingAlbum = null
+                TrackOverrides.setAlbum(selected.map { it.mediaId }.filterNot { it.startsWith(LOCAL_KEY_PREFIX) }, album)
+                done(resources.getString(R.string.selection_album_set, album.trim()))
             }
         )
     }
@@ -290,6 +311,20 @@ fun SelectionTopBar(
                             val items = selected
                             scope.launch {
                                 naming = commonAlbum(items.map { it.storedTrackLinks().album?.name }).orEmpty()
+                            }
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(text = stringResource(R.string.selection_set_album)) },
+                        enabled = selected.any { !it.isLocal },
+                        onClick = {
+                            overflow = false
+                            val items = selected
+                            scope.launch {
+                                // The album the tracks show: their own override, else YouTube's
+                                settingAlbum = commonAlbum(
+                                    items.map { TrackOverrides[it.mediaId]?.albumTitle ?: it.storedTrackLinks().album?.name }
+                                ) ?: collectionName.orEmpty()
                             }
                         }
                     )

@@ -1,5 +1,7 @@
 package app.melogold.android.ui.kit
 
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,10 +58,11 @@ fun TrackGrid(
             .height(TrackRowHeight * rows)
     ) {
         itemsIndexed(items = songs, key = { _, song -> song.key }) { index, song ->
+            val override = rememberTrackOverrides()[song.key]
             TrackRow(
-                title = song.info?.name.orEmpty(),
+                title = override.title(song.info?.name.orEmpty()),
                 videoId = song.key,
-                subtitle = song.authors?.joinToString { it.name.orEmpty() },
+                subtitle = override.artists(song.authors?.joinToString { it.name.orEmpty() }),
                 artworkUrl = song.thumbnail?.url,
                 number = if (numbered) index + 1 else null,
                 explicit = song.explicit,

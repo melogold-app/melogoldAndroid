@@ -236,6 +236,12 @@ class SongBundleAccessor(val extras: Bundle = Bundle()) : BundleAccessor {
     var artistNames by extras.stringList
     var artistIds by extras.stringList
     var explicit by extras.boolean
+
+    /** The user's own title, artist or album shows (tasks/0012); what YouTube gave is kept in `original*`. */
+    var overridden by extras.boolean
+    var originalTitle by extras.string
+    var originalArtist by extras.string
+    var originalAlbum by extras.string
 }
 
 inline val Bundle.songBundle get() = SongBundleAccessor(this)

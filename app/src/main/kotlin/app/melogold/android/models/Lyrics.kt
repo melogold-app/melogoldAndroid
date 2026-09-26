@@ -25,6 +25,17 @@ enum class LyricsSource {
     Melogold
 }
 
+/** The word of API §4.10 for a source (`youtube_music`, `lrclib`, …); the Melogold community has none. */
+val LyricsSource.serverName: String?
+    get() = when (this) {
+        LyricsSource.User -> "user"
+        LyricsSource.File -> "file"
+        LyricsSource.YouTubeMusic -> "youtube_music"
+        LyricsSource.LrcLib -> "lrclib"
+        LyricsSource.KuGou -> "kugou"
+        LyricsSource.Melogold -> null
+    }
+
 /** Lyrics the user made or brought themselves: they are kept on the Melogold server and follow the user. */
 val LyricsSource?.isOwn get() = this == LyricsSource.User || this == LyricsSource.File
 
@@ -54,7 +65,11 @@ data class Lyrics(
     val fixedSource: LyricsSource? = null,
     val syncedSource: LyricsSource? = null,
     @ColumnInfo(defaultValue = "0")
-    val chosen: Boolean = false
+    val chosen: Boolean = false,
+    /** The id of [fixed] at its provider, when a provider found it (tasks/0013: a pin refers to it). */
+    val fixedRef: String? = null,
+    /** The id of [synced] at its provider, when a provider found it. */
+    val syncedRef: String? = null
 ) {
     /** The user's own lyrics (typed, imported or chosen): kept on the Melogold server, they follow the user. */
     val isOwn: Boolean

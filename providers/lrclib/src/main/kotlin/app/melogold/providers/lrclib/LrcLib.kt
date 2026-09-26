@@ -88,19 +88,25 @@ object LrcLib {
         title = title,
         synced = synced
     )?.mapCatching { tracks ->
-        tracks.bestMatchingFor(title, duration)
-            ?.let { if (synced) it.syncedLyrics else it.plainLyrics }
-            ?.let {
+        tracks.bestMatchingFor(title, duration)?.let { track ->
+            (if (synced) track.syncedLyrics else track.plainLyrics)?.let {
                 Lyrics(
                     text = it,
-                    synced = synced
+                    synced = synced,
+                    id = track.id
                 )
             }
+        }
     }
 
+    /** The record [id] (`GET /api/get/{id}`): what a pin of LrcLib lyrics refers to (tasks/0013). */
+    suspend fun byId(id: Int) = runCatchingCancellable { client.get("/api/get/$id").body<Track>() }
+
+    /** @param id the LrcLib record the lyrics are from */
     data class Lyrics(
         val text: String,
-        val synced: Boolean
+        val synced: Boolean,
+        val id: Int? = null
     )
 }
 

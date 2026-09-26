@@ -61,7 +61,14 @@ import app.melogold.android.models.SongWithContentLength
 import app.melogold.android.models.SongWithDownload
 import app.melogold.android.models.SyncState
 import app.melogold.android.models.SyncedBookmark
+import app.melogold.android.data.overrides.originalAlbum
+import app.melogold.android.data.overrides.originalArtist
+import app.melogold.android.data.overrides.originalTitle
 import app.melogold.android.models.SyncedLike
+import app.melogold.android.models.SyncedLyricsPin
+import app.melogold.android.models.LyricsPin
+import app.melogold.android.models.SyncedOverride
+import app.melogold.android.models.TrackOverride
 import app.melogold.android.models.SyncedLyrics
 import app.melogold.android.models.SyncedPlaylist
 import app.melogold.android.models.TrackDownload
@@ -999,10 +1006,11 @@ interface DatabaseAccessor {
     @Transaction
     fun insert(mediaItem: MediaItem, block: (Song) -> Song = { it }) {
         val extras = mediaItem.mediaMetadata.extras?.songBundle
+        // What YouTube calls the track, not the user's override laid over it (tasks/0012)
         val song = Song(
             id = mediaItem.mediaId,
-            title = mediaItem.mediaMetadata.title?.toString().orEmpty(),
-            artistsText = mediaItem.mediaMetadata.artist?.toString(),
+            title = mediaItem.originalTitle.orEmpty(),
+            artistsText = mediaItem.originalArtist,
             durationText = extras?.durationText,
             thumbnailUrl = mediaItem.mediaMetadata.artworkUri?.toString(),
             explicit = extras?.explicit == true
@@ -1014,7 +1022,7 @@ interface DatabaseAccessor {
 
         extras?.albumId?.let { albumId ->
             insert(
-                Album(id = albumId, title = mediaItem.mediaMetadata.albumTitle?.toString()),
+                Album(id = albumId, title = mediaItem.originalAlbum),
                 SongAlbumMap(songId = song.id, albumId = albumId, position = null)
             )
         }
@@ -1072,6 +1080,65 @@ interface DatabaseAccessor {
 
     @Query("DELETE FROM SyncedLike WHERE videoId IN (:videoIds)")
     fun deleteSyncedLikes(videoIds: List<String>)
+
+    // Track overrides (tasks/0012)
+    @Query("SELECT * FROM TrackOverride")
+    fun trackOverrides(): Flow<List<TrackOverride>>
+
+    @Query("SELECT * FROM TrackOverride")
+    fun trackOverridesNow(): List<TrackOverride>
+
+    @Query("SELECT * FROM TrackOverride WHERE videoId = :videoId")
+    fun trackOverride(videoId: String): TrackOverride?
+
+    @Upsert
+    fun upsert(override: TrackOverride)
+
+    @Query("DELETE FROM TrackOverride WHERE videoId = :videoId")
+    fun deleteTrackOverride(videoId: String)
+
+    @Query("SELECT * FROM SyncedOverride")
+    fun syncedOverrides(): List<SyncedOverride>
+
+    @Upsert
+    fun upsert(override: SyncedOverride)
+
+    @Query("DELETE FROM SyncedOverride WHERE videoId = :videoId")
+    fun deleteSyncedOverride(videoId: String)
+
+    @Query("DELETE FROM SyncedOverride")
+    fun clearSyncedOverrides()
+
+    // Lyrics pins (tasks/0013)
+    @Query("SELECT * FROM LyricsPin WHERE videoId = :videoId")
+    fun lyricsPin(videoId: String): LyricsPin?
+
+    @Query("SELECT * FROM LyricsPin WHERE videoId = :videoId")
+    fun lyricsPinFlow(videoId: String): Flow<LyricsPin?>
+
+    @Query("SELECT * FROM LyricsPin")
+    fun lyricsPinsNow(): List<LyricsPin>
+
+    @Query("SELECT * FROM LyricsPin")
+    fun lyricsPins(): Flow<List<LyricsPin>>
+
+    @Upsert
+    fun upsert(pin: LyricsPin)
+
+    @Query("DELETE FROM LyricsPin WHERE videoId = :videoId")
+    fun deleteLyricsPin(videoId: String)
+
+    @Query("SELECT * FROM SyncedLyricsPin")
+    fun syncedLyricsPins(): List<SyncedLyricsPin>
+
+    @Upsert
+    fun upsert(pin: SyncedLyricsPin)
+
+    @Query("DELETE FROM SyncedLyricsPin WHERE videoId = :videoId")
+    fun deleteSyncedLyricsPin(videoId: String)
+
+    @Query("DELETE FROM SyncedLyricsPin")
+    fun clearSyncedLyricsPins()
 
     @Query("SELECT * FROM Playlist")
     fun playlistsNow(): List<Playlist>
@@ -1387,10 +1454,14 @@ interface DatabaseAccessor {
         SyncedPlaylist::class,
         SyncedBookmark::class,
         SyncedLyrics::class,
-        HistoryForget::class
+        HistoryForget::class,
+        TrackOverride::class,
+        SyncedOverride::class,
+        LyricsPin::class,
+        SyncedLyricsPin::class
     ],
     views = [SortedSongPlaylistMap::class],
-    version = 37,
+    version = 38,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -1424,7 +1495,8 @@ interface DatabaseAccessor {
         AutoMigration(from = 33, to = 34),
         AutoMigration(from = 34, to = 35),
         AutoMigration(from = 35, to = 36),
-        AutoMigration(from = 36, to = 37)
+        AutoMigration(from = 36, to = 37),
+        AutoMigration(from = 37, to = 38)
     ]
 )
 @TypeConverters(Converters::class)

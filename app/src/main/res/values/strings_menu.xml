@@ -40,4 +40,16 @@
     <string name="player_speed">Playback speed</string>
     <string name="player_speed_description">For every track</string>
     <string name="player_nothing_playing">Nothing is playing</string>
+    <!-- Own names of a track (tasks/0012) -->
+    <string name="menu_edit_details">Edit details…</string>
+    <string name="track_details_title">Track details</string>
+    <string name="track_details_name">Title</string>
+    <string name="track_details_artist">Artist</string>
+    <string name="track_details_album">Album</string>
+    <string name="track_details_save">Save</string>
+    <string name="track_details_reset">As on YouTube</string>
+    <string name="selection_set_album">Set album…</string>
+    <string name="selection_set_album_title">Set album</string>
+    <string name="selection_album_set">Album set: %s</string>
+    <string name="track_details_youtube">On YouTube: %s</string>
 </resources>

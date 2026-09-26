@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.searchresult
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -560,12 +563,13 @@ private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
     val selection = LocalResultsSelection.current
+    val overrides = rememberTrackOverrides()
 
     when (item) {
         is Innertube.SongItem -> TrackRow(
-            title = item.info?.name.orEmpty(),
+            title = overrides[item.key].title(item.info?.name.orEmpty()),
             videoId = item.key,
-            subtitle = item.authors?.joinToString { it.name.orEmpty() },
+            subtitle = overrides[item.key].artists(item.authors?.joinToString { it.name.orEmpty() }),
             artworkUrl = item.thumbnail?.url,
             explicit = item.explicit,
             duration = item.durationText,
@@ -596,7 +600,7 @@ private fun RouteHandlerScope.MusicItemRow(item: Innertube.Item) {
         )
 
         is Innertube.VideoItem -> ResultRow(
-            title = item.info?.name.orEmpty(),
+            title = overrides[item.key].title(item.info?.name.orEmpty()),
             subtitle = subtitle(
                 stringResource(R.string.results_music_video),
                 item.authors?.joinToString { it.name.orEmpty() },
@@ -629,11 +633,12 @@ private fun RouteHandlerScope.YouTubeItemRow(item: YouTubeItem) {
     val binder = LocalPlayerServiceBinder.current
     val menuState = LocalMenuState.current
     val selection = LocalResultsSelection.current
+    val overrides = rememberTrackOverrides()
 
     when (item) {
         is YouTubeItem.Video -> ResultRow(
-            title = item.title,
-            subtitle = subtitle(item.channelName, item.viewsText, item.publishedText),
+            title = overrides[item.videoId].title(item.title),
+            subtitle = subtitle(overrides[item.videoId].artists(item.channelName), item.viewsText, item.publishedText),
             titleLines = 2,
             leading = {
                 VideoThumbnail(

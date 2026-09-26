@@ -14,6 +14,7 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
+import app.melogold.android.data.lyrics.shows
 import app.melogold.android.models.Lyrics
 import app.melogold.android.transaction
 import app.melogold.android.ui.screens.player.awaitDuration
@@ -21,6 +22,7 @@ import app.melogold.android.ui.screens.player.fetchLyrics
 import app.melogold.domain.lyrics.LyricsFormats
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
 
@@ -42,6 +44,9 @@ class PlayerLyricsState internal constructor(val mediaId: String) {
 
     internal var retryKey by mutableIntStateOf(0)
         private set
+
+    /** The pin already fetched for (`source:ref`): when its provider failed, it is not asked again and again. */
+    internal var triedPin: String? = null
 
     /** Fetches again after [LyricsContent.Failed]. */
     fun retry() {
@@ -69,14 +74,19 @@ fun rememberPlayerLyrics(
     LaunchedEffect(mediaId, fetchEnabled, preferSynced, state.retryKey) {
         runCatching {
             withContext(Dispatchers.IO) {
-                Database
-                    .lyrics(mediaId)
+                combine(Database.lyrics(mediaId), Database.lyricsPinFlow(mediaId)) { row, pin -> row to pin }
                     .distinctUntilChanged()
-                    .collect { row ->
+                    .collect { (row, pin) ->
                         state.raw = row
 
-                        if (fetchEnabled && (row?.fixed == null || row.synced == null)) {
+                        // The account pinned other lyrics than the ones found here (tasks/0013): they take their
+                        // place, unless the user has their own
+                        val pinKey = pin?.let { "${it.source}:${it.ref}" }
+                        val repin = pin != null && row != null && !row.isOwn && !row.shows(pin) && state.triedPin != pinKey
+
+                        if (fetchEnabled && (row?.fixed == null || row.synced == null || repin)) {
                             state.content = LyricsContent.Loading
+                            if (repin) state.triedPin = pinKey
 
                             val item = currentMediaItem
                             val duration = awaitDuration {
@@ -87,7 +97,8 @@ fun rememberPlayerLyrics(
                                 mediaId = mediaId,
                                 metadata = item.mediaMetadata,
                                 durationMs = duration,
-                                current = row
+                                current = row.takeUnless { repin },
+                                pin = pin
                             )
 
                             // A side that was missing and could not be fetched because of the
@@ -120,10 +131,12 @@ fun rememberPlayerLyrics(
                                             songId = mediaId,
                                             fixed = result.fixed.orEmpty(),
                                             synced = result.synced.orEmpty(),
-                                            startTime = result.startTime ?: row?.startTime,
+                                            startTime = if (repin) result.startTime else result.startTime ?: row?.startTime,
                                             fixedSource = result.fixedSource,
                                             syncedSource = result.syncedSource,
-                                            chosen = result.chosen || row?.chosen == true
+                                            chosen = result.chosen || row?.chosen == true,
+                                            fixedRef = result.fixedRef,
+                                            syncedRef = result.syncedRef
                                         )
                                     )
                                 }.onFailure {

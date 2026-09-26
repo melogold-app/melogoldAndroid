@@ -75,6 +75,11 @@ import app.melogold.android.R
 import app.melogold.android.data.downloads.ChunkedDataSource
 import app.melogold.android.data.repo.applyingHidden
 import app.melogold.android.data.repo.pendingMutations
+import app.melogold.android.data.lyrics.LyricsPins
+import app.melogold.android.data.lyrics.PIN_AFTER_MS
+import app.melogold.android.data.overrides.TrackOverrides
+import app.melogold.android.data.overrides.withOverride
+import app.melogold.android.models.TrackOverride
 import app.melogold.android.models.Event
 import app.melogold.android.models.Format
 import app.melogold.android.models.QueuedMediaItem
@@ -374,6 +379,13 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
         maybeResumePlaybackWhenDeviceConnected()
 
+        // An override changed, here or on another device: the queue and the notification show it (tasks/0012)
+        coroutineScope.launch {
+            TrackOverrides.all.collect { overrides ->
+                withContext(Dispatchers.Main) { applyOverrides(overrides) }
+            }
+        }
+
         preferenceUpdaterJob = coroutineScope.launch {
             fun <T : Any> subscribe(
                 prop: SharedPreferencesProperty<T>,
@@ -461,6 +473,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         if (totalPlayTimeMs < 5000) return
 
         val mediaItem = eventTime.timeline[eventTime.windowIndex].mediaItem
+
+        // Played long enough with lyrics found automatically: they are pinned for every device (tasks/0013)
+        if (totalPlayTimeMs >= PIN_AFTER_MS) query { runCatching { LyricsPins.pinPlayed(mediaItem.mediaId) } }
 
         if (!DataPreferences.pausePlaytime) {
             query {
@@ -613,6 +628,20 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
     }
 
+    /** Lays [overrides] over the items of the queue whose names changed; playback goes on. */
+    private fun applyOverrides(overrides: Map<String, TrackOverride>) {
+        var current = false
+        for (index in 0 until player.mediaItemCount) {
+            val item = player.getMediaItemAt(index)
+            val updated = item.withOverride(overrides[item.mediaId])
+            if (updated === item || updated.mediaMetadata == item.mediaMetadata) continue
+            player.replaceMediaItem(index, updated)
+            if (index == player.currentMediaItemIndex) current = true
+        }
+        // The same track, new names: the notification and the media session show them
+        if (current) mediaItemState.update { player.currentMediaItem }
+    }
+
     private fun maybeRestorePlayerQueue() {
         transaction {
             var posted = false
@@ -620,6 +649,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                 val queue = Database.queue()
                 if (queue.isEmpty()) return@transaction
                 Database.clearQueue()
+                // The overrides as they are now: some may have changed since the queue was saved
+                val overrides = queue.associate { it.mediaItem.mediaId to Database.trackOverride(it.mediaItem.mediaId) }
 
                 val index = queue
                     .indexOfFirst { it.position != null }
@@ -636,6 +667,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                                         .setUri(item.mediaItem.mediaId)
                                         .setCustomCacheKey(item.mediaItem.mediaId)
                                         .build()
+                                        .withOverride(overrides[item.mediaItem.mediaId])
                                 },
                                 /* startIndex = */
                                 index,

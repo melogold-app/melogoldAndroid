@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.library.collections
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -279,10 +282,11 @@ fun DownloadsScreen() = RouteHandler {
                     }
 
                     itemsIndexed(items = done, key = { _, track -> track.song.id }) { index, track ->
+                        val override = rememberTrackOverrides()[track.song.id]
                         TrackRow(
-                            title = track.song.title,
+                            title = override.title(track.song.title),
                             videoId = track.song.id,
-                            subtitle = track.song.artistsText,
+                            subtitle = override.artists(track.song.artistsText),
                             artworkUrl = track.song.thumbnailUrl,
                             onClick = { play(done, index) },
                             onMenu = { showMenu(track) },
@@ -341,10 +345,11 @@ private fun LazyListScope.cachedSection(
     }
 
     itemsIndexed(items = tracks, key = { _, (song, _) -> "cached_${song.id}" }) { index, (song, _) ->
+        val override = rememberTrackOverrides()[song.id]
         TrackRow(
-            title = song.title,
+            title = override.title(song.title),
             videoId = song.id,
-            subtitle = song.artistsText,
+            subtitle = override.artists(song.artistsText),
             artworkUrl = song.thumbnailUrl,
             onClick = { onPlay(index) },
             onMenu = { onMenu(song) },

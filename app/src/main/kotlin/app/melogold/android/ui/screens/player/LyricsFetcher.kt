@@ -4,14 +4,17 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaMetadata
 import app.melogold.android.Dependencies
 import app.melogold.android.models.Lyrics
+import app.melogold.android.models.LyricsPin
 import app.melogold.android.models.LyricsSource
+import app.melogold.android.models.serverName
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.core.ui.utils.songBundle
 import app.melogold.domain.lyrics.TitleCleaner
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.bodies.NextBody
-import app.melogold.providers.innertube.requests.lyrics
-import app.melogold.providers.innertube.requests.timedLyrics
+import app.melogold.providers.innertube.requests.lyricsBrowseIdOf
+import app.melogold.providers.innertube.requests.lyricsOf
+import app.melogold.providers.innertube.requests.timedLyricsOf
 import app.melogold.providers.kugou.KuGou
 import app.melogold.providers.lrclib.LrcLib
 import java.io.IOException
@@ -31,6 +34,8 @@ import kotlinx.coroutines.withContext
  * @param fixedSource where [fixed] came from
  * @param syncedSource where [synced] came from
  * @param startTime where the synced lyrics start, when the user's own version from the server says so
+ * @param fixedRef the id of [fixed] at its provider (tasks/0013)
+ * @param syncedRef the id of [synced] at its provider
  */
 data class LyricsFetchResult(
     val fixed: String?,
@@ -40,8 +45,13 @@ data class LyricsFetchResult(
     val syncedSource: LyricsSource? = null,
     val startTime: Long? = null,
     /** Taken from the user's own version on the server: chosen, it stays theirs (tasks/0009). */
-    val chosen: Boolean = false
+    val chosen: Boolean = false,
+    val fixedRef: String? = null,
+    val syncedRef: String? = null
 )
+
+/** The lyrics a pin refers to, fetched from their provider (tasks/0013). */
+private class PinnedLyrics(val source: LyricsSource, val ref: String, val synced: String?, val plain: String?)
 
 /**
  * Waits until [provider] reports a known duration (the player reports [C.TIME_UNSET] while the
@@ -82,14 +92,18 @@ private fun Throwable.isNetworkError(): Boolean {
  * The Melogold server comes first and last (API §4.10): the user's own version synced from another device wins over
  * every provider, and when no provider has synced lyrics, the server's own or shared version fills the gap.
  *
+ * Pinned lyrics ([pin], tasks/0013) come right after the user's own: the account kept them, so every device shows
+ * them instead of searching its own. When their provider does not give them, the search goes on as usual.
+ *
  * Sides already present in [current] are not fetched again.
  */
-@Suppress("CyclomaticComplexMethod")
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 suspend fun fetchLyrics(
     mediaId: String,
     metadata: MediaMetadata,
     durationMs: Long,
-    current: Lyrics?
+    current: Lyrics?,
+    pin: LyricsPin? = null
 ): LyricsFetchResult {
     val rawArtist = metadata.artist?.toString().orEmpty()
     val rawTitle = metadata.title?.toString().orEmpty().let {
@@ -98,10 +112,24 @@ suspend fun fetchLyrics(
             .trim()
         else it
     }
-    val isSong = metadata.albumTitle != null || metadata.extras?.songBundle?.albumId != null
+    // The user's own names are asked first (fan uploads are found by them), then YouTube's (tasks/0012)
+    val bundle = metadata.extras?.songBundle
+    val overridden = bundle?.overridden == true
+    val youTubeAlbum = if (overridden) bundle.originalAlbum else metadata.albumTitle?.toString()
+    val isSong = youTubeAlbum != null || bundle?.albumId != null
     val clean = TitleCleaner.clean(title = rawTitle, channel = rawArtist.ifBlank { null }, videoType = if (isSong) "song" else null)
     val artist = clean.artist ?: rawArtist
     val title = clean.title.ifBlank { rawTitle }
+    val youTubeName = if (overridden) {
+        val youTubeTitle = bundle.originalTitle.orEmpty()
+        val youTubeArtist = bundle.originalArtist.orEmpty()
+        val cleaned = TitleCleaner.clean(
+            title = youTubeTitle,
+            channel = youTubeArtist.ifBlank { null },
+            videoType = if (isSong) "song" else null
+        )
+        ((cleaned.artist ?: youTubeArtist) to cleaned.title.ifBlank { youTubeTitle }).takeIf { it != (artist to title) }
+    } else null
     val duration = durationMs.milliseconds
     val isLocal = mediaId.startsWith(LOCAL_KEY_PREFIX)
     val sync = Dependencies.application.container.sync
@@ -115,7 +143,9 @@ suspend fun fetchLyrics(
         synced = current?.synced ?: own.synced,
         startTime = if (ownSynced) own.startTime else current?.startTime,
         fixedSource = if (current?.fixed != null) current.fixedSource else own.fixedSource,
-        syncedSource = if (current?.synced != null) current.syncedSource else own.syncedSource
+        syncedSource = if (current?.synced != null) current.syncedSource else own.syncedSource,
+        fixedRef = current?.fixedRef.takeIf { current?.fixed != null },
+        syncedRef = current?.syncedRef.takeIf { current?.synced != null }
     )
 
     var anyFailure = false
@@ -125,37 +155,88 @@ suspend fun fetchLyrics(
         return this?.getOrNull()
     }
 
+    // What the account pinned, unless the user's own lyrics are here (tasks/0013)
+    val pinned = pin?.takeIf { !isLocal && known?.synced == null }?.let { pinnedLyrics(it) { result -> result.track() } }
+
+    // The browse id of YouTube Music's lyrics of this video: asked once, for both sides
+    var browseId: String? = null
+    var browseIdAsked = false
+    suspend fun youTubeMusicBrowseId(): String? {
+        if (isLocal) return null
+        if (!browseIdAsked) {
+            browseIdAsked = true
+            browseId = Innertube.lyricsBrowseIdOf(NextBody(videoId = mediaId)).track()
+        }
+        return browseId
+    }
+
+    /** LrcLib's lyrics by a name, with their record id. */
+    suspend fun lrcLibFound(artist: String, title: String, synced: Boolean): Pair<String, String?>? =
+        LrcLib.bestLyrics(artist = artist, title = title, duration = duration, synced = synced).track()
+            ?.let { it.text to it.id?.toString() }
+
     var fixedSource = known?.fixedSource
+    var fixedRef = known?.fixedRef
     val fixed = known?.fixed
-        ?: (if (isLocal) null else Innertube.lyrics(NextBody(videoId = mediaId)).track())
-            ?.also { fixedSource = LyricsSource.YouTubeMusic }
-        ?: LrcLib.bestLyrics(artist = artist, title = title, duration = duration, synced = false)
-            ?.map { it?.text }.track()?.also { fixedSource = LyricsSource.LrcLib }
+        ?: pinned?.plain?.also {
+            fixedSource = pinned.source
+            fixedRef = pinned.ref
+        }
+        ?: youTubeMusicBrowseId()?.let { id ->
+            Innertube.lyricsOf(id).track()?.also {
+                fixedSource = LyricsSource.YouTubeMusic
+                fixedRef = id
+            }
+        }
+        ?: (lrcLibFound(artist, title, synced = false)
+            ?: youTubeName?.let { (youTubeArtist, youTubeTitle) -> lrcLibFound(youTubeArtist, youTubeTitle, synced = false) })
+            ?.let { (text, ref) ->
+                fixedSource = LyricsSource.LrcLib
+                fixedRef = ref
+                text
+            }
 
     // Where the synced lyrics found below came from
     var syncedFrom: LyricsSource? = null
+    var syncedFromRef: String? = null
 
-    suspend fun youTubeMusic() = if (isLocal) null
-    else Innertube.timedLyrics(NextBody(videoId = mediaId)).track()?.also { syncedFrom = LyricsSource.YouTubeMusic }
+    suspend fun youTubeMusic(): String? = youTubeMusicBrowseId()?.let { id ->
+        Innertube.timedLyricsOf(id).track()?.also {
+            syncedFrom = LyricsSource.YouTubeMusic
+            syncedFromRef = id
+        }
+    }
 
-    suspend fun lrcLib() = LrcLib.bestLyrics(artist = artist, title = title, duration = duration)
-        ?.map { it?.text }.track()
-        // The name as the track has it, when cleaning changed it
-        ?: (if (artist != rawArtist || title != rawTitle) {
-            LrcLib.bestLyrics(artist = rawArtist, title = rawTitle, duration = duration)?.map { it?.text }.track()
-        } else null)
+    suspend fun lrcLib(): String? = (
+        lrcLibFound(artist, title, synced = true)
+            // The name as the track has it, when cleaning changed it
+            ?: (if (artist != rawArtist || title != rawTitle) lrcLibFound(rawArtist, rawTitle, synced = true) else null)
+            // What YouTube calls the track, under the user's own names
+            ?: youTubeName?.let { (youTubeArtist, youTubeTitle) -> lrcLibFound(youTubeArtist, youTubeTitle, synced = true) }
+        )?.let { (text, ref) ->
+        syncedFrom = LyricsSource.LrcLib
+        syncedFromRef = ref
+        text
+    }
 
     var syncedSource = known?.syncedSource
-    val synced = known?.synced ?: run {
-        val found = if (isSong) {
-            youTubeMusic() ?: lrcLib()?.also { syncedFrom = LyricsSource.LrcLib }
-        } else {
-            lrcLib()?.also { syncedFrom = LyricsSource.LrcLib } ?: youTubeMusic()
+    var syncedRef = known?.syncedRef
+    val synced = known?.synced
+        ?: pinned?.synced?.also {
+            syncedSource = pinned.source
+            syncedRef = pinned.ref
         }
-        found?.also { syncedSource = syncedFrom }
-            ?: KuGou.lyrics(artist = artist, title = title, duration = durationMs / 1000)
-                ?.map { it?.value }.track()?.also { syncedSource = LyricsSource.KuGou }
-    }
+        ?: run {
+            val found = if (isSong) youTubeMusic() ?: lrcLib() else lrcLib() ?: youTubeMusic()
+            found?.also {
+                syncedSource = syncedFrom
+                syncedRef = syncedFromRef
+            } ?: KuGou.lyricsWithRef(artist = artist, title = title, duration = durationMs / 1000).track()?.let { kugou ->
+                syncedSource = LyricsSource.KuGou
+                syncedRef = kugou.ref
+                kugou.lyrics.value
+            }
+        }
 
     // No provider has synced lyrics: the user's own on the server, else what other users share
     if (synced == null && !isLocal) sync.serverLyrics(mediaId)?.let { server ->
@@ -180,7 +261,13 @@ suspend fun fetchLyrics(
         anyFailure = anyFailure,
         fixedSource = fixedSource,
         syncedSource = syncedSource,
-        startTime = if (ownSynced) own?.startTime else null,
+        startTime = when {
+            ownSynced -> own?.startTime
+            pinned?.synced != null && synced == pinned.synced -> pin.startTimeMs
+            else -> null
+        },
+        fixedRef = fixedRef.takeIf { fixed != null },
+        syncedRef = syncedRef.takeIf { synced != null },
         // A side taken from the user's own version on the server: the row stays their chosen lyrics
         chosen = current?.chosen == true ||
             (own != null && ((fixed != null && fixed == own.fixed) || (synced != null && synced == own.synced)))
@@ -194,4 +281,37 @@ private fun String?.toLyricsSource() = when (this) {
     "lrclib" -> LyricsSource.LrcLib
     "kugou" -> LyricsSource.KuGou
     else -> null
+}
+
+/**
+ * The lyrics [pin] refers to, from its provider (tasks/0013); null when the provider does not answer or has nothing
+ * there. [track] notes a network failure.
+ */
+private suspend fun pinnedLyrics(pin: LyricsPin, track: (Result<*>?) -> Any?): PinnedLyrics? {
+    @Suppress("UNCHECKED_CAST")
+    fun <T> Result<T>?.value(): T? = track(this) as T?
+
+    return when (pin.source) {
+        LyricsSource.LrcLib.serverName -> pin.ref.toIntOrNull()?.let { LrcLib.byId(it).value() }?.let { record ->
+            PinnedLyrics(
+                source = LyricsSource.LrcLib,
+                ref = pin.ref,
+                synced = record.syncedLyrics?.takeIf { it.isNotBlank() },
+                plain = record.plainLyrics?.takeIf { it.isNotBlank() }
+            )
+        }
+
+        LyricsSource.YouTubeMusic.serverName -> {
+            val synced = Innertube.timedLyricsOf(pin.ref).value()
+            val plain = Innertube.lyricsOf(pin.ref).value()
+            if (synced == null && plain == null) null
+            else PinnedLyrics(source = LyricsSource.YouTubeMusic, ref = pin.ref, synced = synced, plain = plain)
+        }
+
+        LyricsSource.KuGou.serverName -> KuGou.lyricsByRef(pin.ref).value()?.let {
+            PinnedLyrics(source = LyricsSource.KuGou, ref = pin.ref, synced = it.value, plain = null)
+        }
+
+        else -> null
+    }?.takeIf { it.synced != null || it.plain != null }
 }

@@ -15,7 +15,11 @@ import app.melogold.android.models.Song
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.SyncState
 import app.melogold.android.models.SyncedBookmark
+import app.melogold.android.models.LyricsPin
 import app.melogold.android.models.SyncedLike
+import app.melogold.android.models.SyncedLyricsPin
+import app.melogold.android.models.SyncedOverride
+import app.melogold.android.models.TrackOverride
 import app.melogold.android.models.SyncedPlaylist
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.sync.api.ApiException
@@ -82,6 +86,11 @@ private const val BASELINE_MAX = 500
 private const val VIDEO_ID_LENGTH = 11
 private const val MAX_PLAY_TIME_MS = 86_400_000L
 
+/** Op kinds this client sends only to a server that lists them in `features.sync.kinds` (API §4.2). */
+private const val KIND_OVERRIDE = "track.override.set"
+private const val KIND_PIN = "lyrics.pin.set"
+private const val KINDS_TTL_MS = 60 * 60_000L
+
 private const val KEY_BINDING = "binding"
 private const val KEY_CURSOR = "cursor"
 private const val KEY_MERGE = "needsMerge"
@@ -137,6 +146,9 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
 
     /** The cursor the ops being built were computed against (their `base`); set by [buildOps]. */
     private var base: String? = null
+
+    /** The op kinds of the server: its url, the kinds, when they were asked. */
+    private var kinds: Triple<String, Set<String>, Long>? = null
 
     val status: StateFlow<SyncStatus> = mutableStatus.asStateFlow()
 
@@ -194,6 +206,8 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     private suspend fun followLocalChanges() {
         merge(
             Database.libraryFingerprint().distinctUntilChanged().drop(1).map { },
+            Database.trackOverrides().distinctUntilChanged().drop(1).map { },
+            Database.lyricsPins().distinctUntilChanged().drop(1).map { },
             Database.ownLyrics().distinctUntilChanged().drop(1).map { },
             Database.unsentEventCount().distinctUntilChanged().drop(1).filter { it > 0 }.map { },
             Database.historyForgetCount().distinctUntilChanged().drop(1).filter { it > 0 }.map { }
@@ -233,6 +247,8 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
                 Database.clearSyncedPlaylists()
                 Database.clearSyncedBookmarks()
                 Database.clearSyncedLyrics()
+                Database.clearSyncedOverrides()
+                Database.clearSyncedLyricsPins()
                 Database.markOwnEventsUnsent()
                 Database.deleteOtherDevicesEvents()
                 Database.clearHistoryForgets()
@@ -249,8 +265,22 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         lyrics.sync(force)
     }
 
+    /** The op kinds of the server of the account (`features.sync.kinds`); asked at most once an hour. */
+    private suspend fun serverKinds(): Set<String> {
+        val url = account.session?.serverUrl ?: return emptySet()
+        kinds?.let { (cachedUrl, value, at) ->
+            if (cachedUrl == url && System.currentTimeMillis() - at < KINDS_TTL_MS) return value
+        }
+        val value = runCatching { account.api(url).serverInfo().features.sync?.kinds.orEmpty().toSet() }
+            .onFailure { if (it is CancellationException) throw it }
+            .getOrElse { return kinds?.second.orEmpty() }
+        kinds = Triple(url, value, System.currentTimeMillis())
+        return value
+    }
+
     private suspend fun syncLibrary(force: Boolean) {
-        var ops = withContext(Dispatchers.IO) { Database.internal.runInTransaction<List<Op>> { buildOps() } }
+        val kinds = serverKinds()
+        var ops = withContext(Dispatchers.IO) { Database.internal.runInTransaction<List<Op>> { buildOps(kinds) } }
         if (ops.isEmpty() && !force) return
         val baseline = ops.any { it.kind == "play.baseline" }
 
@@ -316,7 +346,7 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     }
 
     /** What changed here since the last sync, as ops. Runs in a transaction: new playlists get their `syncId` here. */
-    private fun buildOps(): List<Op> {
+    private fun buildOps(kinds: Set<String>): List<Op> {
         val ops = mutableListOf<Op>()
         val now = System.currentTimeMillis()
         base = Database.syncState(KEY_CURSOR)?.takeIf { it.isNotEmpty() }
@@ -410,8 +440,41 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
             }
         }
 
+        if (KIND_OVERRIDE in kinds) ops += overrideOps(now)
+        if (KIND_PIN in kinds) ops += pinOps(now)
+
         ops += historyOps(now)
         return ops
+    }
+
+    /** The track overrides changed here (tasks/0012): each one as a whole; a removed one with no fields. */
+    private fun overrideOps(now: Long): List<Op> {
+        val (changed, removed) = overrideChanges(Database.trackOverridesNow(), Database.syncedOverrides())
+        return changed.map { override ->
+            op(KIND_OVERRIDE, "ovr:${override.videoId}", at = override.updatedAt) {
+                put("videoId", override.videoId)
+                override.title?.let { put("title", it) }
+                override.artistsText?.let { put("artistsText", it) }
+                override.albumTitle?.let { put("albumTitle", it) }
+            }
+        } + removed.map { videoId ->
+            op(KIND_OVERRIDE, "ovr:$videoId", at = now) { put("videoId", videoId) }
+        }
+    }
+
+    /** The lyrics pins made here (tasks/0013); a removed one without a reference. */
+    private fun pinOps(now: Long): List<Op> {
+        val (changed, removed) = pinChanges(Database.lyricsPinsNow(), Database.syncedLyricsPins())
+        return changed.map { pin ->
+            op(KIND_PIN, "lpin:${pin.videoId}", at = pin.updatedAt) {
+                put("videoId", pin.videoId)
+                put("source", pin.source)
+                put("ref", pin.ref)
+                pin.startTimeMs?.let { put("startTimeMs", it) }
+            }
+        } + removed.map { videoId ->
+            op(KIND_PIN, "lpin:$videoId", at = now) { put("videoId", videoId) }
+        }
     }
 
     /** The history (API §4.8): the time played so far once, the plays not sent yet, then forget and clear. */
@@ -657,6 +720,30 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
             else Database.deleteSyncedBookmark(row.type, row.browseId)
         }
 
+        response.overrides.forEach { row ->
+            if (row.deleted) {
+                Database.deleteTrackOverride(row.videoId)
+                Database.deleteSyncedOverride(row.videoId)
+            } else {
+                Database.upsert(
+                    TrackOverride(row.videoId, row.title, row.artistsText, row.albumTitle, row.updatedAt.epochMs())
+                )
+                Database.upsert(SyncedOverride(row.videoId, row.title, row.artistsText, row.albumTitle))
+            }
+        }
+
+        response.lyricsPins.forEach { row ->
+            val source = row.source
+            val ref = row.ref
+            if (row.deleted || source == null || ref == null) {
+                Database.deleteLyricsPin(row.videoId)
+                Database.deleteSyncedLyricsPin(row.videoId)
+            } else {
+                Database.upsert(LyricsPin(row.videoId, source, ref, row.startTimeMs, row.updatedAt.epochMs()))
+                Database.upsert(SyncedLyricsPin(row.videoId, source, ref, row.startTimeMs))
+            }
+        }
+
         // History: plays of every device (this one's come back and are already here), totals, forgets
         response.plays.forEach { row ->
             if (Database.eventExists(row.eventId)) return@forEach
@@ -774,3 +861,32 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
 
 /** A YouTube video id (API §1.6 `VideoId`): local files and other keys are not. */
 private val String.isVideoId get() = length == VIDEO_ID_LENGTH && !startsWith(LOCAL_KEY_PREFIX)
+
+/**
+ * The track overrides to send (tasks/0012): those new or changed since the server's snapshot, and the video ids of
+ * those removed here. Local files (not 11 characters) stay on the device.
+ */
+internal fun overrideChanges(
+    local: List<TrackOverride>,
+    synced: List<SyncedOverride>
+): Pair<List<TrackOverride>, List<String>> {
+    val mine = local.filter { it.videoId.length == VIDEO_ID_LENGTH }.associateBy { it.videoId }
+    val known = synced.associateBy { it.videoId }
+    val changed = mine.values.filter { override ->
+        val server = known[override.videoId]
+        server == null || server.title != override.title || server.artistsText != override.artistsText ||
+            server.albumTitle != override.albumTitle
+    }
+    return changed to known.keys.filter { it !in mine }
+}
+
+/** The lyrics pins to send (tasks/0013), as [overrideChanges]. */
+internal fun pinChanges(local: List<LyricsPin>, synced: List<SyncedLyricsPin>): Pair<List<LyricsPin>, List<String>> {
+    val mine = local.filter { it.videoId.length == VIDEO_ID_LENGTH }.associateBy { it.videoId }
+    val known = synced.associateBy { it.videoId }
+    val changed = mine.values.filter { pin ->
+        val server = known[pin.videoId]
+        server == null || server.source != pin.source || server.ref != pin.ref || server.startTimeMs != pin.startTimeMs
+    }
+    return changed to known.keys.filter { it !in mine }
+}

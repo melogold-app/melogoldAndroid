@@ -1,6 +1,6 @@
 # Своё название, исполнитель и альбом трека
 
-Статус: открыто — ждёт сервер (`melogoldServer/tasks/0001-track-overrides.md`: контракт ещё не утверждён)
+Статус: сделано
 
 Общая часть (что нужно пользователю, как должно быть, синк, тексты) — `melogoldWindows/tasks/0011-track-overrides.md`.
 Те же задания: `melogoldiOSmacOS/tasks/0014-track-overrides.md`, `melogoldLinux/tasks/0005-track-overrides.md`.

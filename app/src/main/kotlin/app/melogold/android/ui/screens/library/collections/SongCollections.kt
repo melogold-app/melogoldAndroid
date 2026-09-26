@@ -1,5 +1,8 @@
 package app.melogold.android.ui.screens.library.collections
 
+import app.melogold.android.ui.kit.rememberTrackOverrides
+import app.melogold.android.data.overrides.artists
+import app.melogold.android.data.overrides.title
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -300,12 +303,14 @@ private fun SongCollection(
                 }
 
                 itemsIndexed(items = shown, key = { _, song -> song.id }) { index, song ->
+                    val override = rememberTrackOverrides()[song.id]
                     TrackRow(
-                        title = song.title,
+                        title = override.title(song.title),
                         videoId = song.id,
                         subtitle = if (showPlayTime && song.totalPlayTimeMs > 0) {
-                            listOfNotNull(song.artistsText, formatListeningTime(song.totalPlayTimeMs)).joinToString(" · ")
-                        } else song.artistsText,
+                            listOfNotNull(override.artists(song.artistsText), formatListeningTime(song.totalPlayTimeMs))
+                                .joinToString(" · ")
+                        } else override.artists(song.artistsText),
                         artworkUrl = song.thumbnailUrl,
                         onClick = { play(shown, index) },
                         onMenu = {
