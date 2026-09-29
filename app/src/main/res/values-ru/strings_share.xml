@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ссылки: поделиться треком, альбомом, плейлистом; открыть ссылки других сервисов (tasks/0017) -->
+<resources>
+    <string name="share_youtube_first_50">Ссылка откроет первые 50 треков на YouTube</string>
+    <string name="share_creating">Делаем ссылку…</string>
+    <string name="share_no_tracks">Делиться нечем: треки плейлиста — файлы на этом устройстве</string>
+    <string name="share_limit_reached">Слишком много ссылок. Удалите старые в Аккаунт › Мои ссылки</string>
+    <string name="share_copy_link">Скопировать ссылку</string>
+    <string name="share_link_copied">Ссылка скопирована</string>
+    <string name="share_delete_link">Удалить ссылку</string>
+    <string name="share_link_deleted">Ссылка удалена</string>
+    <string name="share_delete_title">Удалить ссылку?</string>
+    <string name="share_delete_text">Те, у кого она есть, больше не смогут открыть «%1$s». Плейлист останется в вашей библиотеке</string>
+    <string name="share_delete_failed">Не удалось удалить ссылку</string>
+
+    <string name="my_links">Мои ссылки</string>
+    <string name="my_links_text">Плейлисты, которыми вы поделились. Ссылка работает, пока вы её не удалите</string>
+    <string name="my_links_empty">Вы ещё не делились плейлистами. Выберите «Поделиться» в меню своего плейлиста</string>
+    <string name="my_links_row">%1$s · %2$s</string>
+    <string name="my_links_error">Не удалось загрузить ссылки</string>
+
+    <string name="shared_playlist_title">Плейлист по ссылке</string>
+    <string name="shared_playlist_save">Сохранить в Библиотеку</string>
+    <string name="shared_playlist_saved">Сохранено в Библиотеку</string>
+    <string name="shared_playlist_open">Открыть</string>
+    <string name="shared_playlist_gone">Ссылка удалена или неверна</string>
+    <string name="shared_playlist_offline">Нет связи с сервером ссылки</string>
+    <string name="shared_playlist_save_failed">Не удалось сохранить плейлист</string>
+    <string name="shared_playlist_foreign_server">На сервере %1$s</string>
+</resources>

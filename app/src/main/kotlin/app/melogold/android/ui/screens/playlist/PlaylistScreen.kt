@@ -35,6 +35,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.domain.share.ShareLinks
 import app.melogold.android.models.YtLinkMode
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.menu.CollectionMenu
@@ -128,7 +129,7 @@ private fun PlaylistContent(
     val openLabel = stringResource(R.string.playlist_open)
     val incompleteMessage = stringResource(R.string.playlist_incomplete)
     val failedMessage = stringResource(R.string.playlist_save_failed)
-    val shareUrl = "https://music.youtube.com/playlist?list=${browseId.removePrefix("VL")}"
+    val shareUrl = ShareLinks.playlist(browseId)
 
     fun save(details: PlaylistDetails, mode: YtLinkMode) {
         snackbar.show(savingMessage)
@@ -171,7 +172,7 @@ private fun PlaylistContent(
                     )
                 )
             },
-            shareUrl = details.page.url ?: shareUrl
+            shareUrl = shareUrl
         )
     }
 

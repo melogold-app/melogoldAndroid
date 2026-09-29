@@ -1,7 +1,6 @@
 package app.melogold.android.ui.components.menu
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,6 +12,8 @@ import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.models.Info
 import app.melogold.android.ui.components.LocalMenuState
+import app.melogold.android.ui.share.shareText
+import app.melogold.domain.share.ShareLinks
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.utils.addNext
 import app.melogold.android.utils.enqueue
@@ -94,18 +95,9 @@ fun CollectionMenu(
         MenuEntry(
             icon = R.drawable.ms_share,
             text = stringResource(R.string.menu_share),
-            onClick = entry { context.shareLink(url) }
+            onClick = entry { context.shareText(ShareLinks.message(title, subtitle, url)) }
         )
     }
 
     content()
-}
-
-private fun Context.shareLink(url: String) {
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, url)
-    }
-
-    startActivity(Intent.createChooser(intent, null))
 }

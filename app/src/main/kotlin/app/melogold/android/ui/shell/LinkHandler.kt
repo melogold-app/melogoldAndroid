@@ -5,12 +5,14 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.staticCompositionLocalOf
+import app.melogold.android.Dependencies
 import app.melogold.android.R
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.screens.albumRoute
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.playlistRoute
 import app.melogold.android.ui.screens.searchResultRoute
+import app.melogold.android.ui.screens.sharedPlaylistRoute
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.playWithRadio
 import app.melogold.android.utils.toast
@@ -20,6 +22,10 @@ import app.melogold.providers.innertube.links.YouTubeLinkParser
 import app.melogold.providers.innertube.models.bodies.BrowseBody
 import app.melogold.providers.innertube.requests.playlistPage
 import app.melogold.providers.innertube.requests.song
+import app.melogold.providers.songlink.ExternalLinkResolver
+import app.melogold.providers.songlink.ExternalResolution
+import app.melogold.providers.songlink.MusicLinkKind
+import app.melogold.providers.songlink.MusicServiceLink
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,13 +40,17 @@ private const val TAG = "LinkHandler"
  *
  * - a search switches to Search and shows the results;
  * - albums, playlists and channels open in the stack of the current section;
- * - a video plays as a single track with its radio.
+ * - a video plays as a single track with its radio;
+ * - a playlist someone shared with a link of Melogold opens as "Playlist by link";
+ * - a link of Spotify, Apple Music, Yandex Music, Deezer or Tidal finds the track or album on YouTube Music
+ *   ([classifyLink], tasks/0017).
  */
 @Stable
 class LinkHandler internal constructor(
     private val context: Context,
     private val nav: MainNavState,
-    private val binder: suspend () -> PlayerService.Binder?
+    private val binder: suspend () -> PlayerService.Binder?,
+    private val resolver: ExternalLinkResolver = Dependencies.application.container.externalLinks
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -49,14 +59,26 @@ class LinkHandler internal constructor(
      * it can be opened.
      */
     fun open(text: String): Boolean {
-        val target = YouTubeLinkParser.parse(text)
-        if (target is LinkTarget.Unsupported) {
+        val link = classifyLink(text)
+        if (link is AppLink.YouTube && link.target is LinkTarget.Unsupported) {
             context.toast(context.getString(R.string.error_url, text.trim()))
             return false
         }
 
-        open(target)
+        open(link)
         return true
+    }
+
+    /** Opens what [classifyLink] made of a text: YouTube, a playlist someone shared, a link of another service. */
+    fun open(link: AppLink) {
+        when (link) {
+            is AppLink.YouTube -> open(link.target)
+            is AppLink.SharedPlaylist -> scope.launch {
+                nav.navigate { sharedPlaylistRoute.ensureGlobal(link.ref.serverUrl, link.ref.shareId) }
+            }
+
+            is AppLink.OtherService -> scope.launch { openOtherService(link.link) }
+        }
     }
 
     fun open(uri: Uri) {
@@ -83,6 +105,28 @@ class LinkHandler internal constructor(
                 is LinkTarget.External -> showError(R.string.link_import_later)
                 is LinkTarget.Unsupported -> showError(R.string.link_unsupported)
             }
+        }
+    }
+
+    /**
+     * A link of Spotify, Apple Music, Yandex Music, Deezer or Tidal (tasks/0017): the same track or album on YouTube Music
+     * when song.link finds it, else a search for its name and artist. Playlists come with the import, later.
+     */
+    private suspend fun openOtherService(link: MusicServiceLink) {
+        if (link.kind == MusicLinkKind.Playlist) {
+            showError(R.string.link_import_later)
+            return
+        }
+
+        withContext(Dispatchers.Main) { context.toast(context.getString(R.string.link_finding)) }
+        when (val found = resolver.resolve(link)) {
+            is ExternalResolution.OnYouTube -> {
+                val target = YouTubeLinkParser.parse(found.url)
+                if (target is LinkTarget.Unsupported) showError(R.string.link_unsupported) else open(target)
+            }
+
+            is ExternalResolution.Search -> open(LinkTarget.Search(found.query))
+            ExternalResolution.NotFound -> showError(R.string.link_unsupported)
         }
     }
 

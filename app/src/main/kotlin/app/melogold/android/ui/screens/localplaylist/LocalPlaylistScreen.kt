@@ -1,10 +1,17 @@
 package app.melogold.android.ui.screens.localplaylist
 
 import app.melogold.android.ui.kit.rememberTrackOverrides
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.produceState
+import app.melogold.domain.share.ShareLinks
+import app.melogold.android.ui.share.shareText
+import app.melogold.android.sync.toShareInput
+import app.melogold.android.sync.PlaylistShare
+import app.melogold.android.LocalAppContainer
 import app.melogold.android.data.overrides.artists
 import app.melogold.android.data.overrides.title
 import android.content.Context
-import android.content.Intent
 import android.text.format.DateUtils
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -135,6 +142,14 @@ private fun LocalPlaylistContent(
     val haptic = LocalHapticFeedback.current
     val (playingId, _) = playingSong(binder)
 
+    val container = LocalAppContainer.current
+    val shares = container.shares
+    val scope = rememberCoroutineScope()
+    val overrides = rememberTrackOverrides()
+    val accountState by container.account.state.collectAsState()
+    // An own playlist is shared as a snapshot on the server when there is one to make it, else as a list on YouTube
+    val sharesOnServer by produceState(initialValue = false, accountState) { value = shares.available() }
+
     val ownOrder by model.songs.collectAsState()
     val byDateAdded by model.songsByDateAdded.collectAsState()
     val covers by model.covers.collectAsState()
@@ -149,6 +164,9 @@ private fun LocalPlaylistContent(
     var renaming by rememberSaveable { mutableStateOf(false) }
 
     val showRefreshResult = refreshMessages()
+    val creatingLinkMessage = stringResource(R.string.share_creating)
+    val noTracksToShareMessage = stringResource(R.string.share_no_tracks)
+    val shareLimitMessage = stringResource(R.string.share_limit_reached)
     val removedMessage = stringResource(R.string.local_playlist_removed_track)
     val deletedMessage = stringResource(R.string.local_playlist_deleted)
 
@@ -236,10 +254,26 @@ private fun LocalPlaylistContent(
                     text = stringResource(R.string.menu_share),
                     onClick = {
                         menuState.hide()
-                        context.sharePlaylist(playlist.browseId)
+                        context.shareText(ShareLinks.message(playlist.name, null, ShareLinks.playlist(playlist.browseId)))
                     }
                 )
-            }
+            } else MenuEntry(
+                icon = R.drawable.ms_share,
+                text = stringResource(R.string.menu_share),
+                secondaryText = if (sharesOnServer) null else stringResource(R.string.share_youtube_first_50),
+                onClick = {
+                    menuState.hide()
+                    snackbar.show(creatingLinkMessage)
+                    scope.launch {
+                        when (val shared = shares.sharePlaylist(playlist.name, songs.orEmpty().map { it.toShareInput(overrides[it.id]) })) {
+                            is PlaylistShare.OnServer -> context.shareText(ShareLinks.message(playlist.name, null, shared.url))
+                            is PlaylistShare.OnYouTube -> context.shareText(ShareLinks.message(playlist.name, null, shared.url))
+                            PlaylistShare.NoTracks -> snackbar.show(noTracksToShareMessage)
+                            is PlaylistShare.LimitReached -> snackbar.show(shareLimitMessage)
+                        }
+                    }
+                }
+            )
             MenuDivider()
             MenuEntry(
                 icon = R.drawable.ms_delete,
@@ -583,11 +617,3 @@ private fun List<Song>.filteredBy(filter: String): List<Song> {
     return filter { it.title.contains(query, ignoreCase = true) || it.artistsText.orEmpty().contains(query, ignoreCase = true) }
 }
 
-private fun Context.sharePlaylist(browseId: String) {
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "https://music.youtube.com/playlist?list=${browseId.removePrefix("VL")}")
-    }
-
-    startActivity(Intent.createChooser(intent, null))
-}

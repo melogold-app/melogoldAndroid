@@ -99,7 +99,10 @@ import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.playWithRadio
 import app.melogold.compose.routing.RouteHandlerScope
 import app.melogold.providers.innertube.links.LinkTarget
-import app.melogold.providers.innertube.links.YouTubeLinkParser
+import app.melogold.android.ui.shell.AppLink
+import app.melogold.android.ui.shell.classifyLink
+import app.melogold.providers.songlink.MusicLinkKind
+import app.melogold.providers.songlink.MusicService
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
@@ -183,13 +186,17 @@ fun RouteHandlerScope.SearchRoot() {
             return@launch
         }
 
-        when (val target = YouTubeLinkParser.parse(text)) {
-            is LinkTarget.Search -> {
-                textFieldState.setTextAndPlaceCursorAtEnd(target.query)
-                searchBarState.animateToExpanded()
+        when (val link = classifyLink(text)) {
+            is AppLink.YouTube -> when (val target = link.target) {
+                is LinkTarget.Search -> {
+                    textFieldState.setTextAndPlaceCursorAtEnd(target.query)
+                    searchBarState.animateToExpanded()
+                }
+
+                else -> links.open(target)
             }
 
-            else -> links.open(target)
+            else -> links.open(link)
         }
     }
 
@@ -242,9 +249,9 @@ fun RouteHandlerScope.SearchRoot() {
             text = textFieldState.text.toString(),
             onSubmit = ::submit,
             onFill = { textFieldState.setTextAndPlaceCursorAtEnd(it) },
-            onOpenLink = { target ->
+            onOpenLink = { link ->
                 scope.launch { searchBarState.animateToCollapsed() }
-                links.open(target)
+                links.open(link)
             },
             onOpenPlaylist = { playlist ->
                 scope.launch { searchBarState.animateToCollapsed() }
@@ -445,7 +452,7 @@ private fun FocusedSearch(
     text: String,
     onSubmit: (String) -> Unit,
     onFill: (String) -> Unit,
-    onOpenLink: (LinkTarget) -> Unit,
+    onOpenLink: (AppLink) -> Unit,
     onOpenPlaylist: (Playlist) -> Unit
 ) {
     val context = LocalContext.current
@@ -498,8 +505,8 @@ private fun FocusedSearch(
                     }
                 }
             } else {
-                link?.let { target ->
-                    item(key = "link") { LinkRow(target = target, onOpen = { onOpenLink(target) }) }
+                link?.let { found ->
+                    item(key = "link") { LinkRow(link = found, onOpen = { onOpenLink(found) }) }
                 }
 
                 if (songs.isNotEmpty() || playlists.isNotEmpty()) {
@@ -647,25 +654,42 @@ private fun QueryRow(
 )
 
 /**
- * "Open link: YouTube video" when the field holds a link; Apple Music, Yandex Music and Spotify
- * links say that importing comes later.
+ * "Open link: YouTube video" when the field holds a link: of YouTube, of a playlist someone shared, or of another service
+ * (Spotify, Apple Music, Yandex Music, Deezer, Tidal), whose tracks and albums are found on YouTube Music; their
+ * playlists say that importing comes later.
  */
 @Composable
-private fun LinkRow(target: LinkTarget, onOpen: () -> Unit) {
-    val external = target as? LinkTarget.External
+private fun LinkRow(link: AppLink, onOpen: () -> Unit) {
+    val later = when (link) {
+        is AppLink.OtherService -> link.link.kind == MusicLinkKind.Playlist
+        is AppLink.YouTube -> link.target is LinkTarget.External
+        is AppLink.SharedPlaylist -> false
+    }
     val label = when {
-        external != null -> stringResource(
-            when (external.service) {
+        link is AppLink.OtherService && later -> stringResource(
+            when (link.link.service) {
+                MusicService.AppleMusic -> R.string.search_import_apple
+                MusicService.YandexMusic -> R.string.search_import_yandex
+                MusicService.Spotify -> R.string.search_import_spotify
+                else -> R.string.link_import_later
+            }
+        )
+
+        link is AppLink.YouTube && link.target is LinkTarget.External -> stringResource(
+            when ((link.target as LinkTarget.External).service) {
                 "apple" -> R.string.search_import_apple
                 "yandex" -> R.string.search_import_yandex
                 else -> R.string.search_import_spotify
             }
         )
 
+        link is AppLink.OtherService -> stringResource(R.string.search_open_link, link.link.service.displayName)
+        link is AppLink.SharedPlaylist -> stringResource(R.string.search_open_link, stringResource(R.string.search_link_shared_playlist))
+
         else -> stringResource(
             R.string.search_open_link,
             stringResource(
-                when (target) {
+                when ((link as AppLink.YouTube).target) {
                     is LinkTarget.Video -> R.string.search_link_video
                     is LinkTarget.Playlist -> R.string.search_link_playlist
                     is LinkTarget.Album -> R.string.search_link_album
@@ -681,12 +705,11 @@ private fun LinkRow(target: LinkTarget, onOpen: () -> Unit) {
             Icon(
                 painter = painterResource(R.drawable.ms_link),
                 contentDescription = null,
-                tint = if (external == null) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant
+                tint = if (!later) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        modifier = if (external == null) Modifier.combinedClickable(onClick = onOpen) else Modifier
+        modifier = if (!later) Modifier.combinedClickable(onClick = onOpen) else Modifier
     )
     Spacer(modifier = Modifier.height(4.dp))
 }

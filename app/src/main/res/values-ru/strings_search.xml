@@ -25,6 +25,8 @@
     <string name="search_link_video">видео YouTube</string>
     <string name="search_link_playlist">плейлист</string>
     <string name="search_link_album">альбом</string>
+    <string name="search_link_shared_playlist">плейлист по ссылке</string>
+    <string name="link_finding">Ищем на YouTube Music…</string>
     <string name="search_link_channel">канал</string>
     <string name="search_import_apple">Импорт из Apple Music появится позже</string>
     <string name="search_import_yandex">Импорт из Яндекс Музыки появится позже</string>
@@ -32,7 +34,7 @@
     <string name="search_in_library">В библиотеке</string>
     <string name="search_suggestions">Подсказки</string>
     <string name="link_channel_later">Ссылки на @каналы заработают в следующей версии</string>
-    <string name="link_import_later">Импорт из других сервисов появится позже</string>
+    <string name="link_import_later">Импорт плейлистов из других сервисов появится позже</string>
     <string name="link_unsupported">Эту ссылку не открыть</string>
     <string name="kit_cancel">Отмена</string>
 </resources>

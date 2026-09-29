@@ -62,7 +62,11 @@ data class ServerFeatures(
     val playback: FeatureVersion? = null,
     val recoveryCode: FeatureVersion? = null,
     val registrationPow: FeatureVersion? = null,
-    val lyrics: FeatureVersion? = null
+    val lyrics: FeatureVersion? = null,
+    /** Snapshots of own playlists by link (API §4.11, tasks/0017) */
+    val share: FeatureVersion? = null,
+    /** Control of another device (API §4.9, tasks/0018) */
+    val remote: FeatureVersion? = null
 )
 
 @Serializable
@@ -271,11 +275,16 @@ data class OpResult(
     val replayed: Boolean = false
 )
 
+/** An artist of a track with the browse id YouTube Music has for it (API §4.1). */
+@Serializable
+data class ArtistRef(val id: String? = null, val name: String)
+
 @Serializable
 data class TrackDto(
     val videoId: String,
     val title: String,
     val artistsText: String? = null,
+    val artists: List<ArtistRef> = emptyList(),
     val albumId: String? = null,
     val albumTitle: String? = null,
     val durationMs: Long? = null,
@@ -374,6 +383,43 @@ data class MergePlanEntry(val localKey: String, val action: String, val playlist
 
 @Serializable
 data class MergePlanResponse(val plan: List<MergePlanEntry>)
+// endregion
+
+// region Shared playlists (API §4.11, tasks/0017)
+/** A track as a request carries it (API §4.1 `TrackInput`): every field but the id is optional. */
+@Serializable
+data class TrackInput(
+    val videoId: String,
+    val title: String? = null,
+    val artistsText: String? = null,
+    val albumId: String? = null,
+    val albumTitle: String? = null,
+    val durationMs: Long? = null,
+    val durationText: String? = null,
+    val thumbnailUrl: String? = null,
+    val explicit: Boolean? = null,
+    val videoType: String? = null
+)
+
+@Serializable
+data class CreateShareRequest(val kind: String, val name: String, val tracks: List<TrackInput>)
+
+@Serializable
+data class ShareCreated(val shareId: String, val url: String, val createdAt: String)
+
+/** A snapshot of a playlist: it never changes; sharing again makes a new one. */
+@Serializable
+data class ShareDto(
+    val shareId: String,
+    val kind: String,
+    val name: String,
+    val url: String,
+    val tracks: List<TrackDto> = emptyList(),
+    val createdAt: String
+)
+
+@Serializable
+data class ShareList(val shares: List<ShareDto> = emptyList())
 // endregion
 
 // region Lyrics (API §4.10)
@@ -602,6 +648,25 @@ class MelogoldApi(private val baseUrl: String) {
             jsonBody(request)
         }
     }
+
+    /** Makes a snapshot of an own playlist (API §4.11); `409 share_limit_reached` at 200 of them. */
+    suspend fun createShare(token: String, request: CreateShareRequest): ShareCreated = call {
+        client.post("$baseUrl/shares") {
+            bearerAuth(token)
+            jsonBody(request)
+        }
+    }
+
+    /** The snapshots of this account, the newest first. */
+    suspend fun shares(token: String): ShareList = call { client.get("$baseUrl/shares") { bearerAuth(token) } }
+
+    /** The link stops opening; `404 share_not_found` for a foreign or unknown one. */
+    suspend fun deleteShare(token: String, shareId: String) = callUnit {
+        client.delete("$baseUrl/shares/$shareId") { bearerAuth(token) }
+    }
+
+    /** A snapshot by its id, without signing in (API §4.11): the server of a link may be another one. */
+    suspend fun share(shareId: String): ShareDto = call { client.get("$baseUrl/shares/$shareId") }
 
     suspend fun mergePlan(token: String, request: MergePlanRequest): MergePlanResponse = call {
         client.post("$baseUrl/sync/merge-plan") {

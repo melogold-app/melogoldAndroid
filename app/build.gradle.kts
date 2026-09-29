@@ -40,6 +40,15 @@ android {
         // update itself. Only the release build does: the others are other packages
         buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
 
+        // The key of api.song.link (tasks/0017): the free access without one is over (2026-09), so links of Spotify,
+        // Apple Music and the like are found by the title of their page unless a key is given at build time:
+        // -Pmelogold.songLinkKey=… or ~/.gradle/gradle.properties. It never enters the repository
+        buildConfigField(
+            "String",
+            "SONGLINK_API_KEY",
+            "\"" + (providers.gradleProperty("melogold.songLinkKey").orNull.orEmpty()) + "\""
+        )
+
         ndk {
             //noinspection ChromeOsAbiSupport
             abiFilters += abis
@@ -316,6 +325,7 @@ dependencies {
     implementation(projects.providers.kugou)
     implementation(projects.providers.lrclib)
     implementation(projects.providers.sponsorblock)
+    implementation(projects.providers.songlink)
     implementation(projects.core.data)
     implementation(projects.core.domain)
     implementation(projects.core.ui)

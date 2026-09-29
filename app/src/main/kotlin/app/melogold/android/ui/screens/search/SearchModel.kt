@@ -13,7 +13,8 @@ import app.melogold.android.ui.model.ScreenModel
 import app.melogold.android.utils.likePatterns
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.links.LinkTarget
-import app.melogold.providers.innertube.links.YouTubeLinkParser
+import app.melogold.android.ui.shell.AppLink
+import app.melogold.android.ui.shell.classifyLink
 import app.melogold.providers.innertube.models.bodies.SearchSuggestionsBody
 import app.melogold.providers.innertube.requests.searchSuggestions
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,9 +65,11 @@ class SearchModel(network: NetworkMonitor) : ScreenModel() {
     /**
      * What the text in the field links to, if it is a link.
      */
-    val link: StateFlow<LinkTarget?> = query
+    val link: StateFlow<AppLink?> = query
         .map { text ->
-            YouTubeLinkParser.parse(text).takeIf { it !is LinkTarget.Search && it !is LinkTarget.Unsupported }
+            classifyLink(text).takeIf {
+                it !is AppLink.YouTube || (it.target !is LinkTarget.Search && it.target !is LinkTarget.Unsupported)
+            }
         }
         .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN.inWholeMilliseconds), null)
 

@@ -24,6 +24,8 @@
     <string name="search_link_video">YouTube video</string>
     <string name="search_link_playlist">playlist</string>
     <string name="search_link_album">album</string>
+    <string name="search_link_shared_playlist">shared playlist</string>
+    <string name="link_finding">Looking on YouTube Music…</string>
     <string name="search_link_channel">channel</string>
     <string name="search_import_apple">Import from Apple Music is coming later</string>
     <string name="search_import_yandex">Import from Yandex Music is coming later</string>
@@ -31,7 +33,7 @@
     <string name="search_in_library">In your library</string>
     <string name="search_suggestions">Suggestions</string>
     <string name="link_channel_later">Links to @channels will open in a later version</string>
-    <string name="link_import_later">Import from other services is coming later</string>
+    <string name="link_import_later">Importing playlists from other services is coming later</string>
     <string name="link_unsupported">Can\'t open this link</string>
     <string name="kit_cancel">Cancel</string>
 </resources>

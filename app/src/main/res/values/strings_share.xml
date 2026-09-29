@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Links: share a track, an album, a playlist; open links of other services (tasks/0017) -->
+<resources>
+    <string name="share_youtube_first_50">The link opens the first 50 tracks on YouTube</string>
+    <string name="share_creating">Making the link…</string>
+    <string name="share_no_tracks">There is nothing to share: the tracks of this playlist are files on this device</string>
+    <string name="share_limit_reached">Too many links. Delete old ones in Account › My links</string>
+    <string name="share_copy_link">Copy link</string>
+    <string name="share_link_copied">Link copied</string>
+    <string name="share_delete_link">Delete link</string>
+    <string name="share_link_deleted">Link deleted</string>
+    <string name="share_delete_title">Delete the link?</string>
+    <string name="share_delete_text">Anyone who has it will no longer be able to open “%1$s”. The playlist stays in your library</string>
+    <string name="share_delete_failed">Couldn\'t delete the link</string>
+
+    <string name="my_links">My links</string>
+    <string name="my_links_text">The playlists you shared. A link works until you delete it</string>
+    <string name="my_links_empty">You haven\'t shared any playlists yet. Choose Share in the menu of your own playlist</string>
+    <string name="my_links_row">%1$s · %2$s</string>
+    <string name="my_links_error">Couldn\'t load your links</string>
+
+    <string name="shared_playlist_title">Playlist by link</string>
+    <string name="shared_playlist_save">Save to Library</string>
+    <string name="shared_playlist_saved">Saved to Library</string>
+    <string name="shared_playlist_open">Open</string>
+    <string name="shared_playlist_gone">The link was deleted or isn\'t valid</string>
+    <string name="shared_playlist_offline">Can\'t reach the server of the link</string>
+    <string name="shared_playlist_save_failed">Couldn\'t save the playlist</string>
+    <string name="shared_playlist_foreign_server">On the server %1$s</string>
+</resources>

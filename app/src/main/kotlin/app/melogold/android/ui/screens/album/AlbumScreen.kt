@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.domain.share.ShareLinks
 import app.melogold.android.models.Album
 import app.melogold.android.models.Info
 import app.melogold.android.models.Song
@@ -147,7 +148,7 @@ private fun AlbumContent(
             radioLabel = radioLabel,
             onStartRadio = { binder?.startAlbumRadio(details) },
             artists = details.credits.mapNotNull { credit -> credit.id?.let { Info(it, credit.name) } },
-            shareUrl = details.album.shareUrl
+            shareUrl = ShareLinks.album(details.album.id)
         )
     }
 

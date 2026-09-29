@@ -32,6 +32,8 @@ import app.melogold.android.data.repo.withPending
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.ui.share.shareText
+import app.melogold.domain.share.ShareLinks
 import app.melogold.android.data.repo.TrackLinks
 import app.melogold.android.models.Info
 import app.melogold.android.data.repo.knownTrackLinks
@@ -540,13 +542,14 @@ fun downloadStatus(download: TrackDownload): String = when (download.state) {
     )
 }
 
-/** Shares the link of the track: YouTube Music for music, YouTube for videos (FEATURES "Поделиться"). */
-private fun Context.shareTrack(mediaItem: MediaItem, isMusic: Boolean) {
-    val host = if (isMusic) "music.youtube.com" else "www.youtube.com"
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "https://$host/watch?v=${mediaItem.mediaId}")
-    }
-
-    startActivity(Intent.createChooser(intent, null))
-}
+/**
+ * Shares the track (FEATURES "Поделиться", tasks/0017): "Title — Artist" and its link, on YouTube Music for music and on
+ * YouTube for videos.
+ */
+private fun Context.shareTrack(mediaItem: MediaItem, isMusic: Boolean) = shareText(
+    ShareLinks.message(
+        title = mediaItem.mediaMetadata.title?.toString().orEmpty(),
+        subtitle = mediaItem.mediaMetadata.artist?.toString(),
+        url = ShareLinks.track(mediaItem.mediaId, isMusic)
+    )
+)

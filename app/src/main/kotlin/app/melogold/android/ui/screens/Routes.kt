@@ -17,6 +17,7 @@ import app.melogold.android.ui.screens.library.LibraryAlbumsScreen
 import app.melogold.android.ui.screens.library.LibraryArtistsScreen
 import app.melogold.android.ui.screens.library.LibraryPlaylistsScreen
 import app.melogold.android.ui.screens.library.stats.StatsScreen
+import app.melogold.android.ui.screens.sharedplaylist.SharedPlaylistScreen
 import app.melogold.android.ui.screens.library.stats.WrappedScreen
 import app.melogold.android.ui.screens.localplaylist.LocalPlaylistScreen
 import app.melogold.android.ui.screens.mood.MoodScreen
@@ -57,6 +58,7 @@ val libraryAlbumsRoute = Route0("libraryAlbumsRoute")
 val libraryTracksRoute = Route0("libraryTracksRoute")
 val libraryArtistsRoute = Route0("libraryArtistsRoute")
 val statsRoute = Route0("statsRoute")
+val sharedPlaylistRoute = Route2<String, String>("sharedPlaylistRoute")
 val wrappedRoute = Route1<Int>("wrappedRoute")
 val settingsPageRoute = Route1<SettingsPage>("settingsPageRoute")
 val searchResultRoute = Route2<String, SearchSource>("searchResultRoute")
@@ -116,6 +118,11 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     wrappedRoute { year ->
         WrappedScreen(year = year)
+    }
+
+    // A playlist a link points at: server and id (tasks/0017)
+    sharedPlaylistRoute { serverUrl, shareId ->
+        SharedPlaylistScreen(serverUrl = serverUrl, shareId = shareId)
     }
 
     settingsPageRoute { page ->

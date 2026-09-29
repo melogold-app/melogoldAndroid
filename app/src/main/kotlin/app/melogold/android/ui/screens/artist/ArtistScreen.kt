@@ -4,7 +4,6 @@ import app.melogold.android.ui.kit.rememberTrackOverrides
 import app.melogold.android.data.overrides.artists
 import app.melogold.android.data.overrides.title
 import android.content.Context
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,6 +42,8 @@ import androidx.compose.ui.unit.min
 import androidx.media3.common.MediaItem
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.ui.share.shareText
+import app.melogold.domain.share.ShareLinks
 import app.melogold.android.models.Artist
 import app.melogold.android.models.Song
 import app.melogold.android.ui.components.LocalMenuState
@@ -191,7 +192,9 @@ private fun ArtistContent(
                 text = shareLabel,
                 onClick = {
                     menuState.hide()
-                    context.shareArtist(browseId, channel = details.channel != null)
+                    context.shareText(
+                        ShareLinks.message(details.artist.name.orEmpty(), null, ShareLinks.artist(browseId, channel = details.channel != null))
+                    )
                 }
             )
         }
@@ -594,12 +597,3 @@ private fun LazyListScope.albumSection(
     }
 }
 
-private fun Context.shareArtist(browseId: String, channel: Boolean) {
-    val host = if (channel) "www.youtube.com" else "music.youtube.com"
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, "https://$host/channel/$browseId")
-    }
-
-    startActivity(Intent.createChooser(intent, null))
-}

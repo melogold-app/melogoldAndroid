@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -85,6 +86,7 @@ val signInRoute = Route0("signInRoute")
 val registerRoute = Route0("registerRoute")
 val accountRoute = Route0("accountRoute")
 val serverRoute = Route0("serverRoute")
+val mySharesRoute = Route0("mySharesRoute")
 
 /** What went wrong, in words (API §2 codes). */
 @StringRes
@@ -405,6 +407,7 @@ fun AccountScreen() = RouteHandler {
     GlobalRoutes()
     // Back here from "Add device", the list is read again: the new device is in it
     addDeviceRoute { AddDeviceScreen() }
+    mySharesRoute { MySharesScreen() }
 
     Content {
         val container = LocalAppContainer.current
@@ -423,6 +426,8 @@ fun AccountScreen() = RouteHandler {
         // Signed out here or elsewhere: nothing to show
         LaunchedEffect(state) { if (state !is AccountState.SignedIn) pop() }
         LaunchedEffect(reload) { devices = runCatching { account.devices() }.getOrNull() ?: devices }
+        // The links of playlists need a server that makes them (API §4.11)
+        val sharesAvailable by produceState(initialValue = false, state) { value = container.shares.available() }
         LaunchedEffect(Unit) { container.sync.devicesChanged.collect { reload++ } }
 
         val signedIn = state as? AccountState.SignedIn ?: return@Content
@@ -456,6 +461,28 @@ fun AccountScreen() = RouteHandler {
                 onAddDevice = { addDeviceRoute() }
             )
             SettingsGroupSpacer()
+
+            if (sharesAvailable) {
+                SegmentedGroup {
+                    row { shapes ->
+                        SegmentedRow(
+                            headline = stringResource(R.string.my_links),
+                            icon = R.drawable.ms_link,
+                            shapes = shapes,
+                            onClick = { mySharesRoute() },
+                            modifier = Modifier.testTag("account_my_links"),
+                            trailing = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ms_chevron_right),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        )
+                    }
+                }
+                SettingsGroupSpacer()
+            }
 
             OutlinedButton(
                 onClick = { signingOut = true },

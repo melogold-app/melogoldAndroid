@@ -12,9 +12,14 @@ import app.melogold.android.data.foryou.ForYouBuilder
 import app.melogold.android.data.repo.CatalogRepository
 import app.melogold.android.data.repo.PendingMutationStore
 import app.melogold.android.service.PlayerService
+import app.melogold.android.data.repo.SongLinkFileCache
 import app.melogold.android.sync.Account
+import app.melogold.android.sync.Shares
 import app.melogold.android.sync.SyncEngine
 import app.melogold.android.update.AppUpdater
+import app.melogold.providers.songlink.ExternalLinkResolver
+import app.melogold.providers.songlink.PageFetcher
+import app.melogold.providers.songlink.SongLinkClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -50,6 +55,20 @@ class AppContainer(private val application: Application) {
     /** The account on the Melogold server and the sync of the library with it. */
     val account by lazy { Account(application) }
     val sync by lazy { SyncEngine(account, network, appScope) }
+
+    /** Links to own playlists: snapshots on the server, "My links", opening a link (tasks/0017). */
+    val shares by lazy { Shares(account) }
+
+    /** Links of Spotify, Apple Music, Yandex Music and the like, found on YouTube (tasks/0017). */
+    val externalLinks by lazy {
+        ExternalLinkResolver(
+            songLink = SongLinkClient(
+                apiKey = BuildConfig.SONGLINK_API_KEY,
+                cache = SongLinkFileCache(application.cacheDir.resolve("songlink.json"))
+            ),
+            pages = PageFetcher()
+        )
+    }
 
     /** Import of ViTune, ViMusic and Melogold backups into the library (REWRITE §4.5). */
     val importer by lazy { LegacyImporter(application, appScope, afterImport = { sync.afterImport() }) }

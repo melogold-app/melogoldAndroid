@@ -78,6 +78,7 @@ class Account(context: Context) {
     private val json = Json { ignoreUnknownKeys = true }
     private val refreshMutex = Mutex()
     private var cachedApi: Pair<String, MelogoldApi>? = null
+    private var cachedInfo: Triple<String, ServerInfo, Long>? = null
 
     private val mutableState = MutableStateFlow(initialState())
     val state: StateFlow<AccountState> = mutableState.asStateFlow()
@@ -104,6 +105,18 @@ class Account(context: Context) {
     suspend fun check(url: String): ServerInfo {
         val info = MelogoldApi(url).let { api -> try { api.serverInfo() } finally { api.close() } }
         if (info.software != "melogold-server") throw ApiException(0, "not_melogold", "Not a Melogold server")
+        return info
+    }
+
+    /**
+     * The info of the server this device talks to, asked at most once in [maxAgeMs]: what it can do ([ServerInfo.features]).
+     * Throws [ApiException] when it cannot be reached and there is nothing kept.
+     */
+    suspend fun serverInfo(maxAgeMs: Long = INFO_TTL_MS): ServerInfo {
+        val url = session?.serverUrl ?: serverUrl
+        cachedInfo?.takeIf { it.first == url && System.currentTimeMillis() - it.third < maxAgeMs }?.let { return it.second }
+        val info = api(url).serverInfo()
+        cachedInfo = Triple(url, info, System.currentTimeMillis())
         return info
     }
 
@@ -271,6 +284,7 @@ class Account(context: Context) {
         const val KEY_HWID = "hwid"
         const val KEY_SESSION = "session"
         const val DEVICE_FIELD_MAX = 64
+        const val INFO_TTL_MS = 60 * 60_000L
     }
 }
 
