@@ -94,6 +94,36 @@
     <string name="account_error_link_used">Этот код уже использован</string>
     <string name="account_error_link_wrong_mode">Это код приглашения, а не входа</string>
 
+    <!-- Sign in by code (API §4.6, tasks/0015): the new device shows a code or types one; a signed-in device shows one too -->
+    <string name="account_sign_in_by_code">Войти по коду</string>
+    <string name="link_code_title">Вход по коду</string>
+    <string name="link_code_text">На устройстве, где вы уже вошли, откройте Аккаунт › Добавить устройство и введите этот код</string>
+    <string name="link_code_description">Код для входа: %1$s</string>
+    <string name="link_valid_for">Действует %1$s</string>
+    <string name="link_reconnecting">Нет связи с сервером. Пробуем снова…</string>
+    <string name="link_have_code">У меня есть код с другого устройства</string>
+    <string name="link_show_my_code">Показать мой код</string>
+    <string name="link_claim_text">Введите код, который показывает другое устройство: Аккаунт › Добавить устройство › Показать код для нового устройства</string>
+    <string name="link_verify_pick">Выберите это число на «%1$s»</string>
+    <string name="link_verify_account">Вход в аккаунт %1$s</string>
+    <string name="link_verify_number_description">Число %1$s</string>
+    <string name="link_starting">Получаем код…</string>
+    <string name="link_signing_in">Входим…</string>
+    <string name="link_new_code">Получить новый код</string>
+    <string name="link_enter_other_code">Ввести другой код</string>
+    <string name="link_retry">Повторить</string>
+    <string name="link_back_to_password">Войти по паролю</string>
+    <string name="link_error_denied">Вход отклонён на другом устройстве</string>
+    <string name="link_error_expired">Код устарел. Получите новый</string>
+    <string name="link_error_claim_expired">Код устарел. Покажите новый на устройстве, где вы уже вошли</string>
+    <string name="link_error_cancelled">Вход отменили на другом устройстве</string>
+    <string name="link_error_wrong_mode_claim">Это код нового устройства. Введите его там, где вы уже вошли: Аккаунт › Добавить устройство</string>
+    <string name="account_add_device_show_code">Показать код для нового устройства</string>
+    <string name="account_invite_text">На новом устройстве выберите «Войти по коду» и «У меня есть код с другого устройства», затем введите этот код</string>
+    <string name="account_invite_waiting">Ждём новое устройство…</string>
+    <string name="account_invite_expired">Код устарел. Покажите новый</string>
+    <string name="account_invite_cancelled">Приглашение отменено</string>
+
     <!-- What a device is, for TalkBack: its icon by platform -->
     <string name="device_kind_phone">Телефон</string>
     <string name="device_kind_tablet">Планшет</string>

@@ -186,15 +186,21 @@ internal fun ProgressButton(text: String, busy: Boolean, enabled: Boolean, onCli
         else Text(text = text)
     }
 
-/** Sign-in with a login and a password (API §4.3). */
+/** Sign-in with a login and a password (API §4.3), or by a code (tasks/0015). */
 @Route
 @Composable
 fun SignInScreen() = RouteHandler {
     GlobalRoutes()
+    // A sign-in by code that ends well closes both screens: this one sees the account and goes on its own
+    signInByCodeRoute { SignInByCodeScreen() }
+    // "No account? Create": pushed on this screen, so this screen shows it
+    registerRoute { RegisterScreen() }
 
     Content {
         val account = LocalAppContainer.current.account
+        val accountState by account.state.collectAsState()
         val scope = rememberCoroutineScope()
+        LaunchedEffect(accountState) { if (accountState is AccountState.SignedIn) pop() }
         // Signing in again after the server ended the session: the login is known
         var login by rememberSaveable {
             mutableStateOf((account.state.value as? AccountState.AuthRequired)?.login ?: account.session?.login.orEmpty())
@@ -209,8 +215,8 @@ fun SignInScreen() = RouteHandler {
             busy = true
             error = null
             scope.launch {
+                // Signed in: the effect above closes the screen, as it does after a sign-in by code
                 runCatching { account.signIn(login, password) }
-                    .onSuccess { pop() }
                     .onFailure { error = accountError(it) }
                 busy = false
             }
@@ -238,6 +244,15 @@ fun SignInScreen() = RouteHandler {
                     onClick = ::submit,
                     modifier = Modifier.testTag("account_submit")
                 )
+                OutlinedButton(
+                    onClick = { signInByCodeRoute() },
+                    enabled = !busy,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("account_sign_in_by_code")
+                ) {
+                    Text(text = stringResource(R.string.account_sign_in_by_code))
+                }
                 TextButton(onClick = { registerRoute() }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                     Text(text = stringResource(R.string.account_no_account))
                 }

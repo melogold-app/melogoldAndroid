@@ -6,13 +6,19 @@ import androidx.core.content.edit
 import app.melogold.android.BuildConfig
 import app.melogold.android.sync.api.ApiException
 import app.melogold.android.sync.api.AuthSession
+import app.melogold.android.sync.api.ClaimLinkRequest
+import app.melogold.android.sync.api.CreateLinkRequestRequest
 import app.melogold.android.sync.api.DeviceDto
 import app.melogold.android.sync.api.DeviceInput
 import app.melogold.android.sync.api.DevicePatch
+import app.melogold.android.sync.api.LinkClaimed
+import app.melogold.android.sync.api.LinkCreated
 import app.melogold.android.sync.api.LinkDecision
 import app.melogold.android.sync.api.LinkDetails
+import app.melogold.android.sync.api.LinkPollResponse
 import app.melogold.android.sync.api.LoginRequest
 import app.melogold.android.sync.api.MelogoldApi
+import app.melogold.android.sync.api.PollLinkRequest
 import app.melogold.android.sync.api.PowSolution
 import app.melogold.android.sync.api.RefreshRequest
 import app.melogold.android.sync.api.RegisterRequest
@@ -170,6 +176,40 @@ class Account(context: Context) {
         authorized { api, token -> api.approveLink(token, linkId, verifyCode) }
 
     suspend fun denyLink(linkId: String): LinkDecision = authorized { api, token -> api.denyLink(token, linkId) }
+
+    /** "Show a code for a new device" (API §4.6, mode `invite`): the code to type on the new device. */
+    suspend fun createInvite(): LinkCreated = authorized { api, token -> api.createInvite(token) }
+
+    /** The invitation as it stands: at `claimed`, the new device and the three numbers. */
+    suspend fun link(linkId: String): LinkDetails = authorized { api, token -> api.link(token, linkId) }
+
+    suspend fun cancelInvite(linkId: String) = authorized { api, token -> api.cancelInvite(token, linkId) }
+
+    // region Signing in by code (API §4.6): this is the new device, there is no session yet
+
+    /** Mode `request`: the code this device shows for a signed-in one to enter. */
+    suspend fun requestLink(): LinkCreated = api().createLinkRequest(CreateLinkRequestRequest(deviceInput()))
+
+    /** Mode `invite`: the code a signed-in device shows, typed here; the number to show comes back. */
+    suspend fun claimLink(userCode: String): LinkClaimed = api().claimLink(ClaimLinkRequest(userCode, deviceInput()))
+
+    /**
+     * The long poll of either mode. At `completed` the session is taken here exactly as after a password sign-in, so
+     * the sync starts its first run (and the merge) on its own.
+     */
+    suspend fun pollLink(pollSecret: String, knownStatus: String, waitSeconds: Int? = null): LinkPollResponse {
+        val answer = api().pollLink(PollLinkRequest(pollSecret = pollSecret, waitSeconds = waitSeconds, knownStatus = knownStatus))
+        if (answer.status == "completed") {
+            val session = answer.session ?: throw ApiException(200, "invalid_response", "No session in a completed link")
+            save(session)
+        }
+        return answer
+    }
+
+    /** The new device gives up: the code stops working. */
+    suspend fun cancelLinkRequest(pollSecret: String) = api().cancelLinkRequest(pollSecret)
+
+    // endregion
 
     /** The server ended the session: sign in again, the data stays. */
     fun endSession() {

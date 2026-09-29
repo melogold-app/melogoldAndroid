@@ -6,6 +6,7 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.HttpTimeoutConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.delete
@@ -188,6 +189,67 @@ data class ApproveLinkRequest(val verifyCode: String)
 
 @Serializable
 data class LinkDecision(val linkId: String, val status: String)
+
+/** A link made by either side (`POST /auth/link/requests`, `POST /auth/me/links`); `pollSecret` only in mode `request`. */
+@Serializable
+data class LinkCreated(
+    val linkId: String,
+    val mode: String,
+    val serverId: String,
+    val linkToken: String,
+    val userCode: String,
+    val pollSecret: String? = null,
+    val expiresAt: String,
+    val longPollSeconds: Int = 25
+)
+
+@Serializable
+data class CreateLinkRequestRequest(val device: DeviceInput)
+
+/** The empty body of `POST /auth/me/links` (mode `invite`). */
+@Serializable
+class CreateLinkInviteRequest
+
+@Serializable
+data class ClaimLinkRequest(val userCode: String, val device: DeviceInput)
+
+@Serializable
+data class LinkAccount(val login: String)
+
+/** The signed-in device that approves: "Choose this number on «MacBook Air»". */
+@Serializable
+data class LinkApprover(val name: String, val platform: String)
+
+/** What the new device gets when it claims an invitation: the number to show, who approves. */
+@Serializable
+data class LinkClaimed(
+    val linkId: String,
+    val status: String,
+    val pollSecret: String,
+    val account: LinkAccount,
+    val approverDevice: LinkApprover,
+    val verifyCode: String,
+    val expiresAt: String,
+    val longPollSeconds: Int = 25
+)
+
+@Serializable
+data class PollLinkRequest(val pollSecret: String, val waitSeconds: Int? = null, val knownStatus: String? = null)
+
+/** The answer of the long poll: `pending`, `claimed` (with the number to show) or `completed` (with the session). */
+@Serializable
+data class LinkPollResponse(
+    val linkId: String,
+    val status: String,
+    val expiresAt: String,
+    val account: LinkAccount? = null,
+    val approverDevice: LinkApprover? = null,
+    val verifyCode: String? = null,
+    val session: AuthSession? = null
+)
+
+@Serializable
+data class CancelLinkRequestRequest(val pollSecret: String)
 // endregion
 
 // region Sync (API §4.7, §4.8)
@@ -450,6 +512,58 @@ class MelogoldApi(private val baseUrl: String) {
         }
     }
 
+    // region The new device's side of a link (API §4.6): no session yet, the pollSecret is the proof
+
+    /** Mode `request`: this device shows a code `K7QX-M2PD` for a signed-in device to enter. */
+    suspend fun createLinkRequest(request: CreateLinkRequestRequest): LinkCreated = call {
+        client.post("$baseUrl/auth/link/requests") { jsonBody(request) }
+    }
+
+    /** Mode `invite`: this device types the code a signed-in device shows; the number to show comes back. */
+    suspend fun claimLink(request: ClaimLinkRequest): LinkClaimed = call {
+        client.post("$baseUrl/auth/link/claim") { jsonBody(request) }
+    }
+
+    /**
+     * Waits for the link to leave [PollLinkRequest.knownStatus] (the server answers at once when it already has, else
+     * after `waitSeconds`, 25 by default), so the HTTP timeout is longer than that: 35 s (API §4.6).
+     */
+    suspend fun pollLink(request: PollLinkRequest): LinkPollResponse = call {
+        client.post("$baseUrl/auth/link/poll") {
+            timeout { requestTimeoutMillis = LONG_POLL_TIMEOUT_MS }
+            jsonBody(request)
+        }
+    }
+
+    /** The new device gives up: 204, also when the link is over already. */
+    suspend fun cancelLinkRequest(pollSecret: String) {
+        callUnit { client.post("$baseUrl/auth/link/cancel") { jsonBody(CancelLinkRequestRequest(pollSecret)) } }
+    }
+
+    // endregion
+
+    /** Mode `invite`: this signed-in device shows a code for a new device to type. */
+    suspend fun createInvite(token: String): LinkCreated = call {
+        client.post("$baseUrl/auth/me/links") {
+            bearerAuth(token)
+            jsonBody(CreateLinkInviteRequest())
+        }
+    }
+
+    /** The link as its creator sees it: at `claimed`, the new device and the three numbers. */
+    suspend fun link(token: String, linkId: String): LinkDetails = call {
+        client.get("$baseUrl/auth/me/links/$linkId") { bearerAuth(token) }
+    }
+
+    suspend fun cancelInvite(token: String, linkId: String) {
+        callUnit {
+            client.post("$baseUrl/auth/me/links/$linkId/cancel") {
+                bearerAuth(token)
+                jsonBody(JsonObject(emptyMap()))
+            }
+        }
+    }
+
     suspend fun sync(token: String, request: SyncRequest): SyncResponse = call {
         client.post("$baseUrl/sync") {
             bearerAuth(token)
@@ -540,5 +654,6 @@ class MelogoldApi(private val baseUrl: String) {
         const val SYNC_PROTOCOL_HEADER = "X-Sync-Protocol"
         const val CONNECT_TIMEOUT_MS = 10_000L
         const val REQUEST_TIMEOUT_MS = 30_000L
+        const val LONG_POLL_TIMEOUT_MS = 35_000L
     }
 }

@@ -68,6 +68,7 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
 private const val TAG = "SyncEngine"
@@ -114,7 +115,16 @@ sealed interface SyncStatus {
 private class Op(val kind: String, val key: String, val json: JsonObject)
 
 @Serializable
-private data class LiveEvent(val id: String, val type: String)
+private data class LiveEvent(val id: String, val type: String, val payload: JsonObject? = null)
+
+private val liveEventJson = Json { ignoreUnknownKeys = true }
+
+/** The id of the link a `link.updated` event (API §6 `LinkUpdatedPayload`) is about; null for any other event. */
+internal fun linkUpdatedId(data: String): String? {
+    val event = runCatching { liveEventJson.decodeFromString<LiveEvent>(data) }.getOrNull() ?: return null
+    if (event.type != "link.updated") return null
+    return (event.payload?.get("linkId") as? JsonPrimitive)?.contentOrNull
+}
 
 /**
  * Keeps the library of this device and of the account on the Melogold server the same (API §4.8): the Favorites,
@@ -141,6 +151,7 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     private val json = Json { ignoreUnknownKeys = true }
     private val mutableStatus = MutableStateFlow<SyncStatus>(SyncStatus.Off)
     private val mutableDevicesChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val mutableLinkUpdated = MutableSharedFlow<String>(extraBufferCapacity = LINK_EVENTS_BUFFER)
 
     private val lyrics = LyricsSync(account)
 
@@ -154,6 +165,9 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
 
     /** The device list changed on the server (`devices.updated`): screens showing it read it again. */
     val devicesChanged: SharedFlow<Unit> = mutableDevicesChanged
+
+    /** The link of this id, shown by this device, moved on (`link.updated`, API §6): "Add device" reads it again. */
+    val linkUpdated: SharedFlow<String> = mutableLinkUpdated
 
     fun start() = scope.launch {
         val foreground = ProcessLifecycleOwner.get().lifecycle.currentStateFlow
@@ -848,6 +862,7 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         when (event.type) {
             "system.connected", "sync.changed", "lyrics.changed" -> scope.launch { sync(force = true) }
             "devices.updated" -> mutableDevicesChanged.tryEmit(Unit)
+            "link.updated" -> linkUpdatedId(data)?.let(mutableLinkUpdated::tryEmit)
             "session.invalidated" -> account.endSession()
         }
     }
@@ -856,6 +871,7 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
 
     private companion object {
         const val NAME_MAX = 200
+        const val LINK_EVENTS_BUFFER = 4
     }
 }
 

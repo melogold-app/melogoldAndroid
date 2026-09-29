@@ -16,12 +16,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -37,6 +39,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.melogold.android.LocalAppContainer
 import app.melogold.android.R
+import app.melogold.android.sync.AccountInvitePort
+import app.melogold.android.sync.InviteLinker
+import app.melogold.android.sync.InviteState
+import app.melogold.android.sync.LinkFailure
 import app.melogold.android.sync.api.ApiException
 import app.melogold.android.sync.api.LinkDetails
 import app.melogold.android.sync.epochMs
@@ -51,7 +57,6 @@ import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.compose.routing.Route0
 import app.melogold.compose.routing.RouteHandler
 import app.melogold.domain.server.UserCode
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 val addDeviceRoute = Route0("addDeviceRoute")
@@ -91,9 +96,12 @@ internal fun resolvedLinkError(link: LinkDetails): Int? = when {
 }
 
 /**
- * "Add device" (tasks/0004, API §4.6 mode `request`): a new device where a password is hard to type, like the watch,
- * shows a code `K7QX-M2PD`. Here it is typed in, the device that asks to sign in is shown, and the number on its
+ * "Add device" (tasks/0004, API §4.6): a new device where a password is hard to type, like the watch, shows a code
+ * `K7QX-M2PD` (mode `request`). Here it is typed in, the device that asks to sign in is shown, and the number on its
  * screen is chosen from three. A wrong number is a refusal on the server.
+ *
+ * Or this device shows the code (tasks/0015, mode `invite`): "Show a code for a new device". The new device types it
+ * and shows a number; then the same card as above with the three numbers.
  */
 @Route
 @Composable
@@ -101,11 +109,16 @@ fun AddDeviceScreen() = RouteHandler {
     GlobalRoutes()
 
     Content {
-        val account = LocalAppContainer.current.account
+        val container = LocalAppContainer.current
+        val account = container.account
         val snackbar = LocalAppSnackbar.current
         val scope = rememberCoroutineScope()
         var input by rememberSaveable { mutableStateOf("") }
         var link by remember { mutableStateOf<LinkDetails?>(null) }
+        // The invitation of this device (mode `invite`): followed by the live event, else every 3 s
+        val invite = remember { InviteLinker(AccountInvitePort(account), container.appScope, container.sync.linkUpdated) }
+        val inviteState by invite.state.collectAsState()
+        DisposableEffect(invite) { onDispose { invite.cancel() } }
         var busy by remember { mutableStateOf(false) }
         var error by remember { mutableStateOf<Int?>(null) }
         val signedIn = stringResource(R.string.account_add_device_done)
@@ -116,6 +129,7 @@ fun AddDeviceScreen() = RouteHandler {
         fun resolve() {
             val userCode = UserCode.normalize(input) ?: return
             if (busy) return
+            invite.cancel()
             input = userCode
             busy = true
             error = null
@@ -145,6 +159,10 @@ fun AddDeviceScreen() = RouteHandler {
                     if (choice == null) account.denyLink(details.linkId) else account.approveLink(details.linkId, choice)
                 }
                     .onSuccess {
+                        // Decided: the invitation is not cancelled behind the new device's back. The card stays on
+                        // the screen until it closes, instead of the code field for a frame
+                        link = details
+                        invite.release()
                         snackbar.show(if (choice == null) denied else signedIn.format(details.device?.name ?: someDevice))
                         pop()
                     }
@@ -152,11 +170,13 @@ fun AddDeviceScreen() = RouteHandler {
                         when ((it as? ApiException)?.code) {
                             // The devices of the account are where one can be unlinked: back to them
                             "device_limit_reached" -> {
+                                invite.release()
                                 snackbar.show(deviceLimit)
                                 pop()
                             }
 
                             in LINK_OVER -> {
+                                invite.release()
                                 link = null
                                 input = ""
                                 error = linkError(it)
@@ -169,38 +189,96 @@ fun AddDeviceScreen() = RouteHandler {
             }
         }
 
+        // The card is the same for a code typed here and for an invitation a new device has typed
+        val approving = link ?: (inviteState as? InviteState.Claimed)?.link
+        val waiting = inviteState as? InviteState.Waiting
+        val inviting = inviteState is InviteState.Starting || waiting != null
+        val inviteFailed = inviteState as? InviteState.Failed
+
         AccountPage(
             title = stringResource(R.string.account_add_device),
             onBack = pop,
-            description = if (link == null) stringResource(R.string.account_add_device_text) else null
+            description = when {
+                approving != null -> null
+                waiting != null -> stringResource(R.string.account_invite_text)
+                inviting -> null
+                else -> stringResource(R.string.account_add_device_text)
+            }
         ) {
-            when (val details = link) {
-                null -> LinkCodeStep(
+            when {
+                approving != null -> {
+                    val now = rememberNow(EXPIRY_TICK_MS)
+                    LinkApproval(
+                        link = approving,
+                        minutesLeft = runCatching { approving.expiresAt.epochMs() }.getOrNull()?.let { minutesLeft(it - now) },
+                        busy = busy,
+                        error = error,
+                        onChoose = { decide(approving, it) },
+                        onDeny = { decide(approving, null) }
+                    )
+                }
+
+                waiting != null -> InviteWaiting(
+                    userCode = waiting.userCode,
+                    remainingMs = waiting.expiresAt - rememberNow(),
+                    onCancel = { invite.cancel() }
+                )
+
+                inviting -> LinkWorking(text = stringResource(R.string.link_starting))
+
+                else -> LinkCodeStep(
                     code = input,
                     onCodeChange = { input = it },
                     busy = busy,
-                    error = error,
-                    onContinue = ::resolve
-                )
-
-                else -> {
-                    val now by produceState(System.currentTimeMillis()) {
-                        while (true) {
-                            delay(EXPIRY_TICK_MS)
-                            value = System.currentTimeMillis()
-                        }
+                    error = error ?: inviteFailed?.let { inviteError(it.failure) },
+                    onContinue = ::resolve,
+                    secondaryText = stringResource(R.string.account_add_device_show_code),
+                    secondaryTag = "link_show_code",
+                    onSecondary = {
+                        error = null
+                        invite.start()
                     }
-                    LinkApproval(
-                        link = details,
-                        minutesLeft = runCatching { details.expiresAt.epochMs() }.getOrNull()?.let { minutesLeft(it - now) },
-                        busy = busy,
-                        error = error,
-                        onChoose = { decide(details, it) },
-                        onDeny = { decide(details, null) }
-                    )
-                }
+                )
             }
         }
+    }
+}
+
+/** What went wrong with the invitation of this device, in words. */
+@StringRes
+internal fun inviteError(failure: LinkFailure): Int = when (failure) {
+    LinkFailure.Expired -> R.string.account_invite_expired
+    LinkFailure.Cancelled -> R.string.account_invite_cancelled
+    LinkFailure.Denied -> R.string.account_add_device_denied
+    LinkFailure.DeviceLimit -> R.string.account_add_device_limit
+    LinkFailure.NotFound -> R.string.account_error_link_not_found
+    LinkFailure.Throttled -> R.string.account_error_throttled
+    LinkFailure.Network -> R.string.account_error_network
+    LinkFailure.AlreadyClaimed, LinkFailure.WrongMode, LinkFailure.Unknown -> R.string.account_error_unknown
+}
+
+/** This device's code for a new device to type (mode `invite`): the code, how long it lives, and "Cancel". */
+@Composable
+internal fun InviteWaiting(userCode: String, remainingMs: Long, onCancel: () -> Unit) = Column(
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    modifier = Modifier.padding(horizontal = 4.dp)
+) {
+    LinkBigCode(userCode)
+    LinkCountdown(remainingMs)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        Text(
+            text = stringResource(R.string.account_invite_waiting),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+    }
+    OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().testTag("link_cancel")) {
+        Text(text = stringResource(R.string.cancel))
     }
 }
 
@@ -214,7 +292,10 @@ internal fun LinkCodeStep(
     onCodeChange: (String) -> Unit,
     busy: Boolean,
     @StringRes error: Int?,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    secondaryText: String? = null,
+    secondaryTag: String = "link_secondary",
+    onSecondary: () -> Unit = {}
 ) {
     val valid = UserCode.normalize(code) != null
     // Eight characters typed but not a code: an `U`, a Cyrillic letter
@@ -249,6 +330,15 @@ internal fun LinkCodeStep(
             onClick = onContinue,
             modifier = Modifier.testTag("link_continue")
         )
+        if (secondaryText != null) TextButton(
+            onClick = onSecondary,
+            enabled = !busy,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .testTag(secondaryTag)
+        ) {
+            Text(text = secondaryText)
+        }
     }
 }
 

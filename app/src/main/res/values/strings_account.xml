@@ -94,6 +94,36 @@
     <string name="account_error_link_used">This code has already been used</string>
     <string name="account_error_link_wrong_mode">This is an invitation code, not a sign-in code</string>
 
+    <!-- Sign in by code (API §4.6, tasks/0015): the new device shows a code or types one; a signed-in device shows one too -->
+    <string name="account_sign_in_by_code">Sign in with a code</string>
+    <string name="link_code_title">Sign in with a code</string>
+    <string name="link_code_text">On a device where you\'re signed in, open Account › Add device and enter this code</string>
+    <string name="link_code_description">Sign-in code: %1$s</string>
+    <string name="link_valid_for">Valid for %1$s</string>
+    <string name="link_reconnecting">Can\'t reach the server. Trying again…</string>
+    <string name="link_have_code">I have a code from another device</string>
+    <string name="link_show_my_code">Show my code</string>
+    <string name="link_claim_text">Enter the code another device shows: Account › Add device › Show a code for a new device</string>
+    <string name="link_verify_pick">Choose this number on “%1$s”</string>
+    <string name="link_verify_account">Signing in to %1$s</string>
+    <string name="link_verify_number_description">Number %1$s</string>
+    <string name="link_starting">Getting a code…</string>
+    <string name="link_signing_in">Signing in…</string>
+    <string name="link_new_code">Get a new code</string>
+    <string name="link_enter_other_code">Enter another code</string>
+    <string name="link_retry">Retry</string>
+    <string name="link_back_to_password">Sign in with a password</string>
+    <string name="link_error_denied">Sign-in was denied on the other device</string>
+    <string name="link_error_expired">The code has expired. Get a new one</string>
+    <string name="link_error_claim_expired">The code has expired. Show a new one on the device where you\'re signed in</string>
+    <string name="link_error_cancelled">Sign-in was canceled on the other device</string>
+    <string name="link_error_wrong_mode_claim">This is a new device\'s code. Enter it where you\'re signed in: Account › Add device</string>
+    <string name="account_add_device_show_code">Show a code for a new device</string>
+    <string name="account_invite_text">On the new device, choose “Sign in with a code” and “I have a code from another device”, then enter this code</string>
+    <string name="account_invite_waiting">Waiting for the new device…</string>
+    <string name="account_invite_expired">The code has expired. Show a new one</string>
+    <string name="account_invite_cancelled">The invitation was canceled</string>
+
     <!-- What a device is, for TalkBack: its icon by platform -->
     <string name="device_kind_phone">Phone</string>
     <string name="device_kind_tablet">Tablet</string>
