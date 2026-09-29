@@ -16,6 +16,8 @@ import app.melogold.android.ui.screens.library.collections.ArtistFavoritesScreen
 import app.melogold.android.ui.screens.library.LibraryAlbumsScreen
 import app.melogold.android.ui.screens.library.LibraryArtistsScreen
 import app.melogold.android.ui.screens.library.LibraryPlaylistsScreen
+import app.melogold.android.ui.screens.library.stats.StatsScreen
+import app.melogold.android.ui.screens.library.stats.WrappedScreen
 import app.melogold.android.ui.screens.localplaylist.LocalPlaylistScreen
 import app.melogold.android.ui.screens.mood.MoodScreen
 import app.melogold.android.ui.screens.mood.MoreAlbumsScreen
@@ -54,6 +56,8 @@ val libraryPlaylistsRoute = Route0("libraryPlaylistsRoute")
 val libraryAlbumsRoute = Route0("libraryAlbumsRoute")
 val libraryTracksRoute = Route0("libraryTracksRoute")
 val libraryArtistsRoute = Route0("libraryArtistsRoute")
+val statsRoute = Route0("statsRoute")
+val wrappedRoute = Route1<Int>("wrappedRoute")
 val settingsPageRoute = Route1<SettingsPage>("settingsPageRoute")
 val searchResultRoute = Route2<String, SearchSource>("searchResultRoute")
 
@@ -103,6 +107,15 @@ fun RouteHandlerScope.GlobalRoutes() {
 
     libraryArtistsRoute {
         LibraryArtistsScreen()
+    }
+
+    // Insights of the listening and the year in review (tasks/0016)
+    statsRoute {
+        StatsScreen()
+    }
+
+    wrappedRoute { year ->
+        WrappedScreen(year = year)
     }
 
     settingsPageRoute { page ->

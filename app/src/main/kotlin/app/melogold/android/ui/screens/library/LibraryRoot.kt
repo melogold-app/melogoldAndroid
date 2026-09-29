@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -63,6 +64,8 @@ import app.melogold.android.ui.screens.libraryArtistsRoute
 import app.melogold.android.ui.screens.libraryPlaylistsRoute
 import app.melogold.android.ui.screens.libraryTracksRoute
 import app.melogold.android.ui.screens.localPlaylistRoute
+import app.melogold.android.ui.screens.statsRoute
+import app.melogold.android.ui.screens.wrappedRoute
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.TabRootScaffold
 import app.melogold.android.ui.shell.TopLevelDestination
@@ -79,6 +82,7 @@ fun RouteHandlerScope.LibraryRoot() {
     val model = rememberScreenModel("library/model") { LibraryModel() }
     val counts by model.counts.collectAsState()
     val playlists by model.playlists.collectAsState()
+    val wrappedYear by model.wrappedYear.collectAsState()
     val nav = LocalMainNav.current
     val listState = rememberLazyListState()
     var creating by rememberSaveable { mutableStateOf(false) }
@@ -113,6 +117,11 @@ fun RouteHandlerScope.LibraryRoot() {
             contentPadding = contentPadding,
             modifier = Modifier.fillMaxSize()
         ) {
+            // From 1 December to 31 January: the year in review is ready (tasks/0016)
+            wrappedYear?.let { year ->
+                item(key = "wrapped") { WrappedCard(year = year, onClick = { wrappedRoute(year) }) }
+            }
+
             item(key = "collections") {
                 CollectionTiles(
                     favorites = current.favorites,
@@ -150,6 +159,7 @@ fun RouteHandlerScope.LibraryRoot() {
                         albums = current.albums,
                         artists = current.artists,
                         onTracks = { libraryTracksRoute() },
+                        onStats = { statsRoute() },
                         onAlbums = { libraryAlbumsRoute() },
                         onArtists = { libraryArtistsRoute() },
                         modifier = Modifier.padding(top = 24.dp)
@@ -326,6 +336,7 @@ private fun SavedGroup(
     albums: Int,
     artists: Int,
     onTracks: () -> Unit,
+    onStats: () -> Unit,
     onAlbums: () -> Unit,
     onArtists: () -> Unit,
     modifier: Modifier = Modifier
@@ -336,16 +347,27 @@ private fun SavedGroup(
     // Everything played, liked, in playlists or downloaded: ViTune's "Songs", which people coming from it look for
     SegmentedListItem(
         onClick = onTracks,
-        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 4),
         colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_music_note) },
         trailingContent = { CountAndChevron(tracks) }
     ) {
         Text(text = stringResource(R.string.library_all_tracks))
     }
+    // How much and what was listened to in a week, a month, a year (tasks/0016)
+    SegmentedListItem(
+        onClick = onStats,
+        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 4),
+        colors = SegmentedGroupDefaults.colors(),
+        leadingContent = { LeadingIcon(icon = R.drawable.ms_bar_chart) },
+        trailingContent = { Chevron() },
+        modifier = Modifier.testTag("library_stats")
+    ) {
+        Text(text = stringResource(R.string.stats_title))
+    }
     SegmentedListItem(
         onClick = onAlbums,
-        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+        shapes = ListItemDefaults.segmentedShapes(index = 2, count = 4),
         colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_album) },
         trailingContent = { CountAndChevron(albums) }
@@ -354,7 +376,7 @@ private fun SavedGroup(
     }
     SegmentedListItem(
         onClick = onArtists,
-        shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+        shapes = ListItemDefaults.segmentedShapes(index = 3, count = 4),
         colors = SegmentedGroupDefaults.colors(),
         leadingContent = { LeadingIcon(icon = R.drawable.ms_person) },
         trailingContent = { CountAndChevron(artists) }
@@ -401,11 +423,39 @@ private fun CountAndChevron(count: Int) = Row(verticalAlignment = Alignment.Cent
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
-    Icon(
-        painter = painterResource(R.drawable.ms_chevron_right),
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Chevron()
+}
+
+@Composable
+private fun Chevron() = Icon(
+    painter = painterResource(R.drawable.ms_chevron_right),
+    contentDescription = null,
+    tint = MaterialTheme.colorScheme.onSurfaceVariant
+)
+
+/** "Insights 2026 are ready" (1 December to 31 January): opens the year in review. */
+@Composable
+private fun WrappedCard(year: Int, onClick: () -> Unit) = Surface(
+    onClick = onClick,
+    shape = RoundedCornerShape(24.dp),
+    color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+        .testTag("library_wrapped")
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 16.dp, end = 12.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = stringResource(R.string.stats_wrapped_ready, year), style = MaterialTheme.typography.titleMedium)
+            Text(text = stringResource(R.string.stats_wrapped_ready_text), style = MaterialTheme.typography.bodyMedium)
+        }
+        Icon(painter = painterResource(R.drawable.ms_chevron_right), contentDescription = null)
+    }
 }
 
 /**

@@ -55,6 +55,7 @@ import app.melogold.android.models.Song
 import app.melogold.android.models.SongWithLastPlayed
 import app.melogold.android.models.SongWithPlayTime
 import app.melogold.android.preferences.DataPreferences
+import app.melogold.android.sync.Account
 import app.melogold.android.sync.api.DeviceDto
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.components.m3e.ConnectedToggleGroup
@@ -71,6 +72,7 @@ import app.melogold.android.ui.model.ScreenModel
 import app.melogold.android.ui.model.rememberScreenModel
 import app.melogold.android.ui.screens.GlobalRoutes
 import app.melogold.android.ui.screens.Route
+import app.melogold.android.ui.screens.statsRoute
 import app.melogold.android.ui.shell.AppSnackbar
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.ui.shell.LocalMainNav
@@ -82,6 +84,7 @@ import app.melogold.compose.routing.RouteHandler
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -127,19 +130,14 @@ enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
 }
 
 /**
- * History › Recent and Most played, forgetting a track and clearing all; both wait for "Undo"
- * ([PendingMutation]) and the lists hide what they delete meanwhile.
+ * The other devices of the account that have plays here, with their names (History and Insights): the ids come from the
+ * plays, the names from the server; a device gone from the account stays "Another device".
  */
-@OptIn(ExperimentalCoroutinesApi::class)
-class HistoryModel : ScreenModel() {
-    private val account = Dependencies.application.container.account
+class HistoryDevices(scope: CoroutineScope, private val account: Account) {
     private val names = MutableStateFlow<Map<String, DeviceDto>>(emptyMap())
 
-    val period = MutableStateFlow(HistoryPeriod.Month)
-    val device = MutableStateFlow<HistoryDevice>(HistoryDevice.All)
-
     /** This device on the server: its plays that came back from there carry this id. */
-    private val me: String? get() = account.session?.deviceId
+    val me: String? get() = account.session?.deviceId
 
     /** The other devices of the account with plays here (API §4.8 history); none without an account. */
     val devices: StateFlow<ImmutableList<HistoryDeviceEntry>> = combine(Database.historyDevices(), names) { ids, names ->
@@ -148,6 +146,38 @@ class HistoryModel : ScreenModel() {
             .sortedBy { it.name == null }
             .toImmutableList()
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), persistentListOf())
+
+    init {
+        if (account.session != null) scope.launch {
+            runCatching { account.devices() }.onSuccess { list -> names.value = list.associateBy { it.id } }
+        }
+    }
+
+    /** Whether a play of the device [deviceId] (null: this one) belongs to what [device] shows. */
+    fun includes(device: HistoryDevice, deviceId: String?): Boolean = when (device) {
+        HistoryDevice.All -> true
+        HistoryDevice.Here -> deviceId == null || deviceId == me
+        is HistoryDevice.Other -> deviceId == device.id
+    }
+}
+
+/**
+ * History › Recent and Most played, forgetting a track and clearing all; both wait for "Undo"
+ * ([PendingMutation]) and the lists hide what they delete meanwhile.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class HistoryModel : ScreenModel() {
+    private val account = Dependencies.application.container.account
+    private val deviceList = HistoryDevices(scope, account)
+
+    val period = MutableStateFlow(HistoryPeriod.Month)
+    val device = MutableStateFlow<HistoryDevice>(HistoryDevice.All)
+
+    /** This device on the server: its plays that came back from there carry this id. */
+    private val me: String? get() = deviceList.me
+
+    /** The other devices of the account with plays here (API §4.8 history); none without an account. */
+    val devices: StateFlow<ImmutableList<HistoryDeviceEntry>> = deviceList.devices
 
     val recent: StateFlow<List<SongWithLastPlayed>?> = device
         .flatMapLatest { device ->
@@ -171,13 +201,6 @@ class HistoryModel : ScreenModel() {
 
     /** Whether "Clear history" also goes to the other devices of the account. */
     val signedIn: Boolean get() = account.session != null
-
-    init {
-        // The names of the account's devices; a device gone from the account stays "Another device"
-        if (account.session != null) scope.launch {
-            runCatching { account.devices() }.onSuccess { list -> names.value = list.associateBy { it.id } }
-        }
-    }
 
     private fun mostPlayedIn(period: HistoryPeriod, device: HistoryDevice): Flow<List<SongWithPlayTime>> {
         val since = period.days?.let { System.currentTimeMillis() - TimeUnit.DAYS.toMillis(it) } ?: 0L
@@ -258,6 +281,12 @@ fun HistoryScreen(initialMode: HistoryMode) = RouteHandler {
                 { SelectionTopBar(selection = selection, tracks = selectable) }
             } else null,
             actions = {
+                IconButton(onClick = { statsRoute() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ms_bar_chart),
+                        contentDescription = stringResource(R.string.stats_title)
+                    )
+                }
                 Box {
                     IconButton(onClick = { menu = true }) {
                         Icon(
@@ -455,7 +484,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.mostPlayedItems(
  * the account, each with the icon of its kind (tasks/0004).
  */
 @Composable
-private fun DeviceFilter(
+internal fun DeviceFilter(
     selected: HistoryDevice,
     devices: ImmutableList<HistoryDeviceEntry>,
     onSelect: (HistoryDevice) -> Unit,

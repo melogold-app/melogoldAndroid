@@ -42,7 +42,7 @@ private val RowShape = RoundedCornerShape(16.dp)
 
 /**
  * A track in a list (REWRITE §3.11.1): cover (or a chart [number] in front of it), title,
- * "Artist · Album", marks, duration and ⋮. Tap plays, long tap and ⋮ open the menu; without
+ * "Artist · Album", an optional [detail] line under it (Insights: how many plays), marks, duration and ⋮. Tap plays, long tap and ⋮ open the menu; without
  * [onMenu] (e.g. inside focused search, a dialog of its own) there is no menu.
  *
  * In a list that can select ([selection], task 0011) a long tap selects instead; while selecting,
@@ -65,7 +65,8 @@ fun TrackRow(
     leading: (@Composable () -> Unit)? = null,
     accessibilityActions: List<CustomAccessibilityAction> = emptyList(),
     videoId: String? = null,
-    selection: RowSelection? = null
+    selection: RowSelection? = null,
+    detail: String? = null
 ) {
     val playLabel = stringResource(R.string.kit_play)
     val menuLabel = stringResource(R.string.kit_menu)
@@ -166,6 +167,13 @@ fun TrackRow(
             if (!subtitle.isNullOrBlank()) Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (!detail.isNullOrBlank()) Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Итоги: статистика прослушиваний и итоги года (tasks/0016) -->
+<resources>
+    <string name="stats_title">Итоги</string>
+    <string name="stats_week">Неделя</string>
+    <string name="stats_month">Месяц</string>
+    <string name="stats_year">Год</string>
+    <string name="stats_all_time">Всё время</string>
+    <string name="stats_previous">Предыдущий период</string>
+    <string name="stats_next">Следующий период</string>
+    <string name="stats_listening_time">Время прослушивания</string>
+    <string name="stats_plays">Прослушиваний</string>
+    <string name="stats_tracks">Треков</string>
+    <string name="stats_artists">Исполнителей</string>
+    <string name="stats_top_tracks">Лучшие треки</string>
+    <string name="stats_top_artists">Лучшие исполнители</string>
+    <string name="stats_top_albums">Лучшие альбомы</string>
+    <string name="stats_when">Когда слушал</string>
+    <string name="stats_time_of_day">Время суток</string>
+    <string name="stats_discoveries">Открытия</string>
+    <string name="stats_show_all">Показать все</string>
+    <string name="stats_show_less">Свернуть</string>
+    <string name="stats_empty">За этот период прослушиваний нет</string>
+    <string name="stats_all_time_note">Сервер хранит историю 400 дней: на новом устройстве видно столько, сколько пришло с сервера</string>
+    <plurals name="stats_plays_count">
+        <item quantity="one">%d прослушивание</item>
+        <item quantity="few">%d прослушивания</item>
+        <item quantity="many">%d прослушиваний</item>
+        <item quantity="other">%d прослушивания</item>
+    </plurals>
+    <plurals name="stats_discovered">
+        <item quantity="one">%d новый трек</item>
+        <item quantity="few">%d новых трека</item>
+        <item quantity="many">%d новых треков</item>
+        <item quantity="other">%d нового трека</item>
+    </plurals>
+    <string name="stats_discoveries_text">Услышаны впервые в этом периоде</string>
+    <string name="stats_change">%1$s к %2$s</string>
+    <string name="stats_vs_last_week">прошлой неделе</string>
+    <string name="stats_vs_month">%1$s</string>
+    <string name="stats_vs_month_year">%1$s %2$d</string>
+    <string name="stats_vs_year">%1$d году</string>
+    <string-array name="stats_months_compare">
+        <item>январю</item>
+        <item>февралю</item>
+        <item>марту</item>
+        <item>апрелю</item>
+        <item>маю</item>
+        <item>июню</item>
+        <item>июлю</item>
+        <item>августу</item>
+        <item>сентябрю</item>
+        <item>октябрю</item>
+        <item>ноябрю</item>
+        <item>декабрю</item>
+    </string-array>
+    <string name="stats_chart_busiest">Больше всего слушали: %1$s, %2$s</string>
+    <string name="stats_hours_busiest">Больше всего слушали около %1$s, %2$s</string>
+
+    <!-- Итоги года -->
+    <string name="stats_wrapped">Итоги года</string>
+    <string name="stats_wrapped_title">Итоги %1$d</string>
+    <string name="stats_wrapped_ready">Итоги %1$d готовы</string>
+    <string name="stats_wrapped_ready_text">Посмотрите, что вы слушали в этом году</string>
+    <plurals name="stats_wrapped_minutes">
+        <item quantity="one">минута музыки за год</item>
+        <item quantity="few">минуты музыки за год</item>
+        <item quantity="many">минут музыки за год</item>
+        <item quantity="other">минуты музыки за год</item>
+    </plurals>
+    <string name="stats_wrapped_track">Трек года</string>
+    <string name="stats_wrapped_track_detail">%1$s · %2$s</string>
+    <string name="stats_wrapped_month">Любимый месяц</string>
+    <string name="stats_wrapped_time">Любимое время суток</string>
+    <string name="stats_wrapped_peak">Больше всего слушали около %1$s</string>
+    <plurals name="stats_wrapped_new_tracks">
+        <item quantity="one">новый трек</item>
+        <item quantity="few">новых трека</item>
+        <item quantity="many">новых треков</item>
+        <item quantity="other">нового трека</item>
+    </plurals>
+    <string name="stats_wrapped_discoveries">Новое в этом году</string>
+    <string name="stats_wrapped_empty">За этот год пока нечего показать</string>
+    <string name="stats_wrapped_back">Назад</string>
+    <string name="stats_wrapped_next">Дальше</string>
+    <string name="stats_wrapped_close">Закрыть</string>
+    <string name="stats_wrapped_page">Карточка %1$d из %2$d</string>
+    <string name="stats_share">Поделиться</string>
+    <string name="stats_share_watermark">Melogold · Итоги %1$d</string>
+    <string name="stats_share_text">Мой %1$d год в Melogold</string>
+    <string name="stats_share_failed">Не удалось сделать картинку</string>
+    <string name="stats_daypart_night">Ночь</string>
+    <string name="stats_daypart_morning">Утро</string>
+    <string name="stats_daypart_afternoon">День</string>
+    <string name="stats_daypart_evening">Вечер</string>
+</resources>

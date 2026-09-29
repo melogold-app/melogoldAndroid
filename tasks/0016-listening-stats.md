@@ -1,6 +1,6 @@
 # Итоги: статистика прослушиваний за неделю, месяц и год (как в Spotify)
 
-Статус: открыто — утверждено пользователем 2026-09-30; сервер не нужен
+Статус: сделано
 
 Те же задания: `melogoldWindows/tasks/0015-listening-stats.md`, `melogoldiOSmacOS/tasks/0018-listening-stats.md`, `melogoldLinux/tasks/0009-listening-stats.md`.
 

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Insights: the statistics of the listening and the year in review (tasks/0016) -->
+<resources>
+    <string name="stats_title">Insights</string>
+    <string name="stats_week">Week</string>
+    <string name="stats_month">Month</string>
+    <string name="stats_year">Year</string>
+    <string name="stats_all_time">All time</string>
+    <string name="stats_previous">Previous period</string>
+    <string name="stats_next">Next period</string>
+    <string name="stats_listening_time">Listening time</string>
+    <string name="stats_plays">Plays</string>
+    <string name="stats_tracks">Tracks</string>
+    <string name="stats_artists">Artists</string>
+    <string name="stats_top_tracks">Top tracks</string>
+    <string name="stats_top_artists">Top artists</string>
+    <string name="stats_top_albums">Top albums</string>
+    <string name="stats_when">When you listened</string>
+    <string name="stats_time_of_day">Time of day</string>
+    <string name="stats_discoveries">Discoveries</string>
+    <string name="stats_show_all">Show all</string>
+    <string name="stats_show_less">Show less</string>
+    <string name="stats_empty">No plays in this period</string>
+    <string name="stats_all_time_note">The server keeps the history for 400 days: on a new device you see as much as came from the server</string>
+    <plurals name="stats_plays_count">
+        <item quantity="one">%d play</item>
+        <item quantity="other">%d plays</item>
+    </plurals>
+    <plurals name="stats_discovered">
+        <item quantity="one">%d new track</item>
+        <item quantity="other">%d new tracks</item>
+    </plurals>
+    <string name="stats_discoveries_text">Heard for the first time in this period</string>
+    <string name="stats_change">%1$s vs %2$s</string>
+    <string name="stats_vs_last_week">last week</string>
+    <string name="stats_vs_month">%1$s</string>
+    <string name="stats_vs_month_year">%1$s %2$d</string>
+    <string name="stats_vs_year">%1$d</string>
+    <string-array name="stats_months_compare">
+        <item>January</item>
+        <item>February</item>
+        <item>March</item>
+        <item>April</item>
+        <item>May</item>
+        <item>June</item>
+        <item>July</item>
+        <item>August</item>
+        <item>September</item>
+        <item>October</item>
+        <item>November</item>
+        <item>December</item>
+    </string-array>
+    <string name="stats_chart_busiest">Most listening: %1$s, %2$s</string>
+    <string name="stats_hours_busiest">Most listening around %1$s, %2$s</string>
+
+    <!-- Insights of the year -->
+    <string name="stats_wrapped">Year in review</string>
+    <string name="stats_wrapped_title">Insights %1$d</string>
+    <string name="stats_wrapped_ready">Insights %1$d are ready</string>
+    <string name="stats_wrapped_ready_text">See what you listened to this year</string>
+    <plurals name="stats_wrapped_minutes">
+        <item quantity="one">minute of music this year</item>
+        <item quantity="other">minutes of music this year</item>
+    </plurals>
+    <string name="stats_wrapped_track">Track of the year</string>
+    <string name="stats_wrapped_track_detail">%1$s · %2$s</string>
+    <string name="stats_wrapped_month">Favorite month</string>
+    <string name="stats_wrapped_time">Favorite time of day</string>
+    <string name="stats_wrapped_peak">Most listening around %1$s</string>
+    <plurals name="stats_wrapped_new_tracks">
+        <item quantity="one">new track</item>
+        <item quantity="other">new tracks</item>
+    </plurals>
+    <string name="stats_wrapped_discoveries">New this year</string>
+    <string name="stats_wrapped_empty">There is nothing to show for this year yet</string>
+    <string name="stats_wrapped_back">Back</string>
+    <string name="stats_wrapped_next">Next</string>
+    <string name="stats_wrapped_close">Close</string>
+    <string name="stats_wrapped_page">Card %1$d of %2$d</string>
+    <string name="stats_share">Share</string>
+    <string name="stats_share_watermark">Melogold · Insights %1$d</string>
+    <string name="stats_share_text">My %1$d in Melogold</string>
+    <string name="stats_share_failed">Couldn\'t make the picture</string>
+    <string name="stats_daypart_night">Night</string>
+    <string name="stats_daypart_morning">Morning</string>
+    <string name="stats_daypart_afternoon">Afternoon</string>
+    <string name="stats_daypart_evening">Evening</string>
+</resources>

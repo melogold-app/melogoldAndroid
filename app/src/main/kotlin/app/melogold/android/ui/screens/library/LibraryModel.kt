@@ -5,6 +5,7 @@ import app.melogold.android.data.repo.applying
 import app.melogold.android.data.repo.applyingHistoryTracks
 import app.melogold.android.data.repo.applyingPlaylists
 import app.melogold.android.data.repo.withPending
+import app.melogold.android.data.stats.wrappedSeasonYear
 import app.melogold.android.models.Album
 import app.melogold.android.models.Artist
 import app.melogold.android.models.PlaylistPreview
@@ -13,11 +14,14 @@ import app.melogold.core.data.enums.AlbumSortBy
 import app.melogold.core.data.enums.ArtistSortBy
 import app.melogold.core.data.enums.PlaylistSortBy
 import app.melogold.core.data.enums.SortOrder
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDate
+import java.time.ZoneId
 
 private const val HUB_PLAYLISTS = 5
 private const val KEEP_WHILE_HIDDEN_MS = 5_000L
@@ -57,6 +61,22 @@ class LibraryModel : ScreenModel() {
             tracks = counts[5]
         )
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
+
+    /**
+     * The year of the card "Insights 2026 are ready" (1 December to 31 January, when that year has plays); else null
+     * (tasks/0016).
+     */
+    val wrappedYear: StateFlow<Int?> = run {
+        val zone = ZoneId.systemDefault()
+        val year = wrappedSeasonYear(LocalDate.now(zone))
+        if (year == null) MutableStateFlow(null) else Database
+            .playsBetween(
+                from = LocalDate.of(year, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli(),
+                to = LocalDate.of(year + 1, 1, 1).atStartOfDay(zone).toInstant().toEpochMilli()
+            )
+            .map { plays -> year.takeIf { plays > 0 } }
+            .stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), null)
+    }
 
     /** The newest playlists shown in the hub. */
     val playlists: StateFlow<List<PlaylistPreview>> = Database

@@ -1,0 +1,10 @@
+<!-- A bar chart in the style of Material Symbols Rounded, weight 400, 24dp: three rounded bars -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <path
+      android:fillColor="#FF000000"
+      android:pathData="M190,440 L270,440 A50,50 0 0,1 320,490 L320,770 A50,50 0 0,1 270,820 L190,820 A50,50 0 0,1 140,770 L140,490 A50,50 0 0,1 190,440 Z M440,140 L520,140 A50,50 0 0,1 570,190 L570,770 A50,50 0 0,1 520,820 L440,820 A50,50 0 0,1 390,770 L390,190 A50,50 0 0,1 440,140 Z M690,300 L770,300 A50,50 0 0,1 820,350 L820,770 A50,50 0 0,1 770,820 L690,820 A50,50 0 0,1 640,770 L640,350 A50,50 0 0,1 690,300 Z"/>
+</vector>

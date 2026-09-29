@@ -57,6 +57,10 @@ import app.melogold.android.models.SongAlbumMap
 import app.melogold.android.models.SongArtistMap
 import app.melogold.android.models.SongPlaylistMap
 import app.melogold.android.models.YtLinkMode
+import app.melogold.android.data.stats.FirstPlay
+import app.melogold.android.data.stats.StatAlbumLink
+import app.melogold.android.data.stats.StatArtistLink
+import app.melogold.android.data.stats.StatEvent
 import app.melogold.android.models.SongWithContentLength
 import app.melogold.android.models.SongWithDownload
 import app.melogold.android.models.SyncState
@@ -346,6 +350,46 @@ interface DatabaseAccessor {
         """
     )
     fun mostPlayedOn(since: Long, deviceId: String, limit: Int = 100): Flow<List<SongWithPlayTime>>
+
+    // region Insights (tasks/0016): what the statistics read, in a few plain queries, counted in Kotlin
+    /** The plays from [from] (inclusive) to [to] (exclusive), whichever device made them. */
+    @Query("SELECT songId, timestamp, playTime, deviceId FROM Event WHERE timestamp >= :from AND timestamp < :to")
+    fun statEvents(from: Long, to: Long): List<StatEvent>
+
+    /** The tracks played in that time. */
+    @Query("SELECT * FROM Song WHERE id IN (SELECT DISTINCT songId FROM Event WHERE timestamp >= :from AND timestamp < :to)")
+    fun statSongs(from: Long, to: Long): List<Song>
+
+    /** The first of the artists of each of those tracks (the order they were saved in). */
+    @Query(
+        """
+        SELECT m.songId AS songId, m.artistId AS artistId, a.name AS name, a.thumbnailUrl AS thumbnailUrl
+        FROM SongArtistMap m JOIN Artist a ON a.id = m.artistId
+        WHERE m.songId IN (SELECT DISTINCT songId FROM Event WHERE timestamp >= :from AND timestamp < :to)
+        AND m.rowid = (SELECT MIN(rowid) FROM SongArtistMap WHERE songId = m.songId)
+        """
+    )
+    fun statArtists(from: Long, to: Long): List<StatArtistLink>
+
+    /** The album of each of those tracks. */
+    @Query(
+        """
+        SELECT m.songId AS songId, m.albumId AS albumId, a.title AS title, a.thumbnailUrl AS thumbnailUrl
+        FROM SongAlbumMap m JOIN Album a ON a.id = m.albumId
+        WHERE m.songId IN (SELECT DISTINCT songId FROM Event WHERE timestamp >= :from AND timestamp < :to)
+        AND m.rowid = (SELECT MIN(rowid) FROM SongAlbumMap WHERE songId = m.songId)
+        """
+    )
+    fun statAlbums(from: Long, to: Long): List<StatAlbumLink>
+
+    /** How many plays fall in a period: is there a year in review to show. */
+    @Query("SELECT COUNT(*) FROM Event WHERE timestamp >= :from AND timestamp < :to")
+    fun playsBetween(from: Long, to: Long): Flow<Int>
+
+    /** When each track was first played, on any device: what is new in a period. */
+    @Query("SELECT songId, MIN(timestamp) AS firstAt FROM Event GROUP BY songId")
+    fun firstPlays(): List<FirstPlay>
+    // endregion Insights
 
     @Query("SELECT COUNT(*) FROM Event")
     fun eventCount(): Flow<Int>
