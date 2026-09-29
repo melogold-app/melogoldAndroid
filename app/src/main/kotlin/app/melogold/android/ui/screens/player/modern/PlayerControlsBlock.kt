@@ -372,8 +372,8 @@ fun TransportRow(
 }
 
 /**
- * "Lyrics · Queue" as a connected pair of toggle buttons, and the output switcher chip
- * (REWRITE §3.10.2).
+ * "Lyrics · Queue" as a connected pair of toggle buttons, and the "Device" chip (REWRITE §3.10.2), which opens the
+ * devices sheet, or the system output switcher when the account cannot control other devices (tasks/0018).
  */
 @Composable
 fun PlayerToolbar(
@@ -381,11 +381,9 @@ fun PlayerToolbar(
     queueSelected: Boolean,
     onLyricsClick: () -> Unit,
     onQueueClick: () -> Unit,
+    onDevicesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val noOutputSwitcher = stringResource(R.string.no_output_switcher)
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -426,7 +424,7 @@ fun PlayerToolbar(
         }
 
         AssistChip(
-            onClick = { context.showOutputSwitcher(noOutputSwitcher) },
+            onClick = onDevicesClick,
             label = { Text(text = stringResource(R.string.player_output_short)) },
             leadingIcon = {
                 Icon(

@@ -7,6 +7,7 @@ import androidx.media3.common.Timeline
 import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.service.PlayerService
+import app.melogold.android.sync.remote.RemoteRouting
 import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.models.NavigationEndpoint
 import kotlin.time.Duration
@@ -57,6 +58,8 @@ fun Player.forcePlayAtIndex(
     index: Int
 ) {
     if (items.isEmpty()) return
+    // While this device controls another, a tap on a track plays that list there (tasks/0018)
+    if (RemoteRouting.playQueue(items, index)) return
 
     setMediaItems(items, index, C.TIME_UNSET)
     playWhenReady = true
@@ -135,6 +138,8 @@ operator fun Timeline.get(
  * played"). Local files get no radio.
  */
 fun PlayerService.Binder.playWithRadio(mediaItem: MediaItem) {
+    if (RemoteRouting.playQueue(listOf(mediaItem), 0)) return
+
     stopRadio()
     player.forcePlay(mediaItem)
     if (!mediaItem.mediaId.startsWith(LOCAL_KEY_PREFIX))

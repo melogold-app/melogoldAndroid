@@ -25,7 +25,10 @@ import app.melogold.android.service.LOCAL_KEY_PREFIX
 import app.melogold.android.sync.api.ApiException
 import app.melogold.android.sync.api.MergePlanInput
 import app.melogold.android.sync.api.MergePlanRequest
+import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.sync.api.OpResult
+import app.melogold.android.sync.api.PlaybackCommandPayload
+import app.melogold.android.sync.api.PlaybackUpdatedPayload
 import app.melogold.android.sync.api.SyncRequest
 import app.melogold.android.sync.api.SyncResponse
 import app.melogold.android.sync.api.TrackDto
@@ -69,6 +72,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 
 private const val TAG = "SyncEngine"
@@ -98,6 +102,17 @@ private const val KEY_MERGE = "needsMerge"
 private const val KEY_LAST_SYNC = "lastSyncAt"
 private const val KEY_HISTORY_BASELINE = "historyBaseline"
 private const val KEY_PLAY_RETRY_AT = "playRetryAt"
+
+/** Where the app stands for the live stream: signed in, in front, online, playing. */
+private data class Live(val signedIn: Boolean, val front: Boolean, val online: Boolean, val playing: Boolean)
+
+/**
+ * Whether the player of this app is alive with a queue (playing or paused): the live stream then stays open in the
+ * background too, so that another device can control this one (tasks/0018). Set by the player's service.
+ */
+object PlaybackActivity {
+    val active = MutableStateFlow(false)
+}
 
 /** What the sync is doing, for Settings. */
 sealed interface SyncStatus {
@@ -152,6 +167,9 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     private val mutableStatus = MutableStateFlow<SyncStatus>(SyncStatus.Off)
     private val mutableDevicesChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val mutableLinkUpdated = MutableSharedFlow<String>(extraBufferCapacity = LINK_EVENTS_BUFFER)
+    private val mutablePlaybackUpdated = MutableSharedFlow<PlaybackUpdatedPayload>(extraBufferCapacity = PLAYBACK_EVENTS_BUFFER)
+    private val mutablePlaybackCommands = MutableSharedFlow<PlaybackCommandPayload>(extraBufferCapacity = COMMANDS_BUFFER)
+    private val mutableLiveConnected = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private val lyrics = LyricsSync(account)
 
@@ -169,16 +187,26 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     /** The link of this id, shown by this device, moved on (`link.updated`, API §6): "Add device" reads it again. */
     val linkUpdated: SharedFlow<String> = mutableLinkUpdated
 
+    /** What the account plays changed on another device (`playback.updated`, API §6, tasks/0018). */
+    val playbackUpdated: SharedFlow<PlaybackUpdatedPayload> = mutablePlaybackUpdated
+
+    /** Another device asks this one to do something (`playback.command`; only with "Control from other devices" on). */
+    val playbackCommands: SharedFlow<PlaybackCommandPayload> = mutablePlaybackCommands
+
+    /** The live stream (re)connected: what was missed is read again ([playbackUpdated] has no replay, API §6). */
+    val liveConnected: SharedFlow<Unit> = mutableLiveConnected
+
     fun start() = scope.launch {
         val foreground = ProcessLifecycleOwner.get().lifecycle.currentStateFlow
             .map { it.isAtLeast(Lifecycle.State.STARTED) }
             .distinctUntilChanged()
 
-        combine(account.state, foreground, network.isOnline) { state, front, online ->
-            Triple(state is AccountState.SignedIn, front, online)
+        // The stream also stays while the player has a queue with the app in the background: commands from other devices reach it
+        combine(account.state, foreground, network.isOnline, PlaybackActivity.active) { state, front, online, playing ->
+            Live(state is AccountState.SignedIn, front, online, playing)
         }
             .distinctUntilChanged()
-            .collectLatest { (signedIn, front, online) ->
+            .collectLatest { (signedIn, front, online, playing) ->
                 if (!signedIn) {
                     mutableStatus.value = SyncStatus.Off
                     return@collectLatest
@@ -190,6 +218,12 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
                     front -> coroutineScope {
                         launch { sync(force = true) }
                         launch { followLocalChanges() }
+                        launch { followLiveEvents() }
+                    }
+
+                    // In the background: the stream only, while the player has a queue; a sync when an event says one is due
+                    playing -> coroutineScope {
+                        launch { sync(force = false) }
                         launch { followLiveEvents() }
                     }
 
@@ -826,14 +860,22 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
         )
     }
 
-    /** The live stream (API §6) while the app is in front: syncs on `sync.changed`, signs out on `session.invalidated`. */
+    /**
+     * The live stream (API §6) while the app is in front or plays: syncs on `sync.changed`, signs out on
+     * `session.invalidated`, hands over `playback.updated` and `playback.command`. It is opened with `remote=1` while
+     * "Control from other devices" is on, and again when that is switched (tasks/0018).
+     */
     private suspend fun followLiveEvents() {
+        PlayerPreferences.remoteControlEnabledProperty.stateFlow.collectLatest { remote -> followLiveEvents(remote) }
+    }
+
+    private suspend fun followLiveEvents(remote: Boolean) {
         var backoff = 0L
         while (scope.isActive && account.session != null) {
             val started = System.currentTimeMillis()
             try {
                 account.authorized { api, token ->
-                    api.streamClient.prepareGet(api.eventsUrl) {
+                    api.streamClient.prepareGet(api.eventsUrl(remote)) {
                         bearerAuth(token)
                         header("Accept", "text/event-stream")
                     }.execute { response ->
@@ -860,18 +902,30 @@ class SyncEngine(private val account: Account, private val network: NetworkMonit
     private fun onLiveEvent(data: String) {
         val event = runCatching { json.decodeFromString<LiveEvent>(data) }.getOrNull() ?: return
         when (event.type) {
-            "system.connected", "sync.changed", "lyrics.changed" -> scope.launch { sync(force = true) }
+            "system.connected" -> {
+                mutableLiveConnected.tryEmit(Unit)
+                scope.launch { sync(force = true) }
+            }
+
+            "sync.changed", "lyrics.changed" -> scope.launch { sync(force = true) }
             "devices.updated" -> mutableDevicesChanged.tryEmit(Unit)
             "link.updated" -> linkUpdatedId(data)?.let(mutableLinkUpdated::tryEmit)
             "session.invalidated" -> account.endSession()
+            "playback.updated" -> event.payload?.let { decodePayload<PlaybackUpdatedPayload>(it)?.let(mutablePlaybackUpdated::tryEmit) }
+            "playback.command" -> event.payload?.let { decodePayload<PlaybackCommandPayload>(it)?.let(mutablePlaybackCommands::tryEmit) }
         }
     }
+
+    private inline fun <reified T> decodePayload(payload: JsonObject): T? =
+        runCatching { json.decodeFromJsonElement<T>(payload) }.getOrNull()
 
     private suspend fun lastSyncAt(): Long? = withContext(Dispatchers.IO) { Database.syncState(KEY_LAST_SYNC)?.toLongOrNull() }
 
     private companion object {
         const val NAME_MAX = 200
         const val LINK_EVENTS_BUFFER = 4
+        const val PLAYBACK_EVENTS_BUFFER = 8
+        const val COMMANDS_BUFFER = 16
     }
 }
 

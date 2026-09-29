@@ -25,6 +25,10 @@ object PlayerPreferences : GlobalPreferencesHolder() {
     val handleAudioFocusProperty = boolean(true)
     var handleAudioFocus by handleAudioFocusProperty
 
+    /** Other devices of the account may control this one (tasks/0018): the live stream is opened with `remote=1`. */
+    val remoteControlEnabledProperty = boolean(true)
+    var remoteControlEnabled by remoteControlEnabledProperty
+
     val sponsorBlockEnabledProperty = boolean(false)
     var sponsorBlockEnabled by sponsorBlockEnabledProperty
 }

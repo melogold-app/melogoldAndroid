@@ -191,6 +191,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     private lateinit var cache: Cache
     private lateinit var player: ExoPlayer
 
+    /** This player for the other devices of the account: what it plays, and what they ask of it (tasks/0018). */
+    private var remote: PlayerRemote? = null
+
     private val defaultActions =
         PlaybackState.ACTION_PLAY or
             PlaybackState.ACTION_PAUSE or
@@ -352,6 +355,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         updateRepeatMode()
         maybeRestorePlayerQueue()
         ProcessLifecycleOwner.get().lifecycle.addObserver(appVisibility)
+        remote = PlayerRemote(this, player, stopRadio = { binder.stopRadio() })
 
         mediaSession = MediaSession(baseContext, TAG).apply {
             setCallback(SessionCallback())
@@ -438,6 +442,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             maybeSavePlayerQueue()
 
             ProcessLifecycleOwner.get().lifecycle.removeObserver(appVisibility)
+            remote?.release()
             player.removeListener(this)
             player.stop()
             player.release()
@@ -1242,6 +1247,11 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
         /** Waits until the queue saved at the last stop is back in the player; at once when there was none. */
         suspend fun awaitQueueRestored() = queueRestored.await()
+
+        /** "Listen here" (tasks/0018): plays the queue of another device from where it is and takes its session over. */
+        fun listenHere(state: app.melogold.android.sync.api.PlaybackState) {
+            remote?.takeOver(state)
+        }
 
         /** Whether the system refused to play in the foreground: the app was in the background (an agent). */
         val foregroundRefused: Boolean

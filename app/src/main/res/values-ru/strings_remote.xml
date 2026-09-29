@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Управление другим устройством и его громкостью (tasks/0018) -->
+<resources>
+    <string name="remote_device">Устройство</string>
+    <string name="remote_this_device">Это устройство</string>
+    <string name="remote_output">Выбор вывода звука…</string>
+    <string name="remote_other_devices">Другие устройства</string>
+    <string name="remote_no_other_devices">Других устройств нет. Войдите на них в тот же аккаунт</string>
+    <string name="remote_online">В сети</string>
+    <string name="remote_offline">Не в сети</string>
+    <string name="remote_control_off">Управление выключено</string>
+    <string name="remote_playing_on">Играет на «%1$s»</string>
+    <string name="remote_listen_here">Слушать здесь</string>
+    <string name="remote_disconnect">Отключиться</string>
+    <string name="remote_volume">Громкость</string>
+    <string name="remote_volume_value">%1$d %%</string>
+    <string name="remote_nothing_playing">На «%1$s» ничего не играет</string>
+    <string name="remote_now_playing_line">%1$s — %2$s</string>
+    <string name="remote_device_volume">Громкость %1$d %%</string>
+    <string name="remote_controlled_by">Управляет «%1$s»</string>
+    <string name="remote_continued_on">Воспроизведение продолжено на «%1$s»</string>
+    <string name="remote_device_offline">«%1$s» не в сети</string>
+    <string name="remote_device_disabled">На «%1$s» управление выключено</string>
+    <string name="remote_failed">Не удалось связаться с устройством</string>
+    <string name="remote_listen_here_failed">Забирать нечего</string>
+    <string name="remote_devices_failed">Не удалось загрузить устройства</string>
+    <string name="remote_setting">Управление с других устройств</string>
+    <string name="remote_setting_text">Другие ваши устройства смогут ставить здесь на паузу, переключать, перематывать и менять громкость</string>
+</resources>

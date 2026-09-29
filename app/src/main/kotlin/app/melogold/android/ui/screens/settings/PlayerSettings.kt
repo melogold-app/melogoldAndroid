@@ -15,6 +15,9 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import androidx.compose.runtime.collectAsState
+import app.melogold.android.sync.AccountState
+import app.melogold.android.LocalAppContainer
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.ui.components.LocalMenuState
 import app.melogold.android.ui.screens.Route
@@ -32,6 +35,7 @@ fun PlayerSettings() = with(PlayerPreferences) {
     val binder = LocalPlayerServiceBinder.current
     val launchEqualizer by rememberEqualizerLauncher(audioSessionId = { binder?.player?.audioSessionId })
     val menuState = LocalMenuState.current
+    val signedIn = LocalAppContainer.current.account.state.collectAsState().value is AccountState.SignedIn
 
     // The track now playing, for "Stream info"
     var nowPlaying by remember(binder) { mutableStateOf(binder?.player?.currentMediaItem, neverEqualPolicy()) }
@@ -52,6 +56,14 @@ fun PlayerSettings() = with(PlayerPreferences) {
                 onCheckedChange = {
                     resumePlaybackWhenDeviceConnected = it
                 }
+            )
+
+            // Other devices of the account may pause, skip and turn this one up (tasks/0018)
+            if (signedIn) SwitchSettingsEntry(
+                title = stringResource(R.string.remote_setting),
+                text = stringResource(R.string.remote_setting_text),
+                isChecked = remoteControlEnabled,
+                onCheckedChange = { remoteControlEnabled = it }
             )
 
             SwitchSettingsEntry(

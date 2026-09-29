@@ -15,6 +15,7 @@ import app.melogold.android.service.PlayerService
 import app.melogold.android.data.repo.SongLinkFileCache
 import app.melogold.android.sync.Account
 import app.melogold.android.sync.Shares
+import app.melogold.android.sync.remote.RemoteControl
 import app.melogold.android.sync.SyncEngine
 import app.melogold.android.update.AppUpdater
 import app.melogold.providers.songlink.ExternalLinkResolver
@@ -55,6 +56,9 @@ class AppContainer(private val application: Application) {
     /** The account on the Melogold server and the sync of the library with it. */
     val account by lazy { Account(application) }
     val sync by lazy { SyncEngine(account, network, appScope) }
+
+    /** This device as a remote for another one of the account (tasks/0018). */
+    val remote by lazy { RemoteControl(account, sync.playbackUpdated, sync.liveConnected, appScope) }
 
     /** Links to own playlists: snapshots on the server, "My links", opening a link (tasks/0017). */
     val shares by lazy { Shares(account) }

@@ -58,6 +58,18 @@ import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
+import kotlinx.coroutines.launch
+import app.melogold.android.utils.asMediaItem
+import app.melogold.android.ui.screens.player.modern.showOutputSwitcher
+import app.melogold.android.ui.screens.player.remote.RemotePlayer
+import app.melogold.android.ui.screens.player.remote.RemoteMiniPlayer
+import app.melogold.android.ui.screens.player.remote.DeviceSheet
+import app.melogold.android.sync.remote.RemoteNotice
+import app.melogold.android.data.repo.toSong
+import app.melogold.android.LocalAppContainer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.components.BottomSheet
 import app.melogold.android.ui.components.BottomSheetState
@@ -109,6 +121,33 @@ fun Player(
 
     val snackbar = LocalAppSnackbar.current
     val stoppedMessage = stringResource(R.string.player_stopped)
+
+    // This device as the remote of another one of the account (tasks/0018)
+    val context = LocalContext.current
+    val container = LocalAppContainer.current
+    val remote = container.remote
+    val remoteTarget by remote.target.collectAsState()
+    val remoteNow by remote.now.collectAsState()
+    val accountState by container.account.state.collectAsState()
+    val remoteAvailable by produceState(initialValue = false, accountState) { value = remote.available() }
+    val remoteScope = rememberCoroutineScope()
+    val noOutputSwitcher = stringResource(R.string.no_output_switcher)
+    val listenHereFailed = stringResource(R.string.remote_listen_here_failed)
+    val noticeOffline = { name: String -> context.getString(R.string.remote_device_offline, name) }
+    val noticeDisabled = { name: String -> context.getString(R.string.remote_device_disabled, name) }
+    val noticeFailed = stringResource(R.string.remote_failed)
+
+    LaunchedEffect(remote) {
+        remote.notices.collect { notice ->
+            snackbar.show(
+                when (notice) {
+                    is RemoteNotice.Offline -> noticeOffline(notice.name)
+                    is RemoteNotice.Disabled -> noticeDisabled(notice.name)
+                    RemoteNotice.Failed -> noticeFailed
+                }
+            )
+        }
+    }
 
     var mediaItem by remember(binder) {
         mutableStateOf(
@@ -168,6 +207,16 @@ fun Player(
         }
     }
 
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val remoteMedia = remember(remoteNow?.track) { remoteNow?.track?.toSong()?.asMediaItem }
+    val remoteScheme = rememberArtworkColorScheme(
+        key = remoteMedia?.mediaId,
+        bitmap = rememberArtworkBitmap(remoteMedia?.mediaMetadata?.artworkUri),
+        isDark = isDark,
+        contrastLevel = rememberContrastLevel(),
+        delayMillis = 150L
+    )
+
     val metadata = remember(mediaItem) { mediaItem?.mediaMetadata }
     val extras = remember(metadata) { metadata?.extras?.songBundle }
 
@@ -204,17 +253,48 @@ fun Player(
         }
     }
 
-    if (mediaItem != null) BottomSheet(
+    /** The sheet of the "Device" button: this device and its output, the other devices of the account. */
+    fun openDevices() {
+        if (!remoteAvailable) {
+            context.showOutputSwitcher(noOutputSwitcher)
+            return
+        }
+        menuState.display {
+            DeviceSheet(
+                onDismiss = menuState::hide,
+                onOutput = { context.showOutputSwitcher(noOutputSwitcher) },
+                onThisDevice = remote::disconnect,
+                onSelect = { device ->
+                    // The playback goes on where it is chosen: this device stops, so that two do not play at once
+                    binder?.player?.pause()
+                    remote.connect(device)
+                }
+            )
+        }
+    }
+
+    if (mediaItem != null || remoteTarget != null) BottomSheet(
         state = layoutState,
         modifier = modifier.fillMaxSize(),
         onDismiss = {
-            binder?.let { stopWithUndo(it, snackbar, stoppedMessage) }
+            if (remoteTarget != null) remote.disconnect() else binder?.let { stopWithUndo(it, snackbar, stoppedMessage) }
             layoutState.dismissSoft()
         },
         backHandlerEnabled = !menuState.isDisplayed,
         collapsedContent = { _ ->
+            val target = remoteTarget
             val error = windowState(binder).second
-            MiniPlayer(
+            if (target != null) RemoteMiniPlayer(
+                target = target,
+                now = remoteNow,
+                onExpand = layoutState::expandSoft,
+                onPlayPause = remote::toggle,
+                onNext = remote::next,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontalBottomPaddingValues)
+                    .padding(bottom = collapsedBottomExtra)
+            ) else MiniPlayer(
                 binder = binder,
                 metadata = metadata,
                 explicit = extras?.explicit == true,
@@ -229,7 +309,26 @@ fun Player(
             )
         }
     ) {
-        mediaItem?.let { currentMediaItem ->
+        val target = remoteTarget
+        if (target != null) RemotePlayer(
+            target = target,
+            now = remoteNow,
+            artworkScheme = remoteScheme,
+            onCollapse = layoutState::collapseSoft,
+            onDevices = ::openDevices,
+            onListenHere = {
+                remoteScope.launch {
+                    val taken = remote.listenHere { state -> binder?.listenHere(state) }
+                    if (!taken) snackbar.show(listenHereFailed)
+                }
+            },
+            onDisconnect = remote::disconnect,
+            onPlayPause = remote::toggle,
+            onPrevious = remote::previous,
+            onNext = remote::next,
+            onSeek = remote::seekTo,
+            onVolume = remote::setVolume
+        ) else mediaItem?.let { currentMediaItem ->
             if (binder != null) ModernPlayer(
                 layoutState = layoutState,
                 binder = binder,
@@ -238,7 +337,8 @@ fun Player(
                 setLikedAt = { likedAt = it },
                 shouldBePlaying = shouldBePlaying,
                 openPlayerMenu = { extras -> openPlayerMenu(extras) },
-                artworkScheme = artworkScheme
+                artworkScheme = artworkScheme,
+                onDevices = ::openDevices
             )
         }
     }

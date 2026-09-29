@@ -422,6 +422,133 @@ data class ShareDto(
 data class ShareList(val shares: List<ShareDto> = emptyList())
 // endregion
 
+// region Playback and the remote (API §4.9, §6, tasks/0018)
+/** Who took the playback over ("Listen here"): the device and its session, and when. */
+@Serializable
+data class PlaybackHandoff(val deviceId: String, val sessionId: String, val at: String)
+
+@Serializable
+data class PlaybackHandoffInput(val deviceId: String, val sessionId: String)
+
+/** What the last active player of the account plays: one row per user, the queue a window of up to 200 tracks. */
+@Serializable
+data class PlaybackState(
+    val rev: Long,
+    val deviceId: String,
+    val deviceName: String? = null,
+    val sessionId: String,
+    val queueVersion: Long,
+    val index: Int,
+    val positionMs: Long,
+    val durationMs: Long? = null,
+    val playing: Boolean,
+    /** When [positionMs] was true, on the clock of the server */
+    val at: String,
+    val updatedAt: String,
+    val queue: List<TrackDto> = emptyList(),
+    val handoffFrom: PlaybackHandoff? = null,
+    /** 0..100, the volume of the device that made this state; null: it did not say */
+    val volume: Int? = null
+)
+
+@Serializable
+data class PlaybackStateResponse(val state: PlaybackState? = null, val serverTime: String)
+
+/** `PUT /playback/state`; the position is not sent between calls, the others count it from [at] and [playing]. */
+@Serializable
+data class PlaybackPut(
+    val sessionId: String,
+    val queueVersion: Long,
+    val at: String,
+    val index: Int,
+    val positionMs: Long,
+    val durationMs: Long? = null,
+    val playing: Boolean,
+    val queue: List<TrackInput>? = null,
+    val handoffFrom: PlaybackHandoffInput? = null,
+    val volume: Int? = null
+)
+
+/** [reason] `newer_state` or `handed_off` when not [applied]; [state] is then the server's. */
+@Serializable
+data class PlaybackPutResult(
+    val applied: Boolean,
+    val rev: Long? = null,
+    val reason: String? = null,
+    val state: PlaybackState? = null,
+    val serverTime: String
+)
+
+/** [PlaybackState] without the queue: what the events carry (API §6 `PlaybackSummary`). */
+@Serializable
+data class PlaybackSummary(
+    val rev: Long,
+    val deviceId: String,
+    val deviceName: String? = null,
+    val sessionId: String,
+    val queueVersion: Long,
+    val index: Int,
+    val queueLength: Int,
+    val track: TrackDto? = null,
+    val positionMs: Long,
+    val durationMs: Long? = null,
+    val playing: Boolean,
+    val at: String,
+    val updatedAt: String,
+    val handoffFrom: PlaybackHandoff? = null,
+    val volume: Int? = null
+)
+
+/** Another device of the account, for the choice of the device to control (API §4.9 "Пульт"). */
+@Serializable
+data class RemoteDevice(
+    val deviceId: String,
+    val name: String,
+    val platform: String,
+    /** A stream of events of it is open now */
+    val online: Boolean,
+    /** …and it was opened with `remote=1`: the device lets others control it */
+    val controllable: Boolean,
+    val playing: PlaybackSummary? = null,
+    val volume: Int? = null
+)
+
+@Serializable
+data class RemoteDeviceList(val devices: List<RemoteDevice> = emptyList(), val serverTime: String)
+
+/** A command to another device: [action] is `play|pause|toggle|next|previous|seek|volume|play_queue|stop`. */
+@Serializable
+data class RemoteCommand(
+    val commandId: String,
+    val targetDeviceId: String,
+    val action: String,
+    val positionMs: Long? = null,
+    val volume: Int? = null,
+    val queue: List<TrackInput>? = null,
+    val index: Int? = null
+)
+
+@Serializable
+data class RemoteCommandResult(val delivered: Boolean)
+
+/** `playback.updated` of the live stream (API §6). */
+@Serializable
+data class PlaybackUpdatedPayload(val rev: Long, val cleared: Boolean = false, val state: PlaybackSummary? = null)
+
+/** `playback.command` of the live stream: what another device asks this one to do. */
+@Serializable
+data class PlaybackCommandPayload(
+    val commandId: String,
+    val fromDeviceId: String,
+    val fromDeviceName: String? = null,
+    val action: String,
+    val positionMs: Long? = null,
+    val volume: Int? = null,
+    val queue: List<TrackDto>? = null,
+    val index: Int? = null
+)
+// endregion
+
 // region Lyrics (API §4.10)
 @Serializable
 data class LyricsText(
@@ -500,6 +627,9 @@ class MelogoldApi(private val baseUrl: String) {
     }
 
     val eventsUrl get() = "$baseUrl/auth/me/events"
+
+    /** The live stream; with [remote] this device lets the others control it and gets `playback.command` (API §6). */
+    fun eventsUrl(remote: Boolean) = if (remote) "$eventsUrl?remote=1" else eventsUrl
 
     suspend fun serverInfo(): ServerInfo = call { client.get("$baseUrl/server/info") }
 
@@ -667,6 +797,43 @@ class MelogoldApi(private val baseUrl: String) {
 
     /** A snapshot by its id, without signing in (API §4.11): the server of a link may be another one. */
     suspend fun share(shareId: String): ShareDto = call { client.get("$baseUrl/shares/$shareId") }
+
+    /** What the account plays now, with the queue (API §4.9); the state is null when nothing does. */
+    suspend fun playbackState(token: String): PlaybackStateResponse = call {
+        client.get("$baseUrl/playback/state") {
+            bearerAuth(token)
+            header(SYNC_PROTOCOL_HEADER, SYNC_PROTOCOL.toString())
+        }
+    }
+
+    /** This device says what it plays (API §4.9, DESIGN §3.12); `409 playback_queue_required` asks for the queue too. */
+    suspend fun putPlaybackState(token: String, put: PlaybackPut): PlaybackPutResult = call {
+        client.put("$baseUrl/playback/state") {
+            bearerAuth(token)
+            header(SYNC_PROTOCOL_HEADER, SYNC_PROTOCOL.toString())
+            jsonBody(put)
+        }
+    }
+
+    /**
+     * The other devices of the account with what they play (`features.remote`). Like everything under `/playback` it needs
+     * `X-Sync-Protocol` (the server checks it; API §1.2 names only `/playback/state`).
+     */
+    suspend fun remoteDevices(token: String): RemoteDeviceList = call {
+        client.get("$baseUrl/playback/devices") {
+            bearerAuth(token)
+            header(SYNC_PROTOCOL_HEADER, SYNC_PROTOCOL.toString())
+        }
+    }
+
+    /** A command for another device; `409 device_offline`, `409 remote_control_disabled`, `404 device_not_found`. */
+    suspend fun sendCommand(token: String, command: RemoteCommand): RemoteCommandResult = call {
+        client.post("$baseUrl/playback/commands") {
+            bearerAuth(token)
+            header(SYNC_PROTOCOL_HEADER, SYNC_PROTOCOL.toString())
+            jsonBody(command)
+        }
+    }
 
     suspend fun mergePlan(token: String, request: MergePlanRequest): MergePlanResponse = call {
         client.post("$baseUrl/sync/merge-plan") {

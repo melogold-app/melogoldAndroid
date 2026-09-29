@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Control of another device and its volume (tasks/0018) -->
+<resources>
+    <string name="remote_device">Device</string>
+    <string name="remote_this_device">This device</string>
+    <string name="remote_output">Audio output…</string>
+    <string name="remote_other_devices">Other devices</string>
+    <string name="remote_no_other_devices">No other devices. Sign in on them with the same account</string>
+    <string name="remote_online">Online</string>
+    <string name="remote_offline">Offline</string>
+    <string name="remote_control_off">Control is off</string>
+    <string name="remote_playing_on">Playing on “%1$s”</string>
+    <string name="remote_listen_here">Listen here</string>
+    <string name="remote_disconnect">Disconnect</string>
+    <string name="remote_volume">Volume</string>
+    <string name="remote_volume_value">%1$d%%</string>
+    <string name="remote_nothing_playing">Nothing is playing on “%1$s”</string>
+    <string name="remote_now_playing_line">%1$s — %2$s</string>
+    <string name="remote_device_volume">Volume %1$d%%</string>
+    <string name="remote_controlled_by">Controlled by “%1$s”</string>
+    <string name="remote_continued_on">Playback continued on “%1$s”</string>
+    <string name="remote_device_offline">“%1$s” is offline</string>
+    <string name="remote_device_disabled">Control is off on “%1$s”</string>
+    <string name="remote_failed">Couldn\'t reach the device</string>
+    <string name="remote_listen_here_failed">There is nothing to take over</string>
+    <string name="remote_devices_failed">Couldn\'t load the devices</string>
+    <string name="remote_setting">Control from other devices</string>
+    <string name="remote_setting_text">Your other devices can pause, skip, rewind and change the volume here while it plays</string>
+</resources>

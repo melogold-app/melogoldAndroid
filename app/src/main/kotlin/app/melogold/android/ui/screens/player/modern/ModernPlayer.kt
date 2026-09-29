@@ -167,6 +167,7 @@ fun ModernPlayer(
     shouldBePlaying: Boolean,
     openPlayerMenu: (PlayerMenuExtras) -> Unit,
     artworkScheme: ColorScheme?,
+    onDevices: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val appearance = LocalAppearance.current
@@ -529,7 +530,8 @@ fun ModernPlayer(
                     lyricsSelected = mode == PlayerMode.Lyrics,
                     queueSelected = queueOpen,
                     onLyricsClick = onLyricsClick,
-                    onQueueClick = onQueueClick
+                    onQueueClick = onQueueClick,
+                    onDevicesClick = onDevices
                 )
             }
         )
