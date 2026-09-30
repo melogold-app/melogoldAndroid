@@ -326,7 +326,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         cache = Dependencies.application.container.playerCache
         player = ExoPlayer.Builder(this, createRendersFactory(), createMediaSourceFactory())
             .setHandleAudioBecomingNoisy(true)
-            .setWakeMode(C.WAKE_MODE_LOCAL)
+            // Сетевой режим: кроме процессора держит и Wi‑Fi — с погашенным экраном Wi‑Fi не засыпает посреди трека
+            // (иначе буфер кончается, а плеер «играет» без звука; поток идёт кусками по 512 КБ)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .setAudioAttributes(
                 /* audioAttributes = */
                 AudioAttributes.Builder()
