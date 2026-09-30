@@ -131,7 +131,8 @@ enum class HistoryPeriod(val days: Long?, @param:StringRes val label: Int) {
 
 /**
  * The other devices of the account that have plays here, with their names (History and Insights): the ids come from the
- * plays, the names from the server; a device gone from the account stays "Another device".
+ * plays, the names from the server. A device gone from the account is not offered at all (the user, 2026-09-30: no
+ * "Another device" and no "Removed device"): its plays stay under "All devices" only.
  */
 class HistoryDevices(scope: CoroutineScope, private val account: Account) {
     private val names = MutableStateFlow<Map<String, DeviceDto>>(emptyMap())
@@ -142,8 +143,7 @@ class HistoryDevices(scope: CoroutineScope, private val account: Account) {
     /** The other devices of the account with plays here (API §4.8 history); none without an account. */
     val devices: StateFlow<ImmutableList<HistoryDeviceEntry>> = combine(Database.historyDevices(), names) { ids, names ->
         ids.filter { it != me }
-            .map { HistoryDeviceEntry(id = it, name = names[it]?.name, platform = names[it]?.platform) }
-            .sortedBy { it.name == null }
+            .mapNotNull { id -> names[id]?.let { HistoryDeviceEntry(id = id, name = it.name, platform = it.platform) } }
             .toImmutableList()
     }.stateIn(scope, SharingStarted.WhileSubscribed(KEEP_WHILE_HIDDEN_MS), persistentListOf())
 
@@ -491,11 +491,11 @@ internal fun DeviceFilter(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val other = stringResource(R.string.history_device_other)
     fun label(device: HistoryDevice): String? = when (device) {
         HistoryDevice.All -> null
         HistoryDevice.Here -> null
-        is HistoryDevice.Other -> devices.firstOrNull { it.id == device.id }?.name ?: other
+        // Only devices of the account are offered; one removed meanwhile shows as "All devices" until reselected
+        is HistoryDevice.Other -> devices.firstOrNull { it.id == device.id }?.name
     }
 
     @DrawableRes
