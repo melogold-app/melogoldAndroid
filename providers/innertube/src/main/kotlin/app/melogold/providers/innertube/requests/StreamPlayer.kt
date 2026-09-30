@@ -112,6 +112,12 @@ object StreamVisitor {
         visitorData = value
         onVisitorData?.invoke(value)
     }
+
+    /** YouTube's bot check: the next request gets a fresh `visitorData` (the kept one may be the flagged one). */
+    fun forget() {
+        visitorData = null
+        onVisitorData?.invoke("")
+    }
 }
 
 private const val WEB_REMIX_VERSION = "1.20250922.03.00"

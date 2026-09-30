@@ -7,6 +7,7 @@ import androidx.core.net.toUri
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.PlayerResponse.StreamingData.AdaptiveFormat
 import app.melogold.providers.innertube.requests.StreamClient
+import app.melogold.providers.innertube.requests.StreamVisitor
 import app.melogold.providers.innertube.requests.streamPlayer
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
@@ -117,8 +118,9 @@ internal fun pickAudio(formats: List<AdaptiveFormat>): AdaptiveFormat? {
  * The stream of [videoId] from [clients] in order: one request when the first answers. What the clients said on the
  * way goes to [reasons], for yt-dlp's turn and the diagnosis.
  *
- * - YouTube's bot check (or 429) throws [BotCheckException] at once: it is the address the device goes out from, not
- *   the client, and every further request only deepens the block (2026-09-30, a shared VPN server);
+ * - YouTube's bot check (or 429): the next client is still asked once (a bot check can hit one client and not another:
+ *   a German VPN exit on 2026-09-30 blocked VISIONOS and ANDROID_VR but not IOS); when every client got it,
+ *   [BotCheckException] — no yt-dlp, no diagnosis, the address is remembered as closed ([BlockedAddress]);
  * - no client answered at all — the network error of the last one;
  * - otherwise `null`: yt-dlp tries next.
  *
@@ -133,12 +135,15 @@ suspend fun resolveDirect(
     if (background && BlockedAddress.isBlocked) throw BotCheckException(IOException("the address is closed, not asking"))
     var networkError: IOException? = null
     var onlyNetworkErrors = true
+    var botCheck: BotCheckException? = null
     for (client in clients) {
         val result = Innertube.streamPlayer(videoId, client) ?: throw CancellationException()
         val response = result.getOrElse { error ->
             if (error is ResponseException && error.response.status.value == HTTP_TOO_MANY_REQUESTS) {
-                BlockedAddress.mark()
-                throw BotCheckException(error)
+                botCheck = BotCheckException(error)
+                reasons += "${client.name}: HTTP 429"
+                onlyNetworkErrors = false
+                return@getOrElse null
             }
             if (error is IOException) networkError = error else onlyNetworkErrors = false
             reasons += "${client.name}: ${error.message}"
@@ -150,8 +155,9 @@ suspend fun resolveDirect(
         val reason = response.playabilityStatus?.reason
         if (status != "OK") {
             if (isBotCheck(status, reason)) {
-                BlockedAddress.mark()
-                throw BotCheckException(IOException("${client.name}: $status $reason"))
+                botCheck = BotCheckException(IOException("${client.name}: $status $reason"))
+                reasons += "${client.name}: $status ${reason.orEmpty()}".trim()
+                continue
             }
             reasons += "${client.name}: $status ${reason.orEmpty()}".trim()
             continue
@@ -181,6 +187,12 @@ suspend fun resolveDirect(
             userAgent = client.mediaUserAgent,
             source = client.name
         )
+    }
+    botCheck?.let {
+        BlockedAddress.mark()
+        // The kept visitorData may be the flagged one: the next try (a user's action) starts with a fresh one
+        StreamVisitor.forget()
+        throw it
     }
     if (onlyNetworkErrors) networkError?.let { throw it }
     return null
