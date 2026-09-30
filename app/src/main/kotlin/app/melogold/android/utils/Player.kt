@@ -100,6 +100,43 @@ fun Player.forceSeekToPrevious(
 fun Player.forceSeekToNext() =
     if (hasNextMediaItem()) seekToNext() else seekTo(0, C.TIME_UNSET)
 
+/**
+ * The index [forceSeekToNext] lands on: the next one in the playing order (shuffle and repeat included), else the
+ * first; `null` when it would stay on the same track (a queue of one, or none).
+ */
+fun Player.nextTrackIndex(): Int? = when {
+    mediaItemCount <= 1 -> null
+    hasNextMediaItem() -> nextMediaItemIndex
+    else -> 0
+}.takeIf { it != C.INDEX_UNSET && it != currentMediaItemIndex }
+
+/**
+ * The index [forceSeekToPrevious] lands on when it does not seek to the start of the current track (`seekToStart =
+ * false`: a swipe of the mini player): the previous one (skipping explicit ones when they are hidden), else the last;
+ * `null` when it would stay on the same track. Only the swipe needs it beforehand, to show the track that comes in.
+ */
+fun Player.previousTrackIndex(hideExplicit: Boolean = AppearancePreferences.hideExplicit): Int? {
+    val count = mediaItemCount
+    if (count <= 1) return null
+    val target = when {
+        hideExplicit -> {
+            // At most one round: a queue of explicit tracks only must not loop here (composition calls this)
+            var i = currentMediaItemIndex - 1
+            var steps = 0
+            while (
+                (i !in 0 until count || getMediaItemAt(i).mediaMetadata.extras?.songBundle?.explicit == true) &&
+                steps++ < count
+            ) {
+                if (i <= 0) i = count - 1 else i--
+            }
+            i
+        }
+        hasPreviousMediaItem() -> previousMediaItemIndex
+        else -> count - 1
+    }
+    return target.takeIf { it in 0 until count && it != currentMediaItemIndex }
+}
+
 fun Player.addNext(mediaItem: MediaItem) = when (playbackState) {
     Player.STATE_IDLE, Player.STATE_ENDED -> forcePlay(mediaItem)
     else -> addMediaItem(currentMediaItemIndex + 1, mediaItem)
