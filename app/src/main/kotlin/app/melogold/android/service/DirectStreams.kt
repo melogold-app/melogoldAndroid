@@ -82,6 +82,28 @@ data class ResolvedStream(
     val source: String
 )
 
+/**
+ * YouTube closed the address this device goes out from (its bot check): remembered for 10 minutes, so background work
+ * (downloads) does not ask YouTube again and deepen the block. A user's action still tries one request; a stream that
+ * comes clears it.
+ */
+object BlockedAddress {
+    private const val REMEMBER_MS = 10 * 60_000L
+
+    @Volatile
+    private var until = 0L
+
+    val isBlocked: Boolean get() = System.currentTimeMillis() < until
+
+    fun mark() {
+        until = System.currentTimeMillis() + REMEMBER_MS
+    }
+
+    fun clear() {
+        until = 0L
+    }
+}
+
 /** Opus 160k, AAC 128k, then the smaller ones; the rest by bitrate. Only audio with a direct address. */
 private val PREFERRED_ITAGS = listOf(251, 140, 250, 249, 139)
 
@@ -99,14 +121,23 @@ internal fun pickAudio(formats: List<AdaptiveFormat>): AdaptiveFormat? {
  *   the client, and every further request only deepens the block (2026-09-30, a shared VPN server);
  * - no client answered at all — the network error of the last one;
  * - otherwise `null`: yt-dlp tries next.
+ *
+ * [background] (downloads): while the address is remembered as closed ([BlockedAddress]), no request at all.
  */
-suspend fun resolveDirect(videoId: String, clients: List<StreamClient>, reasons: MutableList<String>): ResolvedStream? {
+suspend fun resolveDirect(
+    videoId: String,
+    clients: List<StreamClient>,
+    reasons: MutableList<String>,
+    background: Boolean = false
+): ResolvedStream? {
+    if (background && BlockedAddress.isBlocked) throw BotCheckException(IOException("the address is closed, not asking"))
     var networkError: IOException? = null
     var onlyNetworkErrors = true
     for (client in clients) {
         val result = Innertube.streamPlayer(videoId, client) ?: throw CancellationException()
         val response = result.getOrElse { error ->
             if (error is ResponseException && error.response.status.value == HTTP_TOO_MANY_REQUESTS) {
+                BlockedAddress.mark()
                 throw BotCheckException(error)
             }
             if (error is IOException) networkError = error else onlyNetworkErrors = false
@@ -118,7 +149,10 @@ suspend fun resolveDirect(videoId: String, clients: List<StreamClient>, reasons:
         val status = response.playabilityStatus?.status
         val reason = response.playabilityStatus?.reason
         if (status != "OK") {
-            if (isBotCheck(status, reason)) throw BotCheckException(IOException("${client.name}: $status $reason"))
+            if (isBotCheck(status, reason)) {
+                BlockedAddress.mark()
+                throw BotCheckException(IOException("${client.name}: $status $reason"))
+            }
             reasons += "${client.name}: $status ${reason.orEmpty()}".trim()
             continue
         }
@@ -133,6 +167,7 @@ suspend fun resolveDirect(videoId: String, clients: List<StreamClient>, reasons:
             reasons += "${client.name}: no audio with a direct address"
             continue
         }
+        BlockedAddress.clear()
         return ResolvedStream(
             uri = uri,
             contentLength = format.contentLength,

@@ -1442,7 +1442,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             cache: Cache?,
             chunkLength: Long? = DEFAULT_CHUNK_LENGTH,
             findMediaItem: suspend (videoId: String) -> MediaItem? = { null },
-            uriCache: UriCache<String, StreamMeta> = UriCache()
+            uriCache: UriCache<String, StreamMeta> = UriCache(),
+            background: Boolean = false,
+            onBotCheck: () -> Unit = {}
         ): DataSource.Factory = ResolvingDataSource.Factory(
             cache?.let {
                 ConditionalCacheDataSourceFactory(
@@ -1504,9 +1506,14 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                     // One request of a stream client; yt-dlp (four or five requests) only when none of them gave
                     // a stream for a reason other than the bot check
                     val reasons = mutableListOf<String>()
-                    val stream = runBlocking(Dispatchers.IO) {
-                        resolveDirect(mediaId, StreamClients.current, reasons)
-                    } ?: resolveWithYtDlp(mediaId, reasons)
+                    val stream = try {
+                        runBlocking(Dispatchers.IO) {
+                            resolveDirect(mediaId, StreamClients.current, reasons, background)
+                        } ?: resolveWithYtDlp(mediaId, reasons)
+                    } catch (e: BotCheckException) {
+                        onBotCheck()
+                        throw e
+                    }
 
                     val mediaItem = runCatching {
                         runBlocking(Dispatchers.IO) { findMediaItem(mediaId) }

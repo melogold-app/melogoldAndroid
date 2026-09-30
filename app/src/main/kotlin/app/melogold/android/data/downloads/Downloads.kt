@@ -32,6 +32,7 @@ import app.melogold.android.models.DownloadWaitReason
 import app.melogold.android.models.TrackDownload
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.query
+import app.melogold.android.service.BlockedAddress
 import app.melogold.android.service.DownloadsService
 import app.melogold.android.service.PlayerService
 import app.melogold.android.service.UnplayableException
@@ -96,7 +97,15 @@ class Downloads(
                         .setCache(playerCache())
                         .setCacheWriteDataSinkFactory(null)
                         .setUpstreamDataSourceFactory(
-                            PlayerService.createYouTubeDataSourceResolverFactory(context = context, cache = null, chunkLength = null)
+                            // Background: after YouTube's bot check the queue stops at once instead of asking again
+                            // for every track and every retry (BlockedAddress)
+                            PlayerService.createYouTubeDataSourceResolverFactory(
+                                context = context,
+                                cache = null,
+                                chunkLength = null,
+                                background = true,
+                                onBotCheck = ::holdForBotCheck
+                            )
                         )
                 ),
             Executors.newFixedThreadPool(MAX_PARALLEL)
@@ -161,7 +170,22 @@ class Downloads(
 
     fun pauseAll() = main.post { manager.pauseDownloads() }
 
-    fun resumeAll() = main.post { manager.resumeDownloads() }
+    fun resumeAll() {
+        // "Resume" after the bot check: one new try, the user may have switched the VPN server
+        BlockedAddress.clear()
+        main.post { manager.resumeDownloads() }
+    }
+
+    /**
+     * YouTube's bot check while downloading: the whole queue pauses (the other tracks would fail the same way) and
+     * waits for "Resume"; the downloads keep their place and what they have.
+     */
+    private fun holdForBotCheck() = main.post {
+        if (!manager.downloadsPaused) {
+            Log.w(TAG, "YouTube's bot check: the downloads pause until Resume")
+            manager.pauseDownloads()
+        }
+    }
 
     /** "Only over Wi-Fi" (REWRITE §3.5.6). */
     fun setWifiOnly(wifiOnly: Boolean) {

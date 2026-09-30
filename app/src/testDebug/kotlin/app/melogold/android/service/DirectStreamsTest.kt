@@ -2,12 +2,18 @@ package app.melogold.android.service
 
 import app.melogold.providers.innertube.models.PlayerResponse.StreamingData.AdaptiveFormat
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The format of a stream client's answer, and what counts as YouTube's bot check. */
+/**
+ * The format of a stream client's answer, what counts as YouTube's bot check, the memory of a closed address.
+ * Robolectric: a PlaybackException reads the Android clock.
+ */
+@RunWith(RobolectricTestRunner::class)
 class DirectStreamsTest {
     private fun format(itag: Int, mime: String, bitrate: Long, url: String? = "https://rr1.googlevideo.com/$itag") =
         AdaptiveFormat(
@@ -44,5 +50,21 @@ class DirectStreamsTest {
         assertFalse(isBotCheck("LOGIN_REQUIRED", "This video is private"))
         assertFalse(isBotCheck("UNPLAYABLE", "Video unavailable"))
         assertFalse(isBotCheck("OK", null))
+    }
+
+    @Test
+    fun `a closed address is not asked again in the background`() = kotlinx.coroutines.runBlocking {
+        BlockedAddress.mark()
+        try {
+            // No client is asked: the list is empty, and still the answer is the bot check, not "nothing found"
+            val error = runCatching { resolveDirect("dQw4w9WgXcQ", emptyList(), mutableListOf(), background = true) }
+                .exceptionOrNull()
+            assertTrue(error is BotCheckException)
+            // The player (a user's action) is not stopped by the memory: with no clients it simply finds nothing
+            assertNull(resolveDirect("dQw4w9WgXcQ", emptyList(), mutableListOf(), background = false))
+        } finally {
+            BlockedAddress.clear()
+        }
+        assertFalse(BlockedAddress.isBlocked)
     }
 }
