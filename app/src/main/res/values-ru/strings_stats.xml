@@ -15,7 +15,7 @@
     <string name="stats_top_tracks">Лучшие треки</string>
     <string name="stats_top_artists">Лучшие исполнители</string>
     <string name="stats_top_albums">Лучшие альбомы</string>
-    <string name="stats_when">Когда слушал</string>
+    <string name="stats_when">Когда вы слушали</string>
     <string name="stats_time_of_day">Время суток</string>
     <string name="stats_discoveries">Открытия</string>
     <string name="stats_show_all">Показать все</string>

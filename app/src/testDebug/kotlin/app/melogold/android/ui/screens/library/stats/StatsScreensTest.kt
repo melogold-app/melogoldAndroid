@@ -124,7 +124,7 @@ class StatsScreensTest {
         shoot("stats-month")
 
         scrollTo("stats_chart")
-        compose.onNodeWithText("Когда слушал").assertExists()
+        compose.onNodeWithText("Когда вы слушали").assertExists()
         compose.onNodeWithTag("stats_chart").assertExists()
         shoot("stats-month-when")
 

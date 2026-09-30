@@ -1320,6 +1320,130 @@
 | 12 дней без синхронизации | 12 days without sync | `<plurals>` |
 | Выйти | Sign out | |
 
+### 4.16 Итоги, ссылки, пульт (Android 0.1.13, задания 0016–0018)
+
+Собрано из `strings_stats.xml`, `strings_share.xml`, `strings_remote.xml` (en и ru). Множественное число — формы через « ¦ » (§1.4).
+
+**Итоги (задание 0016)**
+
+| Русский | English | Ключ |
+|---|---|---|
+| Итоги | Insights | `stats_title` |
+| Неделя | Week | `stats_week` |
+| Месяц | Month | `stats_month` |
+| Год | Year | `stats_year` |
+| Всё время | All time | `stats_all_time` |
+| Предыдущий период | Previous period | `stats_previous` |
+| Следующий период | Next period | `stats_next` |
+| Время прослушивания | Listening time | `stats_listening_time` |
+| Прослушиваний | Plays | `stats_plays` |
+| Треков | Tracks | `stats_tracks` |
+| Исполнителей | Artists | `stats_artists` |
+| Лучшие треки | Top tracks | `stats_top_tracks` |
+| Лучшие исполнители | Top artists | `stats_top_artists` |
+| Лучшие альбомы | Top albums | `stats_top_albums` |
+| Когда вы слушали | When you listened | `stats_when` |
+| Время суток | Time of day | `stats_time_of_day` |
+| Открытия | Discoveries | `stats_discoveries` |
+| Показать все | Show all | `stats_show_all` |
+| Свернуть | Show less | `stats_show_less` |
+| За этот период прослушиваний нет | No plays in this period | `stats_empty` |
+| Сервер хранит историю 400 дней: на новом устройстве видно столько, сколько пришло с сервера | The server keeps the history for 400 days: on a new device you see as much as came from the server | `stats_all_time_note` |
+| %d прослушивание ¦ %d прослушивания ¦ %d прослушиваний ¦ %d прослушивания | %d play ¦ %d plays | `stats_plays_count` |
+| %d новый трек ¦ %d новых трека ¦ %d новых треков ¦ %d нового трека | %d new track ¦ %d new tracks | `stats_discovered` |
+| Услышаны впервые в этом периоде | Heard for the first time in this period | `stats_discoveries_text` |
+| %1$s к %2$s | %1$s vs %2$s | `stats_change` |
+| прошлой неделе | last week | `stats_vs_last_week` |
+| %1$s | %1$s | `stats_vs_month` |
+| %1$s %2$d | %1$s %2$d | `stats_vs_month_year` |
+| %1$d году | %1$d | `stats_vs_year` |
+| Больше всего слушали: %1$s, %2$s | Most listening: %1$s, %2$s | `stats_chart_busiest` |
+| Больше всего слушали около %1$s, %2$s | Most listening around %1$s, %2$s | `stats_hours_busiest` |
+| Итоги года | Year in review | `stats_wrapped` |
+| Итоги %1$d | Insights %1$d | `stats_wrapped_title` |
+| Итоги %1$d готовы | Insights %1$d are ready | `stats_wrapped_ready` |
+| Посмотрите, что вы слушали в этом году | See what you listened to this year | `stats_wrapped_ready_text` |
+| минута музыки за год ¦ минуты музыки за год ¦ минут музыки за год ¦ минуты музыки за год | minute of music this year ¦ minutes of music this year | `stats_wrapped_minutes` |
+| Трек года | Track of the year | `stats_wrapped_track` |
+| %1$s · %2$s | %1$s · %2$s | `stats_wrapped_track_detail` |
+| Любимый месяц | Favorite month | `stats_wrapped_month` |
+| Любимое время суток | Favorite time of day | `stats_wrapped_time` |
+| Больше всего слушали около %1$s | Most listening around %1$s | `stats_wrapped_peak` |
+| новый трек ¦ новых трека ¦ новых треков ¦ нового трека | new track ¦ new tracks | `stats_wrapped_new_tracks` |
+| Новое в этом году | New this year | `stats_wrapped_discoveries` |
+| За этот год пока нечего показать | There is nothing to show for this year yet | `stats_wrapped_empty` |
+| Назад | Back | `stats_wrapped_back` |
+| Дальше | Next | `stats_wrapped_next` |
+| Закрыть | Close | `stats_wrapped_close` |
+| Карточка %1$d из %2$d | Card %1$d of %2$d | `stats_wrapped_page` |
+| Поделиться | Share | `stats_share` |
+| Melogold · Итоги %1$d | Melogold · Insights %1$d | `stats_share_watermark` |
+| Мой %1$d год в Melogold | My %1$d in Melogold | `stats_share_text` |
+| Не удалось сделать картинку | Couldn't make the picture | `stats_share_failed` |
+| Ночь | Night | `stats_daypart_night` |
+| Утро | Morning | `stats_daypart_morning` |
+| День | Afternoon | `stats_daypart_afternoon` |
+| Вечер | Evening | `stats_daypart_evening` |
+
+**Ссылки (задание 0017)**
+
+| Русский | English | Ключ |
+|---|---|---|
+| Ссылка откроет первые 50 треков на YouTube | The link opens the first 50 tracks on YouTube | `share_youtube_first_50` |
+| Делаем ссылку… | Making the link… | `share_creating` |
+| Делиться нечем: треки плейлиста — файлы на этом устройстве | There is nothing to share: the tracks of this playlist are files on this device | `share_no_tracks` |
+| Слишком много ссылок. Удалите старые в Аккаунт › Мои ссылки | Too many links. Delete old ones in Account › My links | `share_limit_reached` |
+| Скопировать ссылку | Copy link | `share_copy_link` |
+| Ссылка скопирована | Link copied | `share_link_copied` |
+| Удалить ссылку | Delete link | `share_delete_link` |
+| Ссылка удалена | Link deleted | `share_link_deleted` |
+| Удалить ссылку? | Delete the link? | `share_delete_title` |
+| Те, у кого она есть, больше не смогут открыть «%1$s». Плейлист останется в вашей библиотеке | Anyone who has it will no longer be able to open “%1$s”. The playlist stays in your library | `share_delete_text` |
+| Не удалось удалить ссылку | Couldn't delete the link | `share_delete_failed` |
+| Мои ссылки | My links | `my_links` |
+| Плейлисты, которыми вы поделились. Ссылка работает, пока вы её не удалите | The playlists you shared. A link works until you delete it | `my_links_text` |
+| Вы ещё не делились плейлистами. Выберите «Поделиться» в меню своего плейлиста | You haven't shared any playlists yet. Choose Share in the menu of your own playlist | `my_links_empty` |
+| %1$s · %2$s | %1$s · %2$s | `my_links_row` |
+| Не удалось загрузить ссылки | Couldn't load your links | `my_links_error` |
+| Плейлист по ссылке | Playlist by link | `shared_playlist_title` |
+| Сохранить в Библиотеку | Save to Library | `shared_playlist_save` |
+| Сохранено в Библиотеку | Saved to Library | `shared_playlist_saved` |
+| Открыть | Open | `shared_playlist_open` |
+| Ссылка удалена или неверна | The link was deleted or isn't valid | `shared_playlist_gone` |
+| Нет связи с сервером ссылки | Can't reach the server of the link | `shared_playlist_offline` |
+| Не удалось сохранить плейлист | Couldn't save the playlist | `shared_playlist_save_failed` |
+| На сервере %1$s | On the server %1$s | `shared_playlist_foreign_server` |
+
+**Пульт (задание 0018)**
+
+| Русский | English | Ключ |
+|---|---|---|
+| Устройство | Device | `remote_device` |
+| Это устройство | This device | `remote_this_device` |
+| Выбор вывода звука… | Audio output… | `remote_output` |
+| Другие устройства | Other devices | `remote_other_devices` |
+| Других устройств нет. Войдите на них в тот же аккаунт | No other devices. Sign in on them with the same account | `remote_no_other_devices` |
+| В сети | Online | `remote_online` |
+| Не в сети | Offline | `remote_offline` |
+| Управление выключено | Control is off | `remote_control_off` |
+| Играет на «%1$s» | Playing on “%1$s” | `remote_playing_on` |
+| Слушать здесь | Listen here | `remote_listen_here` |
+| Отключиться | Disconnect | `remote_disconnect` |
+| Громкость | Volume | `remote_volume` |
+| %1$d %% | %1$d%% | `remote_volume_value` |
+| На «%1$s» ничего не играет | Nothing is playing on “%1$s” | `remote_nothing_playing` |
+| %1$s — %2$s | %1$s — %2$s | `remote_now_playing_line` |
+| Громкость %1$d %% | Volume %1$d%% | `remote_device_volume` |
+| Управляет «%1$s» | Controlled by “%1$s” | `remote_controlled_by` |
+| Воспроизведение продолжено на «%1$s» | Playback continued on “%1$s” | `remote_continued_on` |
+| «%1$s» не в сети | “%1$s” is offline | `remote_device_offline` |
+| На «%1$s» управление выключено | Control is off on “%1$s” | `remote_device_disabled` |
+| Не удалось связаться с устройством | Couldn't reach the device | `remote_failed` |
+| Забирать нечего | There is nothing to take over | `remote_listen_here_failed` |
+| Не удалось загрузить устройства | Couldn't load the devices | `remote_devices_failed` |
+| Управление с других устройств | Control from other devices | `remote_setting` |
+| Другие ваши устройства смогут ставить здесь на паузу, переключать, перематывать и менять громкость | Your other devices can pause, skip, rewind and change the volume here while it plays | `remote_setting_text` |
+
 ### 4.15 Упоминания в §3, которые не являются подписями
 
 Эти слова в кавычках встречаются в §3, но в интерфейс не попадают. Перечислены, чтобы проверка покрытия (§7) не считала их пропущенными.
