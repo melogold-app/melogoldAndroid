@@ -558,9 +558,12 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
 
         // Skipping stops where it would go round in circles: a queue of one track (with repeat,
-        // "next" is the same track) or a run of failures, e.g. without network (REWRITE §3.10.9).
-        // The player then stays on the error card
-        if (!player.hasNextMediaItem() || player.mediaItemCount < 2 || failedInARow >= MAX_FAILED_IN_A_ROW) {
+        // "next" is the same track), a run of failures, e.g. without network (REWRITE §3.10.9), or YouTube's bot
+        // check, which fails every track alike. The player then stays on the error card
+        if (
+            !player.hasNextMediaItem() || player.mediaItemCount < 2 || failedInARow >= MAX_FAILED_IN_A_ROW ||
+            error.findCause<BotCheckException>() != null
+        ) {
             failedInARow = 0
             return
         }

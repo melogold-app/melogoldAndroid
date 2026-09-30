@@ -52,4 +52,17 @@ class UnavailabilityTest {
             unavailability(Playability("ERROR", "This video has been removed by the uploader", null, emptyList()), null)
         )
     }
+
+    @Test
+    fun `the bot check is not the age check, in either language`() {
+        val ytDlp = "DownloadError: ERROR: [youtube] j9Sn1nFGQQ8: Sign in to confirm you’re not a bot. Use --cookies-from-browser"
+        assertIs<BotCheckException>(unavailability(null, ytDlp))
+        assertIs<BotCheckException>(
+            unavailability(
+                Playability("LOGIN_REQUIRED", "Войдите в аккаунт, чтобы подтвердить, что вы не бот", "NL", emptyList()),
+                null
+            )
+        )
+        assertIs<LoginRequiredException>(unavailability(null, "ERROR: Sign in to confirm your age"))
+    }
 }

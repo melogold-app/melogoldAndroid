@@ -11,6 +11,9 @@ import app.melogold.providers.innertube.requests.Playability
  * yt-dlp says only "Video unavailable" for a track closed in the country (the track of the report: Saba
  * "Photosynthesis", open in 122 countries but not in Russia, also behind a Helsinki VPN that Google counts as
  * Russian), so the country list decides first.
+ *
+ * The bot check (2026-09-30: every client, every track, from a Dutch VPN server) goes before age: both start with
+ * "Sign in to confirm". YouTube words the reason in the language asked, yt-dlp always in English.
  */
 fun unavailability(playability: Playability?, ytDlpMessage: String?): PlaybackException? {
     val message = ytDlpMessage.orEmpty()
@@ -25,6 +28,7 @@ fun unavailability(playability: Playability?, ytDlpMessage: String?): PlaybackEx
                 availableCountries = playability?.availableCountries?.size?.takeIf { it > 0 }
             )
 
+        BOT_MESSAGES.any { it in message || it in reason } -> BotCheckException()
         AGE_MESSAGES.any { it in message || it in reason } -> LoginRequiredException()
         GONE_MESSAGES.any { it in message || it in reason } -> UnplayableException()
         else -> null
@@ -36,6 +40,8 @@ private val GEO_MESSAGES = listOf(
     "not made this video available in your country",
     "blocked it in your country"
 )
+
+private val BOT_MESSAGES = listOf("not a bot", "не бот")
 
 private val AGE_MESSAGES = listOf("confirm your age", "age-restricted", "inappropriate for some users")
 

@@ -35,6 +35,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import app.melogold.android.R
+import app.melogold.android.service.BotCheckException
 import app.melogold.android.service.LoginRequiredException
 import app.melogold.android.service.PlayableFormatNotFoundException
 import app.melogold.android.service.RestrictedVideoException
@@ -135,6 +136,7 @@ fun playbackErrorMessage(mediaItem: MediaItem, error: PlaybackException?): Strin
             has { it is SocketTimeoutException } -> R.string.player_error_timeout
             has { it is UnresolvedAddressException || it is UnknownHostException || it is ConnectException } ->
                 R.string.player_error_network
+            has { it is BotCheckException } -> R.string.player_error_bot_check
             has { it is LoginRequiredException } -> R.string.player_error_age
             has { it is UnplayableException } -> R.string.player_error_unavailable
             // An expired stream URL or a bot check answers 403/410: not the user's network

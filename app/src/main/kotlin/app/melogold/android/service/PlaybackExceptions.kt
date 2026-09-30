@@ -24,6 +24,17 @@ class LoginRequiredException(cause: Throwable? = null) : PlaybackException(
     /* errorCode = */ ERROR_CODE_AUTHENTICATION_EXPIRED
 )
 
+/**
+ * YouTube asks to sign in to confirm this is not a bot (`LOGIN_REQUIRED`): it has stopped answering the address the
+ * device goes out from, not this track — every track fails the same way. Usually a VPN server that many people
+ * share; another server helps at once, else it passes in hours. Neither another client nor another track helps.
+ */
+class BotCheckException(cause: Throwable? = null) : PlaybackException(
+    /* message = */ "YouTube asks to confirm this is not a bot",
+    /* cause = */ cause,
+    /* errorCode = */ ERROR_CODE_IO_BAD_HTTP_STATUS
+)
+
 class VideoIdMismatchException(cause: Throwable? = null) : PlaybackException(
     /* message = */ "Requested video ID doesn't match returned video ID",
     /* cause = */ cause,
