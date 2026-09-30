@@ -9,6 +9,8 @@ import app.melogold.android.Dependencies
 import app.melogold.android.R
 import app.melogold.android.service.PlayerService
 import app.melogold.android.ui.screens.albumRoute
+import app.melogold.android.ui.screens.joinByCodeRoute
+import app.melogold.android.ui.screens.serverLinkRoute
 import app.melogold.android.ui.screens.artistRoute
 import app.melogold.android.ui.screens.playlistRoute
 import app.melogold.android.ui.screens.searchResultRoute
@@ -16,6 +18,7 @@ import app.melogold.android.ui.screens.sharedPlaylistRoute
 import app.melogold.android.utils.asMediaItem
 import app.melogold.android.utils.playWithRadio
 import app.melogold.android.utils.toast
+import app.melogold.domain.server.MelogoldLink
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.links.LinkTarget
 import app.melogold.providers.innertube.links.YouTubeLinkParser
@@ -78,6 +81,26 @@ class LinkHandler internal constructor(
             }
 
             is AppLink.OtherService -> scope.launch { openOtherService(link.link) }
+            is AppLink.App -> scope.launch { openAppLink(link.link) }
+        }
+    }
+
+    /**
+     * `melogold://server` opens the Server screen with the address filled in (it connects only on «Подключиться»);
+     * `melogold://link?mode=invite` opens «Вход по коду» with the field for the code; `mode=request` (the QR of a new
+     * device) only says where to enter its code (API §7.2: nothing signs in or approves by a link alone).
+     */
+    private suspend fun openAppLink(link: MelogoldLink) {
+        when (link) {
+            is MelogoldLink.Server -> nav.navigate(TopLevelDestination.Settings) {
+                serverLinkRoute.ensureGlobal(link.url, link.serverId.orEmpty())
+            }
+
+            is MelogoldLink.DeviceLink -> when {
+                link.mode == MelogoldLink.DeviceLink.Mode.Request -> showError(R.string.link_request_hint)
+                Dependencies.application.container.account.session != null -> showError(R.string.link_invite_signed_in)
+                else -> nav.navigate(TopLevelDestination.Settings) { joinByCodeRoute.ensureGlobal() }
+            }
         }
     }
 

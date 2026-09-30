@@ -97,7 +97,7 @@ internal fun newDeviceLinkError(failure: LinkFailure, claiming: Boolean): Int = 
  */
 @Route
 @Composable
-fun SignInByCodeScreen() = RouteHandler {
+fun SignInByCodeScreen(startClaiming: Boolean = false) = RouteHandler {
     GlobalRoutes()
 
     Content {
@@ -105,7 +105,7 @@ fun SignInByCodeScreen() = RouteHandler {
         val linker = remember { NewDeviceLinker(AccountLinkPort(container.account), container.appScope) }
         val state by linker.state.collectAsState()
         // Typing the code of another device instead of showing this one's
-        var claiming by rememberSaveable { mutableStateOf(false) }
+        var claiming by rememberSaveable { mutableStateOf(startClaiming) }
         var input by rememberSaveable { mutableStateOf("") }
 
         DisposableEffect(linker) { onDispose { linker.cancel() } }

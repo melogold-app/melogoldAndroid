@@ -159,16 +159,17 @@
                     tools:ignore="IntentFilterUniqueDataAttributes" />
             </intent-filter>
 
-            <!-- The link of a playlist someone shared, melogold://share (API §7.2, tasks/0017) -->
+            <!-- The links of the app (API §7.2): a shared playlist (tasks/0017), a server address, linking a device -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:host="share"
-                    android:scheme="melogold" />
+                <data android:scheme="melogold" />
+                <data android:host="share" />
+                <data android:host="server" />
+                <data android:host="link" />
             </intent-filter>
 
             <intent-filter>

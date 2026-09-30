@@ -36,4 +36,6 @@
     <string name="link_import_later">Importing playlists from other services is coming later</string>
     <string name="link_unsupported">Can\'t open this link</string>
     <string name="kit_cancel">Cancel</string>
+    <string name="search_link_server">server address</string>
+    <string name="search_link_device">sign-in with a code</string>
 </resources>

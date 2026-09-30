@@ -1,5 +1,7 @@
 package app.melogold.android.ui.shell
 
+import app.melogold.domain.server.MelogoldLink
+import app.melogold.domain.server.MelogoldLinkParser
 import app.melogold.domain.share.ShareLinkParser
 import app.melogold.domain.share.ShareRef
 import app.melogold.providers.innertube.links.LinkTarget
@@ -17,6 +19,9 @@ sealed interface AppLink {
 
     /** A link of Spotify, Apple Music, Yandex Music, Deezer, Tidal or SoundCloud. */
     data class OtherService(val link: MusicServiceLink) : AppLink
+
+    /** `melogold://server` or `melogold://link` (API §7.2). */
+    data class App(val link: MelogoldLink) : AppLink
 }
 
 /**
@@ -26,8 +31,9 @@ sealed interface AppLink {
  */
 fun classifyLink(text: String): AppLink {
     if (text.contains("melogold://", ignoreCase = true)) {
-        // Its scheme is nobody else's: a link of the app that is not a valid playlist link is a link nobody can open
+        // Its scheme is nobody else's: a link of the app that is none of these is a link nobody can open
         return ShareLinkParser.parse(text)?.let { AppLink.SharedPlaylist(it) }
+            ?: MelogoldLinkParser.parse(text)?.let { AppLink.App(it) }
             ?: AppLink.YouTube(LinkTarget.Unsupported(LinkTarget.REASON_UNKNOWN_PATH))
     }
 

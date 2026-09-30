@@ -2,6 +2,7 @@
 
 package app.melogold.android.ui.screens.search
 
+import app.melogold.domain.server.MelogoldLink
 import app.melogold.android.ui.kit.rememberTrackOverrides
 import app.melogold.android.data.overrides.artists
 import app.melogold.android.data.overrides.title
@@ -663,7 +664,7 @@ private fun LinkRow(link: AppLink, onOpen: () -> Unit) {
     val later = when (link) {
         is AppLink.OtherService -> link.link.kind == MusicLinkKind.Playlist
         is AppLink.YouTube -> link.target is LinkTarget.External
-        is AppLink.SharedPlaylist -> false
+        is AppLink.SharedPlaylist, is AppLink.App -> false
     }
     val label = when {
         link is AppLink.OtherService && later -> stringResource(
@@ -685,6 +686,10 @@ private fun LinkRow(link: AppLink, onOpen: () -> Unit) {
 
         link is AppLink.OtherService -> stringResource(R.string.search_open_link, link.link.service.displayName)
         link is AppLink.SharedPlaylist -> stringResource(R.string.search_open_link, stringResource(R.string.search_link_shared_playlist))
+        link is AppLink.App -> stringResource(
+            R.string.search_open_link,
+            stringResource(if (link.link is MelogoldLink.Server) R.string.search_link_server else R.string.search_link_device)
+        )
 
         else -> stringResource(
             R.string.search_open_link,

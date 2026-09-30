@@ -1,5 +1,7 @@
 package app.melogold.android.ui.screens
 
+import app.melogold.android.ui.screens.settings.account.ServerScreen
+import app.melogold.android.ui.screens.settings.account.SignInByCodeScreen
 import app.melogold.android.ui.screens.library.collections.AllTracksScreen
 import app.melogold.android.ui.screens.library.collections.DownloadsScreen
 import app.melogold.android.ui.screens.library.collections.FavoritesScreen
@@ -59,6 +61,10 @@ val libraryTracksRoute = Route0("libraryTracksRoute")
 val libraryArtistsRoute = Route0("libraryArtistsRoute")
 val statsRoute = Route0("statsRoute")
 val sharedPlaylistRoute = Route2<String, String>("sharedPlaylistRoute")
+/** `melogold://server`: the address and the server id of the link (empty: none). */
+val serverLinkRoute = Route2<String, String>("serverLinkRoute")
+/** `melogold://link?mode=invite`: «Вход по коду» with the field for the code of another device. */
+val joinByCodeRoute = Route0("joinByCodeRoute")
 val wrappedRoute = Route1<Int>("wrappedRoute")
 val settingsPageRoute = Route1<SettingsPage>("settingsPageRoute")
 val searchResultRoute = Route2<String, SearchSource>("searchResultRoute")
@@ -123,6 +129,15 @@ fun RouteHandlerScope.GlobalRoutes() {
     // A playlist a link points at: server and id (tasks/0017)
     sharedPlaylistRoute { serverUrl, shareId ->
         SharedPlaylistScreen(serverUrl = serverUrl, shareId = shareId)
+    }
+
+    // The links of the app (API §7.2)
+    serverLinkRoute { url, serverId ->
+        ServerScreen(prefill = url, expectedServerId = serverId.ifEmpty { null })
+    }
+
+    joinByCodeRoute {
+        SignInByCodeScreen(startClaiming = true)
     }
 
     settingsPageRoute { page ->

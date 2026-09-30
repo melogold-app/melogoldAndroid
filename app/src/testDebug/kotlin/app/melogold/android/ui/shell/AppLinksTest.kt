@@ -1,5 +1,6 @@
 package app.melogold.android.ui.shell
 
+import app.melogold.domain.server.MelogoldLink
 import app.melogold.domain.share.ShareRef
 import app.melogold.providers.innertube.links.LinkTarget
 import app.melogold.providers.songlink.MusicLinkKind
@@ -26,6 +27,20 @@ class AppLinksTest {
     @Test
     fun `words are a search, not a link`() {
         assertEquals(AppLink.YouTube(LinkTarget.Search("кино группа крови")), classifyLink("кино группа крови"))
+    }
+
+    @Test
+    fun `server and device links of the app are app links (API 7_2)`() {
+        val server = assertIs<AppLink.App>(classifyLink("melogold://server?v=1&url=https%3A%2F%2Fmusic.example.com"))
+        assertEquals(MelogoldLink.Server("https://music.example.com", insecure = false, serverId = null), server.link)
+        val invite = assertIs<AppLink.App>(
+            classifyLink(
+                "melogold://link?v=1&mode=invite&server=https%3A%2F%2Fmusic.example.com" +
+                    "&sid=6f1c2c0e-8a3b-4f7e-9c1d-2b5e7a9f0c11&token=q3JdV0hZxK2mP9sT4uW7yB1cE5fH8jL0nR3vX6zA2dG"
+            )
+        )
+        assertIs<MelogoldLink.DeviceLink>(invite.link)
+        assertIs<AppLink.YouTube>(classifyLink("melogold://unknown?v=1"))
     }
 
     @Test

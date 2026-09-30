@@ -152,4 +152,8 @@
     <string name="server_error_params">The address can\'t contain a login, parameters or #</string>
     <string name="server_insecure">Not a secure connection: use it only at home</string>
     <string name="server_current">In use</string>
+    <!-- The links of the app, melogold://server and melogold://link (API §7.2) -->
+    <string name="server_link_mismatch">Another Melogold server answers at this address, not the one in the link</string>
+    <string name="link_request_hint">On a device where you\'re signed in, open Account › Add device and enter the code this device shows</string>
+    <string name="link_invite_signed_in">This device is already signed in. To use another account, sign out first in Settings › Account</string>
 </resources>

@@ -654,13 +654,14 @@ private fun addressError(reason: ServerAddress.Reason): Int = when (reason) {
  */
 @Route
 @Composable
-fun ServerScreen() = RouteHandler {
+fun ServerScreen(prefill: String? = null, expectedServerId: String? = null) = RouteHandler {
     GlobalRoutes()
 
     Content {
         val account = LocalAppContainer.current.account
         val scope = rememberCoroutineScope()
-        var address by rememberSaveable { mutableStateOf(account.serverUrl) }
+        // A `melogold://server` link fills the address in; connecting still needs «Подключиться» (API §7.2)
+        var address by rememberSaveable { mutableStateOf(prefill ?: account.serverUrl) }
         var info by remember { mutableStateOf<ServerInfo?>(null) }
         var checked by remember { mutableStateOf<String?>(null) }
         var busy by remember { mutableStateOf(false) }
@@ -676,6 +677,12 @@ fun ServerScreen() = RouteHandler {
             scope.launch {
                 runCatching { account.check(url) }
                     .onSuccess {
+                        // The link names its server: another one at that address is not it (API §7.2, `sid`)
+                        if (expectedServerId != null && url == prefill && it.serverId != expectedServerId) {
+                            info = null
+                            error = R.string.server_link_mismatch
+                            return@onSuccess
+                        }
                         info = it
                         checked = url
                         then?.invoke()

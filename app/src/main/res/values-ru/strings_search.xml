@@ -37,4 +37,6 @@
     <string name="link_import_later">Импорт плейлистов из других сервисов появится позже</string>
     <string name="link_unsupported">Эту ссылку не открыть</string>
     <string name="kit_cancel">Отмена</string>
+    <string name="search_link_server">адрес сервера</string>
+    <string name="search_link_device">вход по коду</string>
 </resources>
