@@ -98,7 +98,7 @@ class VideoFramesTest {
     }
 
     @Test
-    fun `every video frame loses its bars, other images load as asked`() {
+    fun `every video frame loses its bars, a cover its ring, other images load as asked`() {
         listOf(
             "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq720.jpg",
             "https://i.ytimg.com/vi/LLhpBVFh2Zg/mqdefault.jpg"
@@ -108,10 +108,15 @@ class VideoFramesTest {
             assertEquals(listOf(FrameBarsCrop), asked.single().transformations)
         }
 
+        // A YouTube Music cover loses only the ring of its scan; any other image loads as asked
         val cover = "https://lh3.googleusercontent.com/abc=w544-h544-l90-rj"
-        val (_, asked) = load(cover)
-        assertEquals(listOf(cover), asked.map { it.data.toString() })
-        assertTrue(asked.single().transformations.isEmpty())
+        val (_, askedCover) = load(cover)
+        assertEquals(listOf(cover), askedCover.map { it.data.toString() })
+        assertEquals(listOf(CoverRingCrop), askedCover.single().transformations)
+
+        val other = "https://example.com/picture.png"
+        val (_, askedOther) = load(other)
+        assertTrue(askedOther.single().transformations.isEmpty())
     }
 
     @Test
@@ -229,6 +234,54 @@ class VideoFramesTest {
 
     /** A "picture": varied, with dark places, but not a bar. */
     private fun picture(x: Int, y: Int) = 40 + (x * 7 + y * 13) % 200
+
+    /** Opaque pixels, rows without gaps: [paint] gives the color (0xRRGGBB) of (x, y). */
+    private fun colored(width: Int, height: Int, paint: (x: Int, y: Int) -> Int) =
+        IntArray(width * height) { i -> (0xFF shl 24) or paint(i % width, i / width) }
+
+    private fun gray(v: Int) = (v shl 16) or (v shl 8) or v
+
+    @Test
+    fun `brown bars are bars too`() {
+        // Kino «Группа крови»: the cover in the middle, even brown bars with JPEG noise at the sides
+        val pixels = colored(320, 180) { x, y ->
+            if (x in 70 until 250) gray(picture(x, y)) else ((90 + (x + y) % 9) shl 16) or ((45 + (x + y) % 9) shl 8) or (25 + (x + y) % 9)
+        }
+        assertEquals(PixelRect(70, 0, 180, 180), FrameBars.content(pixels, 320, 180))
+    }
+
+    @Test
+    fun `different colors at the sides are not bars`() {
+        // A brown wall at the left, a blue sky at the right: a frame, not bars
+        val pixels = colored(320, 180) { x, y -> if (x in 70 until 250) gray(picture(x, y)) else if (x < 70) 0x5A2D19 else 0x285AC8 }
+        assertNull(FrameBars.content(pixels, 320, 180))
+    }
+
+    @Test
+    fun `a black ring inside brown bars goes too`() {
+        // The whole «Группа крови» frame: brown bars, inside them the cover in a black ring of 6 px
+        val pixels = colored(320, 180) { x, y ->
+            when {
+                x !in 70 until 250 -> 0x5A2D19
+                x < 76 || x >= 244 || y < 6 || y >= 174 -> 0x080808
+                else -> gray(picture(x, y))
+            }
+        }
+        assertEquals(PixelRect(77, 7, 166, 166), FrameBars.content(pixels, 320, 180))
+    }
+
+    @Test
+    fun `a square cover loses only its ring`() {
+        // A YouTube Music cover: a scan in a black ring of 5 px; no bars are looked for
+        val pixels = colored(200, 200) { x, y -> if (x < 5 || x >= 195 || y < 5 || y >= 195) 0x060606 else gray(picture(x, y)) }
+        assertEquals(PixelRect(6, 6, 188, 188), FrameBars.content(pixels, 200, 200, bars = false))
+    }
+
+    @Test
+    fun `a cover on a plain background keeps it without looking for bars`() {
+        val pixels = colored(200, 200) { x, y -> if (x in 50 until 150 && y in 50 until 150) gray(picture(x, y)) else 0 }
+        assertNull(FrameBars.content(pixels, 200, 200, bars = false))
+    }
 
     @Test
     fun `a square cover in a wide frame loses its side bars`() {
