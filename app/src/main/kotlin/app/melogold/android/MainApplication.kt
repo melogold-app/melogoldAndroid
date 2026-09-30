@@ -61,6 +61,7 @@ import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.service.PlayerService
 import app.melogold.android.service.ServiceNotifications
+import app.melogold.android.service.StreamClients
 import app.melogold.android.ui.components.rememberBottomSheetState
 import app.melogold.android.ui.screens.searchResultRoute
 import app.melogold.android.ui.shell.AppShell
@@ -96,6 +97,7 @@ import app.melogold.core.ui.theme.MelogoldTheme
 import app.melogold.core.ui.utils.activityIntentBundle
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid17
+import app.melogold.providers.innertube.requests.StreamVisitor
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -399,6 +401,11 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
         super.onCreate()
 
         ServiceNotifications.createAll()
+
+        // Streams: this install's own visitorData, and the list of stream clients (fresh from GitHub)
+        StreamVisitor.visitorData = DataPreferences.youtubeVisitorData.ifBlank { null }
+        StreamVisitor.onVisitorData = { DataPreferences.youtubeVisitorData = it }
+        StreamClients.start(this)
 
         // The download manager lives on the thread that creates it: the main one
         container.downloads

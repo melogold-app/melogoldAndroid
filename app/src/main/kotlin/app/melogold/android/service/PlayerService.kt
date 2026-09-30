@@ -125,9 +125,7 @@ import app.melogold.core.ui.utils.isAtLeastAndroid8
 import app.melogold.core.ui.utils.songBundle
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.NavigationEndpoint
-import app.melogold.providers.innertube.models.bodies.PlayerBody
 import app.melogold.providers.innertube.requests.playability
-import app.melogold.providers.innertube.requests.player
 import app.melogold.providers.sponsorblock.SponsorBlock
 import app.melogold.providers.sponsorblock.models.Action
 import app.melogold.providers.sponsorblock.models.Category
@@ -1406,6 +1404,35 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         private val PLAYABILITY_TIMEOUT = 8.seconds
 
         /**
+         * The stream from yt-dlp, when no stream client gave one ([reasons]: what they said). Its failure is
+         * explained by [whyUnavailable], with the clients' words too.
+         */
+        private fun resolveWithYtDlp(mediaId: String, reasons: List<String>): ResolvedStream {
+            val download = runCatching { Dependencies.runDownload(mediaId) }
+            val info = download.mapCatching {
+                YouTubeDLResponse.fromString(it)
+            }.also { it.exceptionOrNull()?.printStackTrace() }.getOrNull()
+            if (info?.id != mediaId) {
+                val said = reasons + listOfNotNull(download.exceptionOrNull()?.message)
+                throw whyUnavailable(mediaId, said.joinToString("\n").ifEmpty { null })
+            }
+            val format = info.formats?.firstOrNull { it.formatId == info.formatId }
+            val uri = runCatching { info.url?.toUri() }.getOrNull() ?: throw UnplayableException()
+            return ResolvedStream(
+                uri = uri,
+                contentLength = info.fileSize,
+                itag = info.formatId?.toIntOrNull(),
+                mimeType = null,
+                bitrate = format?.abr?.let { it * 1000 }?.toLong(),
+                loudnessDb = null,
+                lastModified = null,
+                durationMs = null,
+                userAgent = null,
+                source = "yt-dlp"
+            )
+        }
+
+        /**
          * Resolves a video id into its stream. With [cache], what it reads is cached there; without
          * one (downloads, which have a cache of their own) it reads the network only.
          */
@@ -1415,7 +1442,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             cache: Cache?,
             chunkLength: Long? = DEFAULT_CHUNK_LENGTH,
             findMediaItem: suspend (videoId: String) -> MediaItem? = { null },
-            uriCache: UriCache<String, Long?> = UriCache()
+            uriCache: UriCache<String, StreamMeta> = UriCache()
         ): DataSource.Factory = ResolvingDataSource.Factory(
             cache?.let {
                 ConditionalCacheDataSourceFactory(
@@ -1471,22 +1498,15 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                 uriCache[mediaId]?.takeUnless { it.uri.isExpiring() }?.let { cachedUri ->
                     dataSpec
                         .withUri(cachedUri.uri)
-                        .ranged(cachedUri.meta)
+                        .withMediaUserAgent(cachedUri.meta.userAgent)
+                        .ranged(cachedUri.meta.contentLength)
                 } ?: run {
-                    val body = runBlocking(Dispatchers.IO) {
-                        Innertube.player(PlayerBody(videoId = mediaId))
-                    }?.getOrNull()
-                    val youtubeFormat = body?.streamingData?.highestQualityFormat
-
-                    val download = runCatching { Dependencies.runDownload(mediaId) }
-                    val info = download.mapCatching {
-                        YouTubeDLResponse.fromString(it)
-                    }.also { it.exceptionOrNull()?.printStackTrace() }.getOrNull()
-                    if (info?.id != mediaId) throw whyUnavailable(mediaId, download.exceptionOrNull()?.message)
-                    val format = info.formats?.firstOrNull { it.formatId == info.formatId }
-
-                    val uri =
-                        runCatching { info.url?.toUri() }.getOrNull() ?: throw UnplayableException()
+                    // One request of a stream client; yt-dlp (four or five requests) only when none of them gave
+                    // a stream for a reason other than the bot check
+                    val reasons = mutableListOf<String>()
+                    val stream = runBlocking(Dispatchers.IO) {
+                        resolveDirect(mediaId, StreamClients.current, reasons)
+                    } ?: resolveWithYtDlp(mediaId, reasons)
 
                     val mediaItem = runCatching {
                         runBlocking(Dispatchers.IO) { findMediaItem(mediaId) }
@@ -1494,10 +1514,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
                     val extras = mediaItem?.mediaMetadata?.extras?.songBundle
                     if (extras?.durationText == null) {
-                        body
-                            ?.streamingData
-                            ?.highestQualityFormat
-                            ?.approxDurationMs
+                        stream.durationMs
                             ?.div(1000)
                             ?.let(DateUtils::formatElapsedTime)
                             ?.removePrefix("0")
@@ -1513,12 +1530,12 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                             Database.insert(
                                 Format(
                                     songId = mediaId,
-                                    itag = info.formatId?.toIntOrNull(),
-                                    mimeType = youtubeFormat?.mimeType,
-                                    bitrate = format?.abr?.let { it * 1000 }?.toLong(),
-                                    loudnessDb = body?.playerConfig?.audioConfig?.normalizedLoudnessDb,
-                                    contentLength = info.fileSize,
-                                    lastModified = youtubeFormat?.lastModified
+                                    itag = stream.itag,
+                                    mimeType = stream.mimeType,
+                                    bitrate = stream.bitrate,
+                                    loudnessDb = stream.loudnessDb,
+                                    contentLength = stream.contentLength,
+                                    lastModified = stream.lastModified
                                 )
                             )
                         }
@@ -1526,13 +1543,14 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
                     uriCache.push(
                         key = mediaId,
-                        meta = info.fileSize,
-                        uri = uri
+                        meta = StreamMeta(stream.contentLength, stream.userAgent),
+                        uri = stream.uri
                     )
 
                     dataSpec
-                        .withUri(uri)
-                        .ranged(info.fileSize)
+                        .withUri(stream.uri)
+                        .withMediaUserAgent(stream.userAgent)
+                        .ranged(stream.contentLength)
                 }
             }
         }.handleUnknownErrors {
@@ -1545,3 +1563,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 /** A stream address of YouTube that expires in less than 5 minutes (`expire`, epoch seconds). */
 private fun Uri.isExpiring(now: Long = System.currentTimeMillis()): Boolean =
     getQueryParameter("expire")?.toLongOrNull()?.let { it * 1000 - 5 * 60_000 < now } == true
+
+/** What the address cache keeps next to a stream address: its length (for the chunks) and the User-Agent it wants. */
+data class StreamMeta(val contentLength: Long?, val userAgent: String?)
+
+/** The User-Agent googlevideo wants for this address (ANDROID_VR); without one the player's own stays. */
+private fun DataSpec.withMediaUserAgent(userAgent: String?) =
+    userAgent?.let { withAdditionalHeaders(mapOf("User-Agent" to it)) } ?: this

@@ -192,10 +192,17 @@ fun DataSource.Factory.retryIf(
 
 val Cache.asDataSource: CacheDataSource.Factory get() = CacheDataSource.Factory().setCache(this)
 
+/**
+ * The network for streams. The User-Agent is a default request property, not the factory's: the factory's one would
+ * override the one a stream client wants for its addresses (ANDROID_VR, [app.melogold.android.service.StreamMeta]).
+ */
 val Context.defaultDataSource
     get() = DefaultDataSource.Factory(
         this,
         DefaultHttpDataSource.Factory().setConnectTimeoutMs(16000)
             .setReadTimeoutMs(8000)
-            .setUserAgent("Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
+            .setUserAgent(null)
+            .setDefaultRequestProperties(
+                mapOf("User-Agent" to "Mozilla/5.0 (Windows NT 10.0; rv:91.0) Gecko/20100101 Firefox/91.0")
+            )
     )

@@ -17,4 +17,7 @@ object DataPreferences : GlobalPreferencesHolder() {
 
     /** Downloads wait for Wi-Fi (REWRITE §3.5.6). */
     var downloadsWifiOnly by boolean(false, name = "downloads.wifiOnly")
+
+    /** YouTube's `visitorData` of this install, for stream requests (`StreamVisitor`): not the one all copies share. */
+    var youtubeVisitorData by string(defaultValue = "", name = "youtube.visitorData")
 }

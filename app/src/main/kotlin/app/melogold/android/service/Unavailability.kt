@@ -41,7 +41,19 @@ private val GEO_MESSAGES = listOf(
     "blocked it in your country"
 )
 
+/**
+ * YouTube's bot check in a `player` answer: its words, or `LOGIN_REQUIRED` that is neither about age nor a private
+ * video (the stream clients ask in English, the web client in the device's language).
+ */
+fun isBotCheck(status: String?, reason: String?): Boolean {
+    val text = reason.orEmpty()
+    if (BOT_MESSAGES.any { it in text }) return true
+    return status == "LOGIN_REQUIRED" && AGE_MESSAGES.none { it in text } && PRIVATE_MESSAGES.none { it in text }
+}
+
 private val BOT_MESSAGES = listOf("not a bot", "не бот")
+
+private val PRIVATE_MESSAGES = listOf("Private video", "private", "частное")
 
 private val AGE_MESSAGES = listOf("confirm your age", "age-restricted", "inappropriate for some users")
 
