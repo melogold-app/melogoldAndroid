@@ -558,7 +558,8 @@ fun ModernPlayer(
                         false
                     }
             ) {
-                ArtworkTintedBackground(playing = shouldBePlaying)
+                // Moves only while the sheet is open: collapsed under the mini player it would draw frames for nothing
+                ArtworkTintedBackground(playing = shouldBePlaying && layoutState.expanded)
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")
 

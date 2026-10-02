@@ -210,7 +210,9 @@ fun RemotePlayer(
     onNext: () -> Unit,
     onSeek: (Long) -> Unit,
     onVolume: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** The player sheet is open: the living background moves only then, not under the mini player. */
+    expanded: Boolean = true
 ) {
     val scheme = artworkScheme ?: MaterialTheme.colorScheme
     val mediaItem = remember(now?.track) { now?.track?.toSong()?.asMediaItem }
@@ -223,7 +225,7 @@ fun RemotePlayer(
                 .testTag("remote_player")
         ) {
             // The music plays on the other device: the background drifts without this device's sound
-            ArtworkTintedBackground(playing = now?.playing == true, listen = false)
+            ArtworkTintedBackground(playing = expanded && now?.playing == true, listen = false)
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val wide = maxWidth > maxHeight

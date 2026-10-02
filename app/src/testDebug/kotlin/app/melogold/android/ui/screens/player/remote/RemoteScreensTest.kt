@@ -28,15 +28,16 @@ import app.melogold.android.sync.remote.RemoteNow
 import app.melogold.android.sync.remote.RemoteTarget
 import app.melogold.android.sync.remote.ServerClock
 import app.melogold.android.ui.theme.brandColorScheme
+import app.melogold.core.ui.MotionLevel
 import app.melogold.core.ui.theme.MelogoldTheme
+import java.io.File
+import kotlin.test.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.io.File
-import kotlin.test.assertEquals
 
 /**
  * The remote as it is drawn (tasks/0018), without a server: the sheet of devices, the expanded remote with its banner,
@@ -355,7 +356,8 @@ class RemoteScreensTest {
     // endregion
 
     private fun render(content: @Composable () -> Unit) = compose.setContent {
-        MelogoldTheme(scheme = brandColorScheme(isDark = false), isBrandScheme = true) {
+        // Minimal motion: the living background of the player stands still, so Compose gets idle and shots are stable
+        MelogoldTheme(scheme = brandColorScheme(isDark = false), isBrandScheme = true, motionLevel = MotionLevel.Minimal) {
             CompositionLocalProvider(
                 LocalPlayerAwareWindowInsets provides WindowInsets(0),
                 LocalAppContainer provides ApplicationProvider.getApplicationContext<MainApplication>().container

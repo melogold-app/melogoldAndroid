@@ -327,7 +327,8 @@ fun Player(
             onPrevious = remote::previous,
             onNext = remote::next,
             onSeek = remote::seekTo,
-            onVolume = remote::setVolume
+            onVolume = remote::setVolume,
+            expanded = layoutState.expanded
         ) else mediaItem?.let { currentMediaItem ->
             if (binder != null) ModernPlayer(
                 layoutState = layoutState,
