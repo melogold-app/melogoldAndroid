@@ -27,6 +27,13 @@ import java.util.UUID
 data class RemoteTarget(val deviceId: String, val name: String, val platform: String)
 
 /**
+ * The devices music can be started on from here (tasks/0023). A watch is not one: the watch app has to be opened by
+ * hand on the watch (watchOS does not start it on a command) and plays only to headphones next to it. The user
+ * (2026-10-01): «бред включать музыку на часах удалённо».
+ */
+fun playable(devices: List<RemoteDevice>): List<RemoteDevice> = devices.filter { it.platform != "watchos" }
+
+/**
  * What the controlled device plays, as the last events and the last read say. [positionMs] was true at [atMs] (the
  * time of the server); [positionAt] counts on from it while it [playing].
  */
@@ -121,9 +128,9 @@ class RemoteControl(
     suspend fun available(): Boolean =
         account.session != null && runCatching { account.serverInfo().features.remote != null }.getOrDefault(false)
 
-    /** The other devices of the account, with whether they are online and what they play. */
+    /** The other devices of the account music can be started on, with whether they are online and what they play. */
     suspend fun devices(): List<RemoteDevice> = account.authorized { api, token ->
-        api.remoteDevices(token).also { ServerClock.update(it.serverTime) }.devices
+        playable(api.remoteDevices(token).also { ServerClock.update(it.serverTime) }.devices)
     }
 
     /** The player becomes the remote of [device]. */

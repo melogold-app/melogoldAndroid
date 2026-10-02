@@ -42,6 +42,8 @@ enum class MusicFilter(val filter: Innertube.SearchFilter) {
  */
 data class AllResults(
     val artist: Innertube.ArtistItem?,
+    /** The artist is the best result (its name is the query): a large card first, tasks/0021. */
+    val artistIsTop: Boolean = false,
     val songs: List<Innertube.SongItem>,
     val videos: List<YouTubeItem.Video>,
     val musicError: Loadable.Error.Kind?,
@@ -89,8 +91,10 @@ class SearchResultsModel(
                 val musicIds = songItems.map { it.key }.toSet()
                 val musicFailure = songsResult?.exceptionOrNull() ?: artistsResult?.exceptionOrNull()
 
+                val firstArtist = artistsResult?.getOrNull()?.items?.firstOrNull() as? Innertube.ArtistItem
                 val all = AllResults(
-                    artist = artistsResult?.getOrNull()?.items?.firstOrNull() as? Innertube.ArtistItem,
+                    artist = firstArtist,
+                    artistIsTop = namesMatch(firstArtist?.info?.name, query),
                     songs = songItems.take(ALL_SONGS),
                     // Re-uploads of what the catalog already has add nothing
                     videos = videosResult?.getOrNull()?.items.orEmpty()

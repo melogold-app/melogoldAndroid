@@ -356,7 +356,12 @@ private fun LazyListScope.musicSection(
         item(key = "ytm/error") { SectionError(kind = kind, onRetry = onRetry) }
     }
     results.artist?.let { artist ->
-        item(key = "ytm/artist") { with(routes) { MusicItemRow(item = artist) } }
+        item(key = "ytm/artist") {
+            with(routes) {
+                if (results.artistIsTop) TopArtistCard(artist = artist, onOpen = { artistRoute(artist.key) })
+                else MusicItemRow(item = artist)
+            }
+        }
     }
     items(items = results.songs, key = { "ytm/${it.key}" }) { song ->
         with(routes) { MusicItemRow(item = song) }

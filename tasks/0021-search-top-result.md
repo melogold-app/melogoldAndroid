@@ -1,6 +1,6 @@
 # Поиск: лучший результат первым, крупной карточкой
 
-Статус: открыто
+Статус: исполнитель — сделано (2026-10-02, `TopArtistCard`, `namesMatch`); карточка YouTube Music для альбома и трека — открыто
 
 Те же задания: `melogoldiOSmacOS/tasks/0023-search-top-result.md`, `melogoldWindows/tasks/0023-search-top-result.md`, `melogoldLinux/tasks/0018-search-top-result.md`.
 

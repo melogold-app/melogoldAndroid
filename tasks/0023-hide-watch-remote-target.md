@@ -1,6 +1,6 @@
 # Пульт: часы не показывать среди устройств, на которые можно включить музыку
 
-Статус: открыто
+Статус: сделано (2026-10-02, `playable` в `RemoteControl.kt`, тест `PlayableDevicesTest`)
 
 Те же задания: `melogoldWindows/tasks/0025-hide-watch-remote-target.md`, `melogoldLinux/tasks/0020-hide-watch-remote-target.md`; Apple сделано в ветке `apple/ui-fixes` (`RemoteControl.canPlay`).
 
