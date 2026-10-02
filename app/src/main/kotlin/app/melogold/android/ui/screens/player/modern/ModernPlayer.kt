@@ -558,7 +558,7 @@ fun ModernPlayer(
                         false
                     }
             ) {
-                ArtworkTintedBackground()
+                ArtworkTintedBackground(playing = shouldBePlaying)
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")
 

@@ -222,7 +222,8 @@ fun RemotePlayer(
                 .fillMaxSize()
                 .testTag("remote_player")
         ) {
-            ArtworkTintedBackground()
+            // The music plays on the other device: the background drifts without this device's sound
+            ArtworkTintedBackground(playing = now?.playing == true, listen = false)
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                 val wide = maxWidth > maxHeight
