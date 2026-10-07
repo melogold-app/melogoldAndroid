@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.core.net.toUri
+import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
+import app.melogold.android.utils.findCause
 import app.melogold.providers.innertube.Innertube
 import app.melogold.providers.innertube.models.PlayerResponse.StreamingData.AdaptiveFormat
 import app.melogold.providers.innertube.requests.StreamClient
@@ -197,6 +199,25 @@ suspend fun resolveDirect(
     if (onlyNetworkErrors) networkError?.let { throw it }
     return null
 }
+
+/**
+ * A 403 (401, 410) of googlevideo while reading: the next address comes in a new YouTube session. A "flagged"
+ * session gets addresses that serve only the first megabyte, then 403 — every fresh address of that session alike
+ * (07.10.2026, Linux task 0025: three fresh addresses of the session — 403 403 403, three after a new `visitorData` —
+ * 206 206 206). This install keeps its `visitorData` across restarts, so without this a flagged session cut every
+ * song after ~1 MB until a bot check. An expired address (the usual 403) loses nothing: one light request more.
+ *
+ * @return whether the session was dropped
+ */
+internal fun renewSessionAfterRefusal(error: Throwable): Boolean {
+    val code = error.findCause<InvalidResponseCodeException>()?.responseCode ?: return false
+    if (code !in REFUSED_ADDRESS) return false
+    Log.i(TAG, "googlevideo $code: the next address comes with a fresh visitorData")
+    StreamVisitor.forget()
+    return true
+}
+
+private val REFUSED_ADDRESS = setOf(401, 403, 410)
 
 private const val HTTP_TOO_MANY_REQUESTS = 429
 

@@ -1562,9 +1562,11 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                         .ranged(stream.contentLength)
                 }
             }
-        }.handleUnknownErrors {
-            // The next attempt resolves the address again (a 403: expired, or another network)
+        }.handleUnknownErrors { error ->
+            // The next attempt resolves the address again (a 403: expired, or another network), in a new YouTube
+            // session: a flagged one gives only the first megabyte of every address (renewSessionAfterRefusal)
             uriCache.clear()
+            renewSessionAfterRefusal(error)
         }
     }
 }
