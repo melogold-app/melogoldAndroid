@@ -67,4 +67,24 @@ class DirectStreamsTest {
         }
         assertFalse(BlockedAddress.isBlocked)
     }
+
+    private fun refused(code: Int) = java.io.IOException(
+        "wrapped",
+        androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException(
+            code, null, null, emptyMap(), androidx.media3.datasource.DataSpec(android.net.Uri.parse("https://rr1.googlevideo.com/x")),
+            ByteArray(0)
+        )
+    )
+
+    @Test
+    fun `a refused address drops the YouTube session, other answers keep it`() {
+        val kept = app.melogold.providers.innertube.requests.StreamVisitor
+        kept.visitorData = "flagged"
+        assertFalse(renewSessionAfterRefusal(refused(416)))
+        assertFalse(renewSessionAfterRefusal(java.io.IOException("timeout")))
+        assertEquals("flagged", kept.visitorData)
+
+        assertTrue(renewSessionAfterRefusal(refused(403)))
+        assertNull(kept.visitorData, "a fresh address of the flagged session is cut after the first megabyte too")
+    }
 }
