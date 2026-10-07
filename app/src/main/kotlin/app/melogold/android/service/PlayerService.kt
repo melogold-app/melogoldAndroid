@@ -16,6 +16,8 @@ import android.media.MediaMetadata
 import android.media.audiofx.LoudnessEnhancer
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Binder as AndroidBinder
 import android.os.Bundle
@@ -238,6 +240,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     /** Tracks skipped in a row because they failed; back to 0 once one plays (REWRITE §3.10.9). */
     private var failedInARow = 0
 
+    /** tasks/0025: a track that failed for the network waits for it instead of being skipped. */
+    private val networkWait by lazy { NetworkWait(handler) }
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
     private lateinit var bitmapProvider: BitmapProvider
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + Job())
@@ -309,6 +315,16 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         super.onCreate()
 
         notificationActionReceiver.register(flags = ContextCompat.RECEIVER_EXPORTED)
+
+        // The network is back (or the VPN reconnected): a track waiting for it is tried now (tasks/0025)
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                handler.post { networkWait.onNetworkAvailable(::retryAfterNetwork) }
+            }
+        }.also { callback ->
+            runCatching { getSystemService<ConnectivityManager>()?.registerDefaultNetworkCallback(callback) }
+                .onFailure { Log.w(TAG, "The network callback is not registered: ${it.message}") }
+        }
 
         bitmapProvider = BitmapProvider(
             getBitmapSize = {
@@ -434,12 +450,19 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         // A new play may ask for the foreground again
         if (playWhenReady) foregroundRefused = false
+        // Paused while waiting for the network: the user decided, no more retries
+        if (!playWhenReady) networkWait.clear()
         maybeSavePlayerQueue()
     }
 
     override fun onDestroy() {
         runCatching {
             maybeSavePlayerQueue()
+
+            networkWait.clear()
+            networkCallback?.let { callback ->
+                runCatching { getSystemService<ConnectivityManager>()?.unregisterNetworkCallback(callback) }
+            }
 
             ProcessLifecycleOwner.get().lifecycle.removeObserver(appVisibility)
             remote?.release()
@@ -507,6 +530,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+        // Another track: nothing waits for the network any more
+        networkWait.clear()
+
         // A new queue may ask for the foreground again
         if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) foregroundRefused = false
 
@@ -545,6 +571,13 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         maybeSavePlayerQueue()
     }
 
+    /** The track waiting for the network is prepared again: ExoPlayer resumes from the position it kept. */
+    private fun retryAfterNetwork() {
+        if (player.currentMediaItem == null) return
+        Log.i(TAG, "Retrying ${player.currentMediaItem?.mediaId} after the network wait")
+        player.prepare()
+    }
+
     override fun onPlayerError(error: PlaybackException) {
         super.onPlayerError(error)
 
@@ -554,6 +587,20 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             player.pause()
             player.prepare()
             player.play()
+            return
+        }
+
+        // No network: the track waits for it on the same position instead of being skipped (tasks/0025). The wait
+        // ran out — the player stays on the error card, the queue does not move
+        val waiting = player.currentMediaItem
+        if (waiting != null && NetworkWait.isNetwork(error)) {
+            if (!networkWait.onNetworkError(waiting.mediaId, ::retryAfterNetwork)) {
+                Log.w(TAG, "No network for ${NetworkWait.LIMIT_MS / 60_000} min: stopping on ${waiting.mediaId}")
+                failedInARow = 0
+            } else {
+                val seconds = player.currentPosition / 1000
+                Log.i(TAG, "No network: ${waiting.mediaId} waits at $seconds s: ${error.message}")
+            }
             return
         }
 
@@ -915,7 +962,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     // legacy behavior may cause inconsistencies, but not available on sdk 24 or lower
     @Suppress("DEPRECATION")
     override fun onEvents(player: Player, events: Player.Events) {
-        if (player.playbackState == Player.STATE_READY) failedInARow = 0
+        if (player.playbackState == Player.STATE_READY) {
+            failedInARow = 0
+            networkWait.clear()
+        }
 
         if (player.duration != C.TIME_UNSET) {
             mediaSession.setMetadata(
