@@ -7,6 +7,12 @@
 
 ## Сделать
 
+0. Агент на Mac кладёт ключ подписи в сейф cdn (`~/.secrets/melogold-android/`, пункт «ОТКРЫТО» в
+   `cdn/agent/WORKSPACE.md`). После этого выпуск идёт с ThinkPad: `cdn/agent/vault.sh pull`, в
+   `~/.gradle/gradle.properties` — строки из `~/.secrets/melogold-android/gradle.properties`, `storeFile` указывает на
+   `~/.secrets/melogold-android/release.jks`. Подпись должна совпасть с 0.1.17 (SHA-256 `1735ecb3…bf33`), иначе
+   обновление не встанет поверх установленного приложения.
+
 ```bash
 git switch main && git pull --ff-only
 scripts/release.sh --publish        # нужен ключ: melogold.release.* в ~/.gradle/gradle.properties
