@@ -157,11 +157,11 @@ class RemoteControlLiveTest {
             calls += "volume $percent"
         }
 
-        override fun playQueue(tracks: List<TrackDto>, index: Int) {
+        override fun playQueue(tracks: List<TrackDto>, index: Int, startMs: Long) {
             queue = tracks.map { TrackInput(it.videoId, it.title, it.artistsText) }
             this.index = index
             playing = true
-            positionMs = 0
+            positionMs = startMs
             calls += "queue ${tracks.size} at $index"
         }
 

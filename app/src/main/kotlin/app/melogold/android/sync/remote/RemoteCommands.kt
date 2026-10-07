@@ -21,8 +21,11 @@ interface PlayerPort {
     /** The volume of the system for music, 0..100. */
     fun setVolume(percent: Int)
 
-    /** Plays [tracks] from [index] on; the queue this device had is gone. */
-    fun playQueue(tracks: List<TrackDto>, index: Int)
+    /**
+     * Plays [tracks] from [index] on, the track at [index] from [startMs] (a queue handed over from another device,
+     * tasks/0026); the queue this device had is gone.
+     */
+    fun playQueue(tracks: List<TrackDto>, index: Int, startMs: Long = 0)
 
     /** Stops: the sound ends, the queue stays where it is. */
     fun stop()
@@ -49,7 +52,7 @@ class RemoteCommandExecutor(private val port: PlayerPort) {
                 val queue = command.queue?.takeIf { it.isNotEmpty() } ?: return false
                 val index = command.index ?: return false
                 if (index !in queue.indices) return false
-                port.playQueue(queue, index)
+                port.playQueue(queue, index, (command.positionMs ?: 0L).coerceAtLeast(0L))
             }
 
             else -> return false

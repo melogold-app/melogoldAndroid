@@ -204,7 +204,7 @@ class RemoteControl(
      * queue is a window of at most 200 tracks around it, files of this device left out. Returns false when no device
      * is controlled and the player plays it here; true when the command was taken (or could not be made).
      */
-    fun playQueue(tracks: List<TrackInput>, index: Int): Boolean {
+    fun playQueue(tracks: List<TrackInput>, index: Int, positionMs: Long? = null): Boolean {
         val target = mutableTarget.value ?: return false
         if (index !in tracks.indices) return true
         val ids = tracks.map { it.videoId }
@@ -220,7 +220,9 @@ class RemoteControl(
                 targetDeviceId = target.deviceId,
                 action = RemoteCommandExecutor.ACTION_PLAY_QUEUE,
                 queue = kept.map(tracks::get),
-                index = at
+                index = at,
+                // From this second on: the queue handed over from this device, like AirPlay (tasks/0026)
+                positionMs = positionMs?.takeIf { it > 0 }
             )
         )
         return true

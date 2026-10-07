@@ -39,8 +39,8 @@ class RemoteCommandsTest {
             calls += "volume $percent"
         }
 
-        override fun playQueue(tracks: List<TrackDto>, index: Int) {
-            calls += "queue ${tracks.map { it.videoId }} at $index"
+        override fun playQueue(tracks: List<TrackDto>, index: Int, startMs: Long) {
+            calls += "queue ${tracks.map { it.videoId }} at $index" + if (startMs > 0) " from $startMs" else ""
         }
 
         override fun stop() {
@@ -102,6 +102,15 @@ class RemoteCommandsTest {
         assertTrue(executor.execute(command("play_queue", queue = queue, index = 2)))
 
         assertEquals(listOf("queue [aaaaaaaaaa1, aaaaaaaaaa2, aaaaaaaaaa3] at 2"), player.calls)
+    }
+
+    @Test
+    fun `play_queue handed over from another device starts the track from its second`() {
+        val queue = listOf(track("aaaaaaaaaa1"), track("aaaaaaaaaa2"))
+
+        assertTrue(executor.execute(command("play_queue", positionMs = 83_000, queue = queue, index = 1)))
+
+        assertEquals(listOf("queue [aaaaaaaaaa1, aaaaaaaaaa2] at 1 from 83000"), player.calls)
     }
 
     @Test
