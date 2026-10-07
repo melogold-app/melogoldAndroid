@@ -229,10 +229,10 @@ class PlayerRemote(
             .onFailure { Log.w(TAG, "The volume could not be set", it) }
     }
 
-    override fun playQueue(tracks: List<TrackDto>, index: Int) {
+    override fun playQueue(tracks: List<TrackDto>, index: Int, startMs: Long) {
         stopRadio()
         val items = tracks.map { it.toSong().asMediaItem }
-        player.setMediaItems(items, index, C.TIME_UNSET)
+        player.setMediaItems(items, index, if (startMs > 0) startMs else C.TIME_UNSET)
         player.playWhenReady = true
         player.prepare()
     }

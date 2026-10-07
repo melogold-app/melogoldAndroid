@@ -65,6 +65,7 @@ import app.melogold.android.ui.screens.player.remote.RemotePlayer
 import app.melogold.android.ui.screens.player.remote.RemoteMiniPlayer
 import app.melogold.android.ui.screens.player.remote.DeviceSheet
 import app.melogold.android.sync.remote.RemoteNotice
+import app.melogold.android.sync.remote.toTrackInput
 import app.melogold.android.data.repo.toSong
 import app.melogold.android.LocalAppContainer
 import androidx.compose.ui.platform.LocalContext
@@ -265,9 +266,16 @@ fun Player(
                 onOutput = { context.showOutputSwitcher(noOutputSwitcher) },
                 onThisDevice = remote::disconnect,
                 onSelect = { device ->
-                    // The playback goes on where it is chosen: this device stops, so that two do not play at once
-                    binder?.player?.pause()
+                    // Playing here: the queue moves there from the same second, like AirPlay (tasks/0026); not
+                    // playing: just control that device. Either way this device stops, so that two do not play at once
+                    val player = binder?.player
+                    val handoff = player?.takeIf { it.playWhenReady && it.mediaItemCount > 0 }?.let { playing ->
+                        val items = List(playing.mediaItemCount) { playing.getMediaItemAt(it).toTrackInput() }
+                        Triple(items, playing.currentMediaItemIndex, playing.currentPosition)
+                    }
+                    player?.pause()
                     remote.connect(device)
+                    handoff?.let { (tracks, index, position) -> remote.playQueue(tracks, index, position) }
                 }
             )
         }
