@@ -44,7 +44,8 @@ elif [[ ! -f "dist/$file" ]]; then
     echo "dist/$file is missing: build it first" >&2
     exit 1
 fi
-sha256=$(shasum -a 256 "dist/$file" | cut -d' ' -f1)
+# macOS has shasum, Linux sha256sum
+sha256=$( (shasum -a 256 "dist/$file" 2>/dev/null || sha256sum "dist/$file") | cut -d' ' -f1)
 size=$(stat -f%z "dist/$file" 2>/dev/null || stat -c%s "dist/$file")
 
 python3 - "$version" "$version_code" "$file" "$size" "$sha256" >dist/update.json <<'PY'
@@ -67,7 +68,11 @@ print(json.dumps({
 }, ensure_ascii=False, indent=2))
 PY
 
-build_tools=$(ls -d "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/build-tools/* | sort -V | tail -1)
+sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+if [[ -z "$sdk" ]]; then
+    for candidate in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do [[ -d "$candidate" ]] && { sdk="$candidate"; break; }; done
+fi
+build_tools=$(ls -d "$sdk"/build-tools/* | sort -V | tail -1)
 echo "dist/$file · $size bytes · sha256 $sha256"
 "$build_tools/apksigner" verify --print-certs "dist/$file" | grep -E "SHA-256 digest" || true
 
