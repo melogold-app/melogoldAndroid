@@ -60,7 +60,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -76,7 +75,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceAtLeast
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.min
 import androidx.core.content.getSystemService
 import androidx.media3.common.MediaItem
@@ -122,13 +123,18 @@ import app.melogold.android.utils.windowState
 import app.melogold.compose.persist.findActivityNullable
 import app.melogold.compose.routing.CallbackPredictiveBackHandler
 import app.melogold.core.ui.LocalAppearance
+import app.melogold.core.ui.MotionLevel
 import app.melogold.core.ui.setSystemBarAppearance
+import app.melogold.core.ui.theme.LocalMotionLevel
 import app.melogold.core.ui.utils.isLandscape
 import app.melogold.domain.lyrics.SyncedLine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val AUTO_HIDE_DELAY_MS = 4_000L
+
+/** The padding at the sides of a line of the lyrics. */
+private val LyricsSidePadding = 32.dp
 
 /**
  * Where the top of the active synced line sits, below the top of the lyrics viewport: at the very top, right under
@@ -151,9 +157,13 @@ private fun LyricsContent.kind() = when (this) {
 }
 
 /**
- * The Apple-Music-style expanded player: artwork-tinted background, big artwork (NowPlaying) or
+ * The Apple-Music-style expanded player: the blurred artwork as the background, big artwork (NowPlaying) or
  * lyrics (Lyrics, full screen when time-synced), and the controls at the bottom. The queue is the
  * existing queue sheet, opened from the toolbar.
+ *
+ * The text, the buttons and the sliders are always light over such a background (tasks/0028): the player takes the
+ * dark scheme of the artwork whatever the theme of the app is, [fallbackScheme] (the dark scheme of the app) for a grey
+ * artwork.
  */
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @OptIn(ExperimentalLayoutApi::class, ExperimentalComposeUiApi::class)
@@ -167,6 +177,8 @@ fun ModernPlayer(
     shouldBePlaying: Boolean,
     openPlayerMenu: (PlayerMenuExtras) -> Unit,
     artworkScheme: ColorScheme?,
+    fallbackScheme: ColorScheme,
+    backdrop: ArtworkBackdrop?,
     onDevices: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -266,17 +278,15 @@ fun ModernPlayer(
         }
     )
 
-    // The player follows the app theme (REWRITE §3.10): its colors come from the artwork (computed
-    // by the host while collapsed too, so they are ready when it opens), its darkness from the
-    // app; system bar icons follow the same darkness
-    val appScheme = MaterialTheme.colorScheme
-    val appIsDark = appScheme.surface.luminance() < 0.5f
+    // The player is always dark (tasks/0028): its background is a darkened artwork, so the text over it is light
+    // whatever the theme of the app is. Its colors come from the artwork (computed by the host while collapsed too,
+    // so they are ready when it opens); system bar icons are light while it is open
     val activity = remember(context) { context.findActivityNullable() }
     val currentAppIsDark by rememberUpdatedState(appearance.colorPalette.isDark)
-    LaunchedEffect(layoutState.expanded, appIsDark) {
+    LaunchedEffect(layoutState.expanded) {
         if (layoutState.expanded) {
             withFrameNanos { }
-            activity?.setSystemBarAppearance(isDark = appIsDark)
+            activity?.setSystemBarAppearance(isDark = true)
         } else activity?.setSystemBarAppearance(isDark = currentAppIsDark)
     }
     DisposableEffect(activity) {
@@ -400,6 +410,22 @@ fun ModernPlayer(
     val controlsHeightPx = remember { mutableIntStateOf(with(density) { DefaultControlsHeight.roundToPx() }) }
     val controlsHeight = with(density) { controlsHeightPx.intValue.toDp() }
 
+    // The size of the whole area of "Now playing" (tasks/0028): the lyrics line and the wide cover are shares of it. Until
+    // it is measured, the screen stands for it
+    val configuration = LocalConfiguration.current
+    var areaSize by remember { mutableStateOf(IntSize.Zero) }
+    val areaHeight = if (areaSize.height > 0) with(density) { areaSize.height.toDp() } else configuration.screenHeightDp.dp
+    val areaWidth = if (areaSize.width > 0) with(density) { areaSize.width.toDp() } else configuration.screenWidthDp.dp
+    val lineSize = lyricsLineSize(areaHeight.value).sp
+    val coverSide = wideCoverSide(areaHeight.value, areaWidth.value).dp
+
+    // The background moves only while the track plays, the sheet is open, the screen is visible, the setting is on and
+    // the animations are not turned off (tasks/0028); a pause keeps the time
+    val still = LocalMotionLevel.current == MotionLevel.Minimal
+    val backdropClock = rememberBackdropClock(
+        running = PlayerPreferences.liveBackground && !reduceMotion && !still && shouldBePlaying && layoutState.expanded
+    )
+
     // Building blocks shared by the portrait and landscape layouts
 
     val artwork: @Composable (Dp, SharedScopes?) -> Unit = { size, scopes ->
@@ -465,6 +491,10 @@ fun ModernPlayer(
 
     // overlaid: whether the controls are drawn over the bottom of the lyrics (portrait)
     val lyricsArea: @Composable (Modifier, Dp, Boolean) -> Unit = { areaModifier, anchor, overlaid ->
+        // In a wide layout the text is no wider than about 28 characters, at the start of its column
+        val columnWidth =
+            if (overlaid) Modifier else Modifier.widthIn(max = wideLyricsTextWidth(lineSize.value).dp + LyricsSidePadding * 2)
+
         AnimatedContent(
             targetState = LyricsTarget(mediaId, content),
             contentKey = { it.mediaId to it.content.kind() },
@@ -473,7 +503,7 @@ fun ModernPlayer(
                     fadeOut(tween(durationMillis = 150))
             },
             label = "",
-            modifier = areaModifier
+            modifier = columnWidth.then(areaModifier)
         ) { target ->
             val overlapPx: () -> Int = { if (overlaid) controlsHeightPx.intValue else 0 }
             // What the controls cover at the bottom: states are centered in what stays visible
@@ -491,7 +521,8 @@ fun ModernPlayer(
                     reduceMotion = reduceMotion,
                     modeState = modeState,
                     onLineLongPress = onLineLongPress,
-                    pillColor = lyricsPillColor(artworkScheme = artworkScheme, isDark = appIsDark)
+                    pillColor = lyricsPillColor(artworkScheme = artworkScheme, isDark = true),
+                    lineSize = lineSize
                 )
 
                 is LyricsContent.Plain -> StaticLyricsView(
@@ -499,7 +530,8 @@ fun ModernPlayer(
                     source = targetContent.source,
                     mediaId = target.mediaId,
                     controlsOverlapPx = overlapPx,
-                    bottomPadding = visibleBottom
+                    bottomPadding = visibleBottom,
+                    lineSize = lineSize
                 )
 
                 LyricsContent.Loading, LyricsContent.Unknown -> LyricsLoading(bottomPadding = visibleBottom)
@@ -538,10 +570,11 @@ fun ModernPlayer(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        MaterialTheme(colorScheme = artworkScheme ?: appScheme) {
+        MaterialTheme(colorScheme = artworkScheme ?: fallbackScheme) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .onSizeChanged { areaSize = it }
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                     .semantics { testTagsAsResourceId = true }
                     .testTag("player_root")
@@ -558,8 +591,13 @@ fun ModernPlayer(
                         false
                     }
             ) {
-                // Moves only while the sheet is open: collapsed under the mini player it would draw frames for nothing
-                ArtworkTintedBackground(playing = shouldBePlaying && layoutState.expanded)
+                // The blurred artwork. It moves only while the clock runs (see above): collapsed under the mini player
+                // or paused it draws no frames
+                NowPlayingBackdrop(
+                    backdrop = backdrop,
+                    fallback = MaterialTheme.colorScheme.surface,
+                    time = backdropClock
+                )
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")
 
@@ -580,6 +618,7 @@ fun ModernPlayer(
                     lyricsArea = lyricsArea,
                     controls = controls
                 ) else if (landscape) LandscapeLayout(
+                    coverSide = coverSide,
                     transition = transition,
                     reduceMotion = reduceMotion,
                     onCollapse = { layoutState.collapseSoft() },
@@ -828,6 +867,7 @@ private fun ControlsOverlay(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LandscapeLayout(
+    coverSide: Dp,
     transition: Transition<PlayerMode>,
     reduceMotion: Boolean,
     onCollapse: () -> Unit,
@@ -851,7 +891,8 @@ private fun LandscapeLayout(
                 .weight(0.5f)
                 .fillMaxHeight()
         ) {
-            val artSize = (min(maxWidth, maxHeight) - 32.dp).coerceAtLeast(64.dp)
+            // Half the height of the whole area or 38 % of its width, the smaller (tasks/0028), not the whole column
+            val artSize = coverSide.coerceAtMost(min(maxWidth, maxHeight) - 32.dp).coerceAtLeast(64.dp)
 
             transition.AnimatedContent(
                 transitionSpec = {

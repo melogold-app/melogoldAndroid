@@ -1,6 +1,12 @@
 # «Сейчас играет»: фон — размытая обложка, текст песни по высоте окна, «Живой фон»
 
-Статус: открыто
+Статус: сделано на Android (без проверки глазами на телефоне) — `ui/theme/ArtworkBackdrop.kt` (`artworkShares`,
+`darkBackdrop`, `prepareBackdropCover`, `backdropColorMatrix`, Lab), `ui/screens/player/modern/NowPlayingBackdrop.kt`
+(фон, часы `rememberBackdropClock`, `rememberArtworkBackdrop`), `NowPlayingSizing.kt` (`lyricsLineSize`, `wideCoverSide`),
+правки `ModernPlayer.kt`, `Player.kt`, `SyncedLyricsView.kt`, `StaticLyricsView.kt`, настройка «Живой фон»
+(`PlayerPreferences.liveBackground`, «Настройки → Внешний вид → Плеер»). Тесты: `ArtworkBackdropTest`,
+`NowPlayingSizingTest`, `NowPlayingBackdropTest` (снимки фона на JVM). Старый фон `ArtworkTintedBackground` остаётся
+только у пульта (`RemotePlayer`).
 
 Эталон и источник этого текста — `melogoldLinux/tasks/0031-now-playing-blurred-backdrop.md`.
 

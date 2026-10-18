@@ -85,6 +85,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.Lifecycle
@@ -233,6 +234,8 @@ private fun Rect.union(other: Rect) =
  * @param anchor where the top of the active line sits, from the top of the view
  * @param controlsOverlapPx height of the controls drawn over the bottom of this view (0 when none)
  * @param controlsVisible whether those controls are currently shown (for the fade mask)
+ * @param lineSize the size of the main text of a line; the backing vocals, the translation, the interlude dots and the
+ * pill keep their proportions to it (tasks/0028: a share of the height of the whole area, see [lyricsLineSize])
  */
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
@@ -248,6 +251,7 @@ fun SyncedLyricsView(
     modeState: PlayerModeState,
     onLineLongPress: (SyncedLine) -> Unit,
     modifier: Modifier = Modifier,
+    lineSize: TextUnit = LYRICS_BASE_LINE.sp,
     pillColor: Color = lyricsPillColor(
         artworkScheme = null,
         isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -372,13 +376,15 @@ fun SyncedLyricsView(
     }
 
     val colors = MaterialTheme.colorScheme
+    val unit = lineSize.value / LYRICS_BASE_LINE
     val lineStyle = MaterialTheme.typography.headlineMedium.copy(
         fontWeight = FontWeight.Bold,
-        lineHeight = 38.sp,
-        letterSpacing = (-0.2).sp
+        fontSize = lineSize,
+        lineHeight = 38.sp * unit,
+        letterSpacing = (-0.2).sp * unit
     )
-    val backingStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-    val translationStyle = MaterialTheme.typography.bodyLarge
+    val backingStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold).scaledBy(unit)
+    val translationStyle = MaterialTheme.typography.bodyLarge.scaledBy(unit)
     val jumpLabel = stringResource(R.string.lyrics_jump_to_line)
     val instrumental = stringResource(R.string.lyrics_instrumental)
     val scrolling = modeState.userScrolling
@@ -452,6 +458,7 @@ fun SyncedLyricsView(
                             playing = shouldBePlaying,
                             reduceMotion = reduceMotion,
                             color = colors.onSurface,
+                            unit = unit,
                             onClick = onClick,
                             modifier = Modifier.semantics { contentDescription = instrumental }
                         )
@@ -763,6 +770,7 @@ private fun InterludeRow(
     playing: Boolean,
     reduceMotion: Boolean,
     color: Color,
+    unit: Float,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -780,7 +788,7 @@ private fun InterludeRow(
     LaunchedEffect(active) { if (!active) clock.floatValue = 0f }
 
     val height by animateDpAsState(
-        targetValue = if (active) 40.dp else 0.dp,
+        targetValue = if (active) 40.dp * unit else 0.dp,
         animationSpec = if (reduceMotion) snap() else spring(dampingRatio = 0.75f, stiffness = Spring.StiffnessMediumLow),
         label = "interlude"
     )
@@ -813,7 +821,8 @@ private fun InterludeRow(
                     animated = !reduceMotion,
                     // With the next singer, where the eye goes next
                     right = (layoutDirection == LayoutDirection.Rtl) != (row.side == VocalSide.End),
-                    color = color
+                    color = color,
+                    unit = unit
                 )
             }
     )
@@ -821,7 +830,7 @@ private fun InterludeRow(
 
 /**
  * Draws the three interlude dots 32 dp from the left edge, or from the right one when [right],
- * centred vertically.
+ * centred vertically; [unit] is the size of the lyrics line to its base size, the dots keep their proportions to it.
  */
 internal fun DrawScope.drawInterludeDots(
     fraction: Float,
@@ -831,10 +840,11 @@ internal fun DrawScope.drawInterludeDots(
     active: Boolean,
     animated: Boolean,
     right: Boolean,
-    color: Color
+    color: Color,
+    unit: Float = 1f
 ) {
-    val dot = 10.dp.toPx()
-    val gap = 6.dp.toPx()
+    val dot = 10.dp.toPx() * unit
+    val gap = 6.dp.toPx() * unit
     val margin = 32.dp.toPx()
     val startX = if (right) size.width - margin - dot * 3 - gap * 2 else margin
     val cy = size.height / 2
@@ -872,6 +882,10 @@ internal fun DrawScope.drawInterludeDots(
         }
     }
 }
+
+/** [this] in [unit] times the size: the font, the line height and the letter spacing. */
+private fun TextStyle.scaledBy(unit: Float): TextStyle =
+    if (unit == 1f) this else copy(fontSize = fontSize * unit, lineHeight = lineHeight * unit, letterSpacing = letterSpacing * unit)
 
 /** 0 → 1 with a small overshoot at the end (the "back" easing). */
 private fun easeOutBack(t: Float): Float {

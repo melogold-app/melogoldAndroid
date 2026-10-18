@@ -56,6 +56,7 @@ import androidx.media3.common.Player
 import app.melogold.android.Database
 import app.melogold.android.LocalPlayerServiceBinder
 import app.melogold.android.R
+import app.melogold.android.preferences.AppearancePreferences
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import kotlinx.coroutines.launch
@@ -83,10 +84,12 @@ import app.melogold.android.ui.components.menu.MenuEntryTextStart
 import app.melogold.android.ui.components.menu.MenuSectionTitle
 import app.melogold.android.ui.components.menu.TrackMenuEntries
 import app.melogold.android.ui.screens.player.modern.ModernPlayer
+import app.melogold.android.ui.screens.player.modern.rememberArtworkBackdrop
 import app.melogold.android.ui.screens.player.modern.rememberArtworkBitmap
 import app.melogold.android.ui.shell.AppSnackbar
 import app.melogold.android.ui.shell.LocalAppSnackbar
 import app.melogold.android.ui.theme.rememberArtworkColorScheme
+import app.melogold.android.ui.theme.rememberMelogoldColorScheme
 import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
@@ -224,13 +227,21 @@ fun Player(
     // The colors of the expanded player come from the artwork. They are computed as soon as the
     // track changes, also while the player is collapsed, so they are ready when it opens instead
     // of arriving after the lyrics
+    // The expanded player is always dark (tasks/0028): its background is the artwork darkened and blurred, the text
+    // over it is light whatever the theme of the app is. A grey artwork has no color: the dark scheme of the app
     val artworkScheme = rememberArtworkColorScheme(
         key = mediaItem?.mediaId,
         bitmap = rememberArtworkBitmap(metadata?.artworkUri),
-        isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
+        isDark = true,
         contrastLevel = rememberContrastLevel(),
         delayMillis = 150L
     )
+    val darkAppScheme = rememberMelogoldColorScheme(
+        source = AppearancePreferences.colorSource,
+        isDark = true,
+        darkness = AppearancePreferences.darkness
+    )
+    val backdrop = rememberArtworkBackdrop(key = mediaItem?.mediaId, uri = metadata?.artworkUri)
 
     val horizontalBottomPaddingValues = windowInsets
         .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
@@ -347,6 +358,8 @@ fun Player(
                 shouldBePlaying = shouldBePlaying,
                 openPlayerMenu = { extras -> openPlayerMenu(extras) },
                 artworkScheme = artworkScheme,
+                fallbackScheme = darkAppScheme,
+                backdrop = backdrop,
                 onDevices = ::openDevices
             )
         }

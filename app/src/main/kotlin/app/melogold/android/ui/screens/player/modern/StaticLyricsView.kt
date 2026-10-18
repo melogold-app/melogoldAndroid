@@ -32,7 +32,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.melogold.android.R
 import app.melogold.android.models.LyricsSource
 import app.melogold.android.ui.kit.DelayedLoadingIndicator
@@ -41,6 +43,8 @@ import app.melogold.android.ui.kit.DelayedLoadingIndicator
  * Unsynchronized lyrics: selectable text in a free scroll, no highlighting, no following.
  *
  * @param controlsOverlapPx height of the controls drawn over the bottom of this view (0 when none)
+ * @param lineSize the size of a line of the synced lyrics (tasks/0028); the text is set in the same proportion to it as
+ * before (headline small to headline medium)
  */
 @Composable
 fun StaticLyricsView(
@@ -49,7 +53,8 @@ fun StaticLyricsView(
     mediaId: String,
     controlsOverlapPx: () -> Int,
     bottomPadding: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    lineSize: TextUnit = LYRICS_BASE_LINE.sp
 ) {
     val scrollState = remember(mediaId) { ScrollState(0) }
 
@@ -87,7 +92,14 @@ fun StaticLyricsView(
         ) {
             Text(
                 text = text,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold).let {
+                    val unit = lineSize.value / LYRICS_BASE_LINE
+                    if (unit == 1f) it else it.copy(
+                        fontSize = it.fontSize * unit,
+                        lineHeight = it.lineHeight * unit,
+                        letterSpacing = it.letterSpacing * unit
+                    )
+                },
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                 modifier = Modifier
                     .fillMaxWidth()

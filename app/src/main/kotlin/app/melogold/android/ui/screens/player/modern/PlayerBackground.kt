@@ -1,5 +1,6 @@
 package app.melogold.android.ui.screens.player.modern
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.animateColorAsState
@@ -50,22 +51,26 @@ fun rememberArtworkBitmap(uri: Uri?): Bitmap? {
     var bitmap by remember(uri) { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(uri) {
-        bitmap = uri?.let {
-            runCatching {
-                val request = ImageRequest.Builder(context)
-                    .data(it.toString().squareThumbnail(SAMPLE_SIZE))
-                    .size(SAMPLE_SIZE)
-                    .scale(Scale.FILL)
-                    .allowHardware(false)
-                    .build()
-                val result = SingletonImageLoader.get(context).execute(request) as? SuccessResult
-                result?.image?.toBitmap()?.centerSquare()
-            }.getOrNull()
-        }
+        bitmap = uri?.let { loadArtworkBitmap(context, it, SAMPLE_SIZE) }
     }
 
     return bitmap
 }
+
+/**
+ * A software copy of the artwork at [uri], [side] px on its short side (a video frame: its middle square); null when
+ * it cannot be loaded.
+ */
+suspend fun loadArtworkBitmap(context: Context, uri: Uri, side: Int): Bitmap? = runCatching {
+    val request = ImageRequest.Builder(context)
+        .data(uri.toString().squareThumbnail(side))
+        .size(side)
+        .scale(Scale.FILL)
+        .allowHardware(false)
+        .build()
+    val result = SingletonImageLoader.get(context).execute(request) as? SuccessResult
+    result?.image?.toBitmap()?.centerSquare()
+}.getOrNull()
 
 /**
  * The living background of the player (the user, 2026-10-02: «как Apple Music, но живой… градиент, живой на звук»; «это

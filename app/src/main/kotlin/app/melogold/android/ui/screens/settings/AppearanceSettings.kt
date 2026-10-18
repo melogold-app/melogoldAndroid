@@ -70,6 +70,12 @@ fun AppearanceSettings() = with(AppearancePreferences) {
                 isChecked = PlayerPreferences.lyricsKeepScreenAwake,
                 onCheckedChange = { PlayerPreferences.lyricsKeepScreenAwake = it }
             )
+            SwitchSettingsEntry(
+                title = stringResource(R.string.live_background),
+                text = stringResource(R.string.live_background_description),
+                isChecked = PlayerPreferences.liveBackground,
+                onCheckedChange = { PlayerPreferences.liveBackground = it }
+            )
         }
         SettingsGroup(title = stringResource(R.string.songs)) {
             SwitchSettingsEntry(

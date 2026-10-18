@@ -22,6 +22,9 @@ object PlayerPreferences : GlobalPreferencesHolder() {
 
     var lyricsKeepScreenAwake by boolean(false)
 
+    /** The blurred artwork behind "Now playing" turns while the track plays (tasks/0028); off, it stands still. This device only. */
+    var liveBackground by boolean(true)
+
     val handleAudioFocusProperty = boolean(true)
     var handleAudioFocus by handleAudioFocusProperty
 
