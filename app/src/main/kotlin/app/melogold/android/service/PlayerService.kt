@@ -1160,6 +1160,9 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     /** How loud what plays now is, for the "now playing" bars. */
     private val audioLevels = AudioLevels()
 
+    /** The 48 bands of what plays now, for the living backdrop of "Now playing" (tasks/0029). */
+    private val spectrumTap = SpectrumTap()
+
     private fun createRendersFactory() = object : DefaultRenderersFactory(this) {
         override fun buildAudioSink(
             context: Context,
@@ -1168,8 +1171,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         ): AudioSink {
             @Suppress("DEPRECATION")
             return DefaultAudioSink.Builder(applicationContext)
-                // The "now playing" bars listen here (AudioLevels)
-                .setAudioProcessors(arrayOf(TeeAudioProcessor(audioLevels)))
+                // The "now playing" bars (AudioLevels) and the living backdrop (SpectrumTap) listen here
+                .setAudioProcessors(arrayOf(TeeAudioProcessor(audioLevels), TeeAudioProcessor(spectrumTap)))
                 .setEnableFloatOutput(enableFloatOutput)
                 .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                 .setAudioOffloadSupportProvider(
@@ -1179,6 +1182,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                 .apply {
                     if (isAtLeastAndroid10) setOffloadMode(AudioSink.OFFLOAD_MODE_DISABLED)
                 }
+                // Tells the tap the time of every buffer and the position that is heard
+                .let { SpectrumAudioSink(it, spectrumTap) }
         }
     }
 
@@ -1199,6 +1204,10 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         /** The loudness of the bands of what plays now (the "now playing" bars). */
         val audioLevels: AudioLevels
             get() = this@PlayerService.audioLevels
+
+        /** The 48 bands of what plays now (the living backdrop of "Now playing"). */
+        val spectrumTap: SpectrumTap
+            get() = this@PlayerService.spectrumTap
 
         private var radioJob: Job? = null
 

@@ -113,6 +113,7 @@ import app.melogold.android.ui.screens.player.playbackErrorMessage
 import app.melogold.android.ui.screens.player.sleepTimerLeft
 import app.melogold.android.ui.shell.LocalMainNav
 import app.melogold.android.ui.shell.SearchSource
+import app.melogold.android.ui.theme.rememberContrastLevel
 import app.melogold.android.utils.DisposableListener
 import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
@@ -132,6 +133,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val AUTO_HIDE_DELAY_MS = 4_000L
+
+/** The contrast level of the system (`UiModeManager.getContrast`) from which the backdrop stands still: the highest. */
+private const val HIGH_CONTRAST = 1.0
 
 /** The padding at the sides of a line of the lyrics. */
 private val LyricsSidePadding = 32.dp
@@ -419,12 +423,12 @@ fun ModernPlayer(
     val lineSize = lyricsLineSize(areaHeight.value).sp
     val coverSide = wideCoverSide(areaHeight.value, areaWidth.value).dp
 
-    // The background moves only while the track plays, the sheet is open, the screen is visible, the setting is on and
-    // the animations are not turned off (tasks/0028); a pause keeps the time
+    // The background lives with the music while the track plays, the sheet is open, the screen is visible, the setting is
+    // on, the animations are not turned off and the contrast is not high (tasks/0029); else it is a still frame, or, where
+    // there is no shader, the blurred artwork of tasks/0028
     val still = LocalMotionLevel.current == MotionLevel.Minimal
-    val backdropClock = rememberBackdropClock(
-        running = PlayerPreferences.liveBackground && !reduceMotion && !still && shouldBePlaying && layoutState.expanded
-    )
+    val highContrast = rememberContrastLevel() >= HIGH_CONTRAST
+    val backdropLive = PlayerPreferences.liveBackground && !reduceMotion && !still && !highContrast
 
     // Building blocks shared by the portrait and landscape layouts
 
@@ -591,12 +595,14 @@ fun ModernPlayer(
                         false
                     }
             ) {
-                // The blurred artwork. It moves only while the clock runs (see above): collapsed under the mini player
-                // or paused it draws no frames
-                NowPlayingBackdrop(
+                // The blurred artwork, alive with the music (see above): collapsed under the mini player or paused it draws no
+                // frames
+                NowPlayingLiveBackdrop(
                     backdrop = backdrop,
                     fallback = MaterialTheme.colorScheme.surface,
-                    time = backdropClock
+                    playing = shouldBePlaying,
+                    visible = layoutState.expanded,
+                    live = backdropLive
                 )
 
                 val transition = rememberTransition(modeState.transitionState, label = "mode")

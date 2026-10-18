@@ -198,7 +198,7 @@
     <string name="lyrics_keep_screen_awake">Держать экран включенным (тексты)</string>
     <string name="lyrics_keep_screen_awake_description">Держит экран включенным, пока отображаются тексты</string>
     <string name="live_background">Живой фон</string>
-    <string name="live_background_description">Размытая обложка за «Сейчас играет» медленно вращается, пока играет трек. Выключен — фон неподвижен</string>
+    <string name="live_background_description">Размытая обложка за «Сейчас играет» течёт и пульсирует под музыку, пока играет трек. Выключен — фон неподвижен</string>
     <string name="lyrics_show_system_bars">Показывать системные панели (тексты)</string>
     <string name="lyrics_show_system_bars_description">Отключение этого параметра включает полноэкранный режим на уровне системы</string>
     <string name="pip">PIP</string>

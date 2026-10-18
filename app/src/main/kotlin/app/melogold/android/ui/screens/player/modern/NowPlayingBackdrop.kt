@@ -43,10 +43,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import app.melogold.android.ui.theme.BACKDROP_SIDE
+import app.melogold.android.ui.theme.ColorShare
+import app.melogold.android.ui.theme.FluidCover
 import app.melogold.android.ui.theme.artworkShares
 import app.melogold.android.ui.theme.backdropBrightness
 import app.melogold.android.ui.theme.backdropColorMatrix
 import app.melogold.android.ui.theme.darkBackdrop
+import app.melogold.android.ui.theme.prepareFluidCover
 import app.melogold.android.ui.theme.prepareBackdropCover
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -85,9 +88,17 @@ private const val VIGNETTE_REACH = 0.75f
  * @property image the small blurred copy, [BACKDROP_SIDE] × [BACKDROP_SIDE]
  * @property luma its mean brightness before the blur
  * @property base the color under the layers, for a corner they might not cover
+ * @property shares the colors of the artwork by their shares, the dominant first (the drops of the living backdrop)
+ * @property fluid the 256 × 256 copy and its mip levels for the shader of the living backdrop (tasks/0029)
  */
 @Immutable
-class ArtworkBackdrop(val image: ImageBitmap, val luma: Float, val base: Color)
+class ArtworkBackdrop(
+    val image: ImageBitmap,
+    val luma: Float,
+    val base: Color,
+    val shares: List<ColorShare> = emptyList(),
+    val fluid: FluidCover? = null
+)
 
 /**
  * The backdrop of the artwork at [uri]; the previous one stays while the new one is prepared (it is replaced with a
@@ -129,7 +140,9 @@ internal fun Bitmap.toArtworkBackdrop(): ArtworkBackdrop? {
     return ArtworkBackdrop(
         image = image.asImageBitmap(),
         luma = cover.luma,
-        base = shares.firstOrNull()?.let { Color(0xFF000000.toInt() or darkBackdrop(it.rgb)) } ?: Color.Black
+        base = shares.firstOrNull()?.let { Color(0xFF000000.toInt() or darkBackdrop(it.rgb)) } ?: Color.Black,
+        shares = shares,
+        fluid = prepareFluidCover(pixels, width, height)
     )
 }
 
