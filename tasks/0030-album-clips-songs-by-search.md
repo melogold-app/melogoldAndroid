@@ -1,6 +1,6 @@
 # Альбом: песни для клипов ищет поиск, если плейлист альбома их не дал
 
-Статус: сделано (20.10.2026, не выпущено; на телефоне не проверено) — `Innertube.albumPage` в
+Статус: сделано (20.10.2026, выпущено в 0.1.20; на телефоне не проверено) — `Innertube.albumPage` в
 `providers/innertube/…/requests/AlbumPage.kt`: `withSongs`, `songsForClips`, `songForClip`; разбор ответов `browse` и `search`
 вынесен из запросов (`toPlaylistOrAlbumPage`, `toSearchPage`). Тест `AlbumClipsTest` на фикстурах `fixtures/album-clips/`.
 
