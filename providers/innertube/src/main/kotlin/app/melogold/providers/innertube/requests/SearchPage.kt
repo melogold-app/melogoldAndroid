@@ -23,19 +23,23 @@ suspend fun <T : Innertube.Item> Innertube.searchPage(
         )
     }.body<SearchResponse>()
 
-    response
-        .contents
-        ?.tabbedSearchResultsRenderer
-        ?.tabs
-        ?.firstOrNull()
-        ?.tabRenderer
-        ?.content
-        ?.sectionListRenderer
-        ?.contents
-        ?.lastOrNull()
-        ?.musicShelfRenderer
-        ?.toItemsPage(fromMusicShelfRendererContent)
+    response.toSearchPage(fromMusicShelfRendererContent)
 }
+
+/** Выдача поиска из ответа `search` — отдельно от запроса, чтобы читать и фикстуры. */
+internal fun <T : Innertube.Item> SearchResponse.toSearchPage(
+    fromMusicShelfRendererContent: (MusicShelfRenderer.Content) -> T?
+) = contents
+    ?.tabbedSearchResultsRenderer
+    ?.tabs
+    ?.firstOrNull()
+    ?.tabRenderer
+    ?.content
+    ?.sectionListRenderer
+    ?.contents
+    ?.lastOrNull()
+    ?.musicShelfRenderer
+    ?.toItemsPage(fromMusicShelfRendererContent)
 
 suspend fun <T : Innertube.Item> Innertube.searchPage(
     body: ContinuationBody,

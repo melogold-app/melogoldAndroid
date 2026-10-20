@@ -16,12 +16,17 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
 suspend fun Innertube.playlistPage(body: BrowseBody) = runCatchingCancellable {
-    val response = client.post(BROWSE) {
+    client.post(BROWSE) {
         setBody(body)
         body.context.apply()
-    }.body<BrowseResponse>()
+    }.body<BrowseResponse>().toPlaylistOrAlbumPage()
+}
 
-    if (response.contents?.twoColumnBrowseResultsRenderer == null) {
+/** Страница плейлиста или альбома из ответа `browse` — отдельно от запроса, чтобы читать и фикстуры. */
+internal fun BrowseResponse.toPlaylistOrAlbumPage(): Innertube.PlaylistOrAlbumPage {
+    val response = this
+
+    return if (response.contents?.twoColumnBrowseResultsRenderer == null) {
         val header = response
             .header
             ?.musicDetailHeaderRenderer

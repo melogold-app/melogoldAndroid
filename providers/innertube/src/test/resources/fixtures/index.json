@@ -4,6 +4,104 @@
   "visitorDataPlaceholder": "CgtBTk9OWU1JWkVEMCiAgICABg%3D%3D",
   "files": [
     {
+      "file": "album-clips/call-me-if-you-get-lost.album.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.01.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "MPREb_rMqWqQe5N3L"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-10-18",
+      "bytes": 191717,
+      "note": "альбом 2021 года: все 16 строк — клипы (OMV), из melogoldLinux"
+    },
+    {
+      "file": "album-clips/call-me-if-you-get-lost.playlist.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.01.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "VLOLAK5uy_np90iV2eD-YiScFePYgA7-i3c9kOYXMpc"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-10-18",
+      "bytes": 139376,
+      "note": "плейлист альбома 2021 года: песни (ATV), из melogoldLinux"
+    },
+    {
+      "file": "album-clips/estate-sale.album.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.01.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "MPREb_VpXYEs5HeNs"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-10-20",
+      "bytes": 201394,
+      "note": "переиздание The Estate Sale: первые 16 строк — клипы, ещё 8 серых, из melogoldLinux"
+    },
+    {
+      "file": "album-clips/estate-sale.playlist.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/browse",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.01.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "browseId": "VLOLAK5uy_kSIbgi-WxAiBFs28kWN1cMy7bewO3-LCs"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-10-20",
+      "bytes": 60,
+      "note": "плейлист Estate Sale пуст: только microformat, из melogoldLinux"
+    },
+    {
+      "file": "album-clips/estate-sale.songs-corso.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.01.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "Tyler, The Creator CORSO",
+        "params": "EgWKAQIIAWoSEAMQCRAEEAUQChAQEBUQDhAR"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-10-20",
+      "bytes": 143556,
+      "note": "поиск «Песни» (params Linux), из melogoldLinux"
+    },
+    {
+      "file": "album-clips/estate-sale.songs-lemonhead.en.json",
+      "host": "music.youtube.com",
+      "endpoint": "/youtubei/v1/search",
+      "client": "WEB_REMIX",
+      "clientVersion": "1.20260922.01.00",
+      "hl": "en",
+      "gl": "US",
+      "request": {
+        "query": "Tyler, The Creator LEMONHEAD (feat. 42 Dugg)",
+        "params": "EgWKAQIIAWoSEAMQCRAEEAUQChAQEBUQDhAR"
+      },
+      "httpStatus": 200,
+      "recordedAt": "2026-10-20",
+      "bytes": 141841,
+      "note": "поиск «Песни» (params Linux), из melogoldLinux"
+    },
+    {
       "file": "web/channel-videos-daftpunk.en.json",
       "host": "www.youtube.com",
       "endpoint": "/youtubei/v1/browse",

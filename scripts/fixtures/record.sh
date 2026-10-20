@@ -314,6 +314,28 @@ jq -s --slurpfile old <(jq -s '.' "$TMP/old.jsonl") \
     echo 'из REWRITE.md — плейлист живой проверки, его id не сохранился; этот взят как ближайший большой и старый публичный.'
     echo
   fi
+  # album-clips/ этот скрипт не записывает: копии из melogoldLinux, записи в index.json сохраняются
+  if [ -d "$OUT/album-clips" ]; then
+    cat <<'MD'
+## Альбом с клипами вместо песен
+
+`album-clips/` — копии из `melogoldLinux/crates/melogold-innertube/tests/fixtures/album-clips` (коммиты `6b13ba6` и
+`736eca0`). Записаны там: WEB_REMIX 1.20260922.01.00, `hl=en gl=US`, без входа. Обезличены иначе, чем здесь: `responseContext`
+(с `visitorData`) и поля отслеживания удалены целиком. Поиск записан без `X-Goog-FieldMask` и с params «Песни» Linux;
+Android с `Innertube.SearchFilter.Song` вживую получает те же первые песни (20.10.2026). Этот скрипт их не перезаписывает.
+
+- `call-me-if-you-get-lost.*` — Tyler, The Creator «CALL ME IF YOU GET LOST» (`MPREb_rMqWqQe5N3L`, 18.10.2026) и его плейлист
+  (`VLOLAK5uy_np90iV2eD-YiScFePYgA7-i3c9kOYXMpc`). В списке альбома все 16 строк — клипы (`MUSIC_VIDEO_TYPE_OMV`), в плейлисте —
+  песни (`MUSIC_VIDEO_TYPE_ATV`): LEMONHEAD в альбоме — клип `a5JCltuobqQ`, в плейлисте — песня `QjckqsLmb1o` на 2:11.
+- `estate-sale.*` — переиздание «CALL ME IF YOU GET LOST: The Estate Sale» (`MPREb_VpXYEs5HeNs`, 20.10.2026), его плейлист
+  (`VLOLAK5uy_kSIbgi-WxAiBFs28kWN1cMy7bewO3-LCs`) и выдача поиска «Песни» по «Tyler, The Creator LEMONHEAD (feat. 42 Dugg)» и
+  «Tyler, The Creator CORSO». Первые 16 строк альбома — клипы с длительностью песни в строке, ещё 8 — серые
+  (`MUSIC_ITEM_RENDERER_DISPLAY_POLICY_GREY_OUT`, без `watchEndpoint`, Android их не показывает). Плейлист пуст — только
+  `microformat`; песни есть только в поиске: LEMONHEAD → `QjckqsLmb1o` 2:11, CORSO → `qz-k3DoMxkw` 2:27. Тест —
+  `AlbumClipsTest` (задание 0030).
+
+MD
+  fi
   echo '## Файлы'
   echo
   echo '| Файл | Эндпоинт | Клиент | Запрос (без context) | hl / gl | HTTP | Дата | Примечание |'
