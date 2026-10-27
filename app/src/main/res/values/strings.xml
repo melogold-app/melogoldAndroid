@@ -337,6 +337,9 @@
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="version_check">Automatically check for updates</string>
+    <string name="background_pause_channel">Paused in the background</string>
+    <string name="background_pause_title">Melogold paused</string>
+    <string name="background_pause_text">Android didn\'t let the music play in the background and would have muted it. Tap to go on.</string>
     <string name="skip_on_error">Autoskip</string>
     <string name="skip_on_error_description">Skips the current song when there is an error</string>
     <string name="skip_on_error_notification">Skipped %s because of an error</string>

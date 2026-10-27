@@ -330,6 +330,9 @@
     <string name="daily">Ежедневно</string>
     <string name="weekly">Еженедельно</string>
     <string name="version_check">Автоматически проверять обновления</string>
+    <string name="background_pause_channel">Пауза в фоне</string>
+    <string name="background_pause_title">Melogold на паузе</string>
+    <string name="background_pause_text">Android не дал играть в фоне и заглушил бы звук. Нажмите, чтобы продолжить.</string>
     <string name="skip_on_error">Автопропуск</string>
     <string name="skip_on_error_description">Пропускает текущую песню при возникновении ошибки.</string>
     <string name="skip_on_error_notification">Пропущено %s из-за ошибки</string>

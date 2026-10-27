@@ -122,6 +122,7 @@ import app.melogold.core.ui.utils.EqualizerIntentBundleAccessor
 import app.melogold.core.ui.utils.isAtLeastAndroid10
 import app.melogold.core.ui.utils.isAtLeastAndroid12
 import app.melogold.core.ui.utils.isAtLeastAndroid13
+import app.melogold.core.ui.utils.isAtLeastAndroid17
 import app.melogold.core.ui.utils.isAtLeastAndroid6
 import app.melogold.core.ui.utils.isAtLeastAndroid8
 import app.melogold.core.ui.utils.songBundle
@@ -269,10 +270,28 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     @Volatile
     private var foregroundRefused = false
 
+    /** The foreground stays through a pause of under 10 minutes ([ForegroundHold], Android 17). */
+    private val foregroundHold by lazy { ForegroundHold(handler) }
+
+    /**
+     * Paused because Android 17 refused the foreground in the background and would have played on in silence
+     * ([pauseForRefusedForeground]): the music goes on when the app comes to the front.
+     */
+    private var resumeWhenVisible = false
+
+    private val isAppVisible: Boolean
+        get() = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+
     /** The app came to the front: a foreground the system refused before is allowed now. */
     private val appVisibility = LifecycleEventObserver { _, event ->
         if (event != Lifecycle.Event.ON_START || !foregroundRefused) return@LifecycleEventObserver
         foregroundRefused = false
+        if (resumeWhenVisible) {
+            resumeWhenVisible = false
+            ServiceNotifications.backgroundPause.cancel(this)
+            player.play()
+            return@LifecycleEventObserver
+        }
         if (player.shouldBePlaying && !isNotificationStarted) {
             goForeground()
             openEqualizer()
@@ -449,7 +468,13 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         // A new play may ask for the foreground again
-        if (playWhenReady) foregroundRefused = false
+        if (playWhenReady) {
+            foregroundRefused = false
+            if (resumeWhenVisible) {
+                resumeWhenVisible = false
+                ServiceNotifications.backgroundPause.cancel(this)
+            }
+        }
         // Paused while waiting for the network: the user decided, no more retries
         if (!playWhenReady) networkWait.clear()
         maybeSavePlayerQueue()
@@ -460,6 +485,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             maybeSavePlayerQueue()
 
             networkWait.clear()
+            foregroundHold.cancel()
             networkCallback?.let { callback ->
                 runCatching { getSystemService<ConnectivityManager>()?.unregisterNetworkCallback(callback) }
             }
@@ -1005,25 +1031,45 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         val notification = notification()
 
         if (notification == null) {
-            isNotificationStarted = false
-            stopForeground(false)
-            closeEqualizer()
+            foregroundHold.cancel()
+            leaveForeground()
             ServiceNotifications.default.cancel(this)
             return
         }
 
         // After a refusal only a new queue, a new play or the app coming to the front asks again (foregroundRefused)
         if (player.shouldBePlaying && !isNotificationStarted && !foregroundRefused) {
+            foregroundHold.cancel()
             goForeground()
             openEqualizer()
         } else {
-            if (!player.shouldBePlaying) {
-                isNotificationStarted = false
-                stopForeground(false)
-                closeEqualizer()
+            when {
+                player.shouldBePlaying -> foregroundHold.cancel()
+
+                // The queue played to its end: nothing goes on by itself, the foreground is left now
+                player.playbackState == Player.STATE_ENDED -> {
+                    foregroundHold.cancel()
+                    leaveForeground()
+                }
+
+                // A pause: the foreground stays a while, so the music can go on without asking for it from the
+                // background — Android 17 refuses that and silences the audio (ForegroundHold)
+                isNotificationStarted -> foregroundHold.stopped {
+                    if (!player.shouldBePlaying) {
+                        leaveForeground()
+                        updateNotification()
+                    }
+                }
             }
             updateNotification()
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun leaveForeground() {
+        isNotificationStarted = false
+        stopForeground(false)
+        closeEqualizer()
     }
 
     private fun notification(): (NotificationCompat.Builder.() -> NotificationCompat.Builder)? {
@@ -1129,6 +1175,33 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         Log.w(TAG, "The system refused the foreground service", error)
         foregroundRefused = true
         isNotificationStarted = false
+        pauseForRefusedForeground()
+    }
+
+    /**
+     * Android 17 silences the audio of an app in the background without a foreground service, with no error: the
+     * track would go on in silence (27.10.2026, One UI 9). Instead the music pauses, a notification says why, and
+     * it goes on when the app comes to the front (tapping the notification opens it).
+     */
+    private fun pauseForRefusedForeground() = handler.post {
+        if (!isAtLeastAndroid17 || isAppVisible || !player.playWhenReady) return@post
+        Log.w(
+            TAG,
+            "Android 17 would silence the background audio without a foreground: pausing ${player.currentMediaItem?.mediaId}"
+        )
+        resumeWhenVisible = true
+        player.pause()
+        ServiceNotifications.backgroundPause.sendNotification(this) {
+            this
+                .setSmallIcon(R.drawable.app_icon)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setOnlyAlertOnce(true)
+                .setAutoCancel(true)
+                .setContentIntent(activityPendingIntent<MainActivity>())
+                .setContentTitle(getString(R.string.background_pause_title))
+                .setContentText(getString(R.string.background_pause_text))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.background_pause_text)))
+        }
     }
 
     private fun createMediaSourceFactory() = DefaultMediaSourceFactory(

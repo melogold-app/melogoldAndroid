@@ -177,6 +177,14 @@ object ServiceNotifications : NotificationChannels() {
         setLightsEnabled(true).setVibrationEnabled(true)
     }
 
+    /** Android 17 would have played on in silence in the background: the music paused (PlayerService). */
+    val backgroundPause by channel(
+        name = "background_pause",
+        description = R.string.background_pause_channel,
+        importance = NotificationManagerCompat.IMPORTANCE_HIGH,
+        singleNotification = true
+    )
+
     val autoSkip by channel(
         name = "autoskip",
         description = R.string.skip_on_error,

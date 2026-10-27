@@ -23,7 +23,11 @@ android {
         applicationId = appId
 
         minSdk = 24
-        targetSdk = 37
+        // 36, not 37 (27.10.2026): on Android 17 an app targeting 37 may play in the background only from a foreground
+        // service started while it was visible, and is silenced without an error otherwise (background audio
+        // hardening) — a play from another device or after a long pause went on in silence on One UI 9. Targeting 36,
+        // any mediaPlayback foreground service is enough. Back to 37 with Media3's MediaSessionService.
+        targetSdk = 36
 
         // 0.1.2 → 102: every release has a higher code, which the self-update compares (REWRITE §4.14)
         versionName = project.version.toString()
