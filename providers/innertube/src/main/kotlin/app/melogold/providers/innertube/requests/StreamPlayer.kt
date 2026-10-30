@@ -63,25 +63,12 @@ data class StreamClient(
             osVersion = "26.5.23O471"
         )
 
-        private const val OCULUS_UA = "com.google.android.apps.youtube.vr.oculus/1.65.10 " +
-            "(Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
-
-        val AndroidVR = StreamClient(
-            name = "ANDROID_VR",
-            id = 28,
-            version = "1.65.10",
-            host = "www.youtube.com",
-            userAgent = OCULUS_UA,
-            deviceMake = "Oculus",
-            deviceModel = "Quest 3",
-            osName = "Android",
-            osVersion = "12L",
-            androidSdkVersion = 32,
-            mediaUserAgent = OCULUS_UA
-        )
-
-        /** VISIONOS, then ANDROID_VR (checked 2026-09-30: direct addresses of itag 140 and 251). */
-        val builtIn = listOf(VisionOS, AndroidVR)
+        /**
+         * VISIONOS only. ANDROID_VR, the second until 30.10.2026, got from googlevideo only the start of a file without a
+         * PO token (403 on the second range: the song broke off at ~30 s); IOS and ANDROID alike, the rest want a
+         * sign-in. Without a second client a bot check of VISIONOS is said as it is, and other failures go to yt-dlp.
+         */
+        val builtIn = listOf(VisionOS)
 
         @Serializable
         private data class Config(val schema: Int? = null, val clients: List<StreamClient>? = null)
