@@ -1,8 +1,9 @@
 # Android 17: звук не пропадает в фоне, пока трек идёт
 
-Статус: сделано (27.10.2026, выпуск 0.1.21; на Android 17 не проверено — эмулятор на ThinkPad падает при запуске, ждём
-ответа клиента) — `service/ForegroundHold.kt`, `PlayerService` (`onEvents`, `leaveForeground`, `pauseForRefusedForeground`,
-`appVisibility`), канал уведомлений `backgroundPause`, `targetSdk 36`; тест `ForegroundHoldTest`.
+Статус: сделано (27.10.2026, выпуск 0.1.21) и не помогло — песни длиннее трёх минут на One UI 9 глохли и дальше;
+продолжение — 0034 (плеер на MediaSessionService, `ForegroundHold` там убран: Media3 держит передний план сам). Было:
+`service/ForegroundHold.kt`, `PlayerService` (`onEvents`, `leaveForeground`, `pauseForRefusedForeground`, `appVisibility`),
+канал уведомлений `backgroundPause`, `targetSdk 36`; тест `ForegroundHoldTest`.
 
 Клиент Максима (27.10.2026, Samsung, One UI 9): «слушаю трек, и в какой-то момент звука просто нет до конца трека. Трек
 продолжает идти, но в полной тишине. Врубаю заново, вручную тяну туда, где звук пропал, — он там есть». На Windows и

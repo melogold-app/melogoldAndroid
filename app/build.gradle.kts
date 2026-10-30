@@ -25,8 +25,9 @@ android {
         minSdk = 24
         // 36, not 37 (27.10.2026): on Android 17 an app targeting 37 may play in the background only from a foreground
         // service started while it was visible, and is silenced without an error otherwise (background audio
-        // hardening) — a play from another device or after a long pause went on in silence on One UI 9. Targeting 36,
-        // any mediaPlayback foreground service is enough. Back to 37 with Media3's MediaSessionService.
+        // hardening). The player is Media3's MediaSessionService since 30.10.2026 (tasks/0034), but a play started in
+        // the background — a command from another device, headphones connected, an agent — still cannot get that;
+        // targeting 36, its mediaPlayback foreground service is enough.
         targetSdk = 36
 
         // 0.1.2 → 102: every release has a higher code, which the self-update compares (REWRITE §4.14)

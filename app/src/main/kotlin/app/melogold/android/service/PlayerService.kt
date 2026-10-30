@@ -1,8 +1,5 @@
 package app.melogold.android.service
 
-import android.app.PendingIntent
-import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -11,20 +8,15 @@ import android.graphics.Color
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.media.MediaDescription
-import android.media.MediaMetadata
 import android.media.audiofx.LoudnessEnhancer
-import android.media.session.MediaSession
-import android.media.session.PlaybackState
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
 import android.os.Binder as AndroidBinder
 import android.os.Bundle
+import android.os.IBinder
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
-import android.support.v4.media.session.MediaSessionCompat
 import android.text.format.DateUtils
 import android.util.Log
 import androidx.annotation.OptIn
@@ -34,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.content.getSystemService
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -42,13 +33,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.common.util.BitmapLoader
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DataSourceBitmapLoader
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException
 import androidx.media3.datasource.ResolvingDataSource
@@ -69,6 +64,17 @@ import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.session.CacheBitmapLoader
+import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
+import androidx.media3.session.SessionResult
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
 import app.melogold.android.Database
 import app.melogold.android.Dependencies
 import app.melogold.android.MainActivity
@@ -92,7 +98,6 @@ import app.melogold.android.preferences.DataPreferences
 import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.transaction
-import app.melogold.android.utils.ActionReceiver
 import app.melogold.android.utils.ConditionalCacheDataSourceFactory
 import app.melogold.android.utils.MAX_THUMBNAIL_SIZE
 import app.melogold.android.utils.TimerJob
@@ -100,7 +105,6 @@ import app.melogold.android.utils.YouTubeDLResponse
 import app.melogold.android.utils.YouTubeRadio
 import app.melogold.android.utils.activityPendingIntent
 import app.melogold.android.utils.asDataSource
-import app.melogold.android.utils.broadcastPendingIntent
 import app.melogold.android.utils.defaultDataSource
 import app.melogold.android.utils.findCause
 import app.melogold.android.utils.findNextMediaItemById
@@ -109,7 +113,6 @@ import app.melogold.android.utils.forceSeekToNext
 import app.melogold.android.utils.forceSeekToPrevious
 import app.melogold.android.utils.get
 import app.melogold.android.utils.handleUnknownErrors
-import app.melogold.android.utils.intent
 import app.melogold.android.utils.mediaItems
 import app.melogold.android.utils.shouldBePlaying
 import app.melogold.android.utils.thumbnail
@@ -164,8 +167,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
@@ -179,13 +180,28 @@ val DataSpec.isLocal get() = key?.startsWith(LOCAL_KEY_PREFIX) == true
 val MediaItem.isLocal get() = mediaId.startsWith(LOCAL_KEY_PREFIX)
 val Song.isLocal get() = id.startsWith(LOCAL_KEY_PREFIX)
 
-private const val LIKE_ACTION = "app.melogold.android.LIKE"
-private const val LOOP_ACTION = "app.melogold.android.LOOP"
+/** ♡ and the track loop: the buttons of the notification and of the system media controls next to the transport ones. */
+private val LIKE_COMMAND = SessionCommand("app.melogold.android.LIKE", Bundle.EMPTY)
+private val LOOP_COMMAND = SessionCommand("app.melogold.android.LOOP", Bundle.EMPTY)
 
+/** The cover of the notification and of the lock screen, dp. */
+private const val ARTWORK_SIZE = 512
+
+/**
+ * The player of the app: ExoPlayer and its Media3 [MediaSession] in a [MediaSessionService] (30.10.2026). The service
+ * keeps the `mediaPlayback` foreground service, the media notification and the session of the system in step with
+ * the player: in the foreground while it plays and for 10 minutes after a pause, started while the app is visible.
+ * Android 17 silences the audio of an app in the background that lacks it (background audio hardening): the
+ * hand-made foreground of the service inherited from ViMusic was not enough on One UI 9 — songs longer than three
+ * minutes went silent (tasks/0034).
+ *
+ * The app's screens bind with an intent without an action and get [Binder]; media controllers (the notification, the
+ * system, Android Auto through [PlayerMediaBrowserService]) talk to [mediaSession].
+ */
 @kotlin.OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LargeClass", "TooManyFunctions") // intended in this class: it is a service
 @OptIn(UnstableApi::class)
-class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback {
+class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListener.Callback {
     private val handler = Handler(Looper.getMainLooper())
 
     private lateinit var mediaSession: MediaSession
@@ -194,46 +210,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     /** This player for the other devices of the account: what it plays, and what they ask of it (tasks/0018). */
     private var remote: PlayerRemote? = null
-
-    private val defaultActions =
-        PlaybackState.ACTION_PLAY or
-            PlaybackState.ACTION_PAUSE or
-            PlaybackState.ACTION_PLAY_PAUSE or
-            PlaybackState.ACTION_STOP or
-            PlaybackState.ACTION_SKIP_TO_PREVIOUS or
-            PlaybackState.ACTION_SKIP_TO_NEXT or
-            PlaybackState.ACTION_SKIP_TO_QUEUE_ITEM or
-            PlaybackState.ACTION_SEEK_TO or
-            PlaybackState.ACTION_REWIND or
-            PlaybackState.ACTION_PLAY_FROM_SEARCH
-
-    private val stateBuilder
-        get() = PlaybackState.Builder().setActions(
-            defaultActions.let {
-                if (isAtLeastAndroid12) it or PlaybackState.ACTION_SET_PLAYBACK_SPEED else it
-            }
-        ).addCustomAction(
-            PlaybackState.CustomAction.Builder(
-                /* action = */
-                LIKE_ACTION,
-                /* name   = */
-                getString(R.string.like),
-                /* icon   = */
-                if (isLikedState.value) R.drawable.heart else R.drawable.heart_outline
-            ).build()
-        ).addCustomAction(
-            PlaybackState.CustomAction.Builder(
-                /* action = */
-                LOOP_ACTION,
-                /* name   = */
-                getString(R.string.queue_loop),
-                /* icon   = */
-                if (PlayerPreferences.trackLoopEnabled) R.drawable.repeat_on else R.drawable.repeat
-            ).build()
-        )
-
-    private val playbackStateMutex = Mutex()
-    private val metadataBuilder = MediaMetadata.Builder()
 
     private var timerJob: TimerJob? by mutableStateOf(null)
     private var radio: YouTubeRadio? = null
@@ -259,19 +235,16 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     private val binder = Binder()
 
-    private var isNotificationStarted = false
+    /** The equalizer of the system was told the audio session is open (an app like Wavelet attaches to it). */
+    private var equalizerOpen = false
 
     /**
-     * The system refused the foreground: playback was started while the app is in the background (by an agent
-     * such as Gemini, Android 12+). The voice commands then ask the person to open the app. Until a new queue, a
-     * new play or the app coming to the front, the foreground is not asked for again: every event of the player
-     * would ask and be refused.
+     * The system refused the foreground: playback was started while the app is in the background (an agent such as
+     * Gemini, a command from another device after a long pause; Android 12+). Logged once until a new queue, a new
+     * play or the app coming to the front.
      */
     @Volatile
     private var foregroundRefused = false
-
-    /** The foreground stays through a pause of under 10 minutes ([ForegroundHold], Android 17). */
-    private val foregroundHold by lazy { ForegroundHold(handler) }
 
     /**
      * Paused because Android 17 refused the foreground in the background and would have played on in silence
@@ -282,7 +255,11 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     private val isAppVisible: Boolean
         get() = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
 
-    /** The app came to the front: a foreground the system refused before is allowed now. */
+    /**
+     * The app came to the front: a foreground the system refused before is allowed now. The music paused for it
+     * goes on; music that played on without it (before Android 17) gets it now — the notification is updated, and
+     * Media3 asks for the foreground again.
+     */
     private val appVisibility = LifecycleEventObserver { _, event ->
         if (event != Lifecycle.Event.ON_START || !foregroundRefused) return@LifecycleEventObserver
         foregroundRefused = false
@@ -290,11 +267,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             resumeWhenVisible = false
             ServiceNotifications.backgroundPause.cancel(this)
             player.play()
-            return@LifecycleEventObserver
-        }
-        if (player.shouldBePlaying && !isNotificationStarted) {
-            goForeground()
-            openEqualizer()
+        } else if (player.shouldBePlaying) {
+            updateMediaButtons()
         }
     }
 
@@ -303,7 +277,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
      * queue waits for it, or the saved queue would replace it ([Binder.awaitQueueRestored]).
      */
     private val queueRestored = CompletableDeferred<Unit>()
-    private val notificationActionReceiver = NotificationActionReceiver()
 
     private val mediaItemState = MutableStateFlow<MediaItem?>(null)
     private val isLikedState = mediaItemState
@@ -317,7 +290,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
         .map { it != null }
         .onEach {
-            updateNotification()
+            updateMediaButtons()
         }
         .stateIn(
             scope = coroutineScope,
@@ -327,13 +300,17 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
 
     private var poiTimestamp: Long? by mutableStateOf(null)
 
-    override fun onBind(intent: Intent?): AndroidBinder = binder
+    /** The app's screens (an intent without an action) get [Binder]; media controllers get the session. */
+    override fun onBind(intent: Intent?): IBinder? {
+        val session = super.onBind(intent)
+        return if (intent?.action == null) binder else session
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession = mediaSession
 
     @Suppress("CyclomaticComplexMethod")
     override fun onCreate() {
         super.onCreate()
-
-        notificationActionReceiver.register(flags = ContextCompat.RECEIVER_EXPORTED)
 
         // The network is back (or the VPN reconnected): a track waiting for it is tried now (tasks/0025)
         networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -392,29 +369,28 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         ProcessLifecycleOwner.get().lifecycle.addObserver(appVisibility)
         remote = PlayerRemote(this, player, stopRadio = { binder.stopRadio() })
 
-        mediaSession = MediaSession(baseContext, TAG).apply {
-            setCallback(SessionCallback())
-            setPlaybackState(stateBuilder.build())
-            setSessionActivity(activityPendingIntent<MainActivity>())
-            isActive = true
-        }
-
-        coroutineScope.launch {
-            var first = true
-            combine(mediaItemState, isLikedState) { mediaItem, _ ->
-                // work around NPE in other processes
-                if (first) {
-                    first = false
-                    return@combine
-                }
-
-                if (mediaItem == null) return@combine
-                withContext(Dispatchers.Main) {
-                    updatePlaybackState()
-                    updateNotification()
-                }
-            }.collect()
-        }
+        mediaSession = MediaSession.Builder(this, SessionPlayer(player))
+            .setId(TAG)
+            .setCallback(SessionCallback())
+            .setSessionActivity(activityPendingIntent<MainActivity>())
+            .setBitmapLoader(CacheBitmapLoader(ArtworkBitmapLoader(this, DataSourceBitmapLoader(this))))
+            .setMediaButtonPreferences(mediaButtons())
+            .build()
+        // The channel and the id of the notification it had before: the person's settings of it stay
+        ServiceNotifications.default.upsertChannel(this)
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider.Builder(this)
+                .setChannelId(ServiceNotifications.default.id)
+                .setChannelName(R.string.now_playing)
+                .setNotificationId(checkNotNull(ServiceNotifications.default.notificationId))
+                .build()
+                .apply { setSmallIcon(R.drawable.app_icon) }
+        )
+        setListener(object : Listener {
+            override fun onForegroundServiceStartNotAllowedException() = refuseForeground()
+        })
+        // The screens play through the binder, not a controller: the service is told of the session itself
+        addSession(mediaSession)
 
         maybeResumePlaybackWhenDeviceConnected()
 
@@ -440,7 +416,7 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             }
             subscribe(PlayerPreferences.trackLoopEnabledProperty) {
                 updateRepeatMode()
-                updateNotification()
+                updateMediaButtons()
             }
             subscribe(PlayerPreferences.volumeNormalizationBaseGainProperty) { maybeNormalizeVolume() }
             subscribe(PlayerPreferences.volumeNormalizationProperty) { maybeNormalizeVolume() }
@@ -459,17 +435,21 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
     }
 
+    /**
+     * The app swiped away from the recent apps: the music goes on only while it plays and «Stop when closed» is off.
+     * Out of the foreground the service must stop (MediaSessionService), or the system crashes and restarts it.
+     */
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (!player.shouldBePlaying || PlayerPreferences.stopWhenClosed) {
-            broadcastPendingIntent<NotificationDismissReceiver>().send()
+        if (!isPlaybackOngoing() || !player.shouldBePlaying || PlayerPreferences.stopWhenClosed) {
+            pauseAllPlayersAndStopSelf()
         }
-        super.onTaskRemoved(rootIntent)
     }
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
         // A new play may ask for the foreground again
         if (playWhenReady) {
             foregroundRefused = false
+            openEqualizer()
             if (resumeWhenVisible) {
                 resumeWhenVisible = false
                 ServiceNotifications.backgroundPause.cancel(this)
@@ -485,21 +465,17 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
             maybeSavePlayerQueue()
 
             networkWait.clear()
-            foregroundHold.cancel()
             networkCallback?.let { callback ->
                 runCatching { getSystemService<ConnectivityManager>()?.unregisterNetworkCallback(callback) }
             }
 
             ProcessLifecycleOwner.get().lifecycle.removeObserver(appVisibility)
             remote?.release()
+            closeEqualizer()
+            mediaSession.release()
             player.removeListener(this)
             player.stop()
             player.release()
-
-            unregisterReceiver(notificationActionReceiver)
-
-            mediaSession.isActive = false
-            mediaSession.release()
 
             loudnessEnhancer?.release()
             preferenceUpdaterJob?.cancel()
@@ -511,10 +487,8 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        handler.post {
-            if (!bitmapProvider.setDefaultBitmap() || player.currentMediaItem == null) return@post
-            updateNotification()
-        }
+        // The placeholder cover of the screens follows the dark theme
+        handler.post { bitmapProvider.setDefaultBitmap() }
 
         super.onConfigurationChanged(newConfig)
     }
@@ -579,21 +553,14 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         maybeNormalizeVolume()
         maybeProcessRadio()
 
-        with(bitmapProvider) {
-            when {
-                mediaItem == null -> load(null)
-                mediaItem.mediaMetadata.artworkUri == lastUri -> bitmapProvider.load(lastUri)
-            }
-        }
-
-        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK) {
-            updateMediaSessionQueue(player.currentTimeline)
-        }
+        // The cover for the screens (Binder.setBitmapListener); the notification loads its own (ArtworkBitmapLoader)
+        bitmapProvider.load(mediaItem?.mediaMetadata?.artworkUri)
+        // ♡ of the notification is the new track's
+        updateMediaButtons()
     }
 
     override fun onTimelineChanged(timeline: Timeline, reason: Int) {
         if (reason != Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) return
-        updateMediaSessionQueue(timeline)
         maybeSavePlayerQueue()
     }
 
@@ -659,21 +626,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                 .setContentTitle(getString(R.string.skip_on_error))
         }
     }
-
-    private fun updateMediaSessionQueue(timeline: Timeline) = mediaSession.setQueue(
-        List(timeline.windowCount) { index ->
-            val mediaItem = timeline.getWindow(index, Timeline.Window()).mediaItem
-            MediaSession.QueueItem(
-                MediaDescription.Builder()
-                    .setMediaId(mediaItem.mediaId)
-                    .setTitle(mediaItem.mediaMetadata.title)
-                    .setSubtitle(mediaItem.mediaMetadata.artist)
-                    .setIconUri(mediaItem.mediaMetadata.artworkUri)
-                    .build(),
-                index.toLong()
-            )
-        }
-    )
 
     private fun maybeRecoverPlaybackError() {
         if (player.playerError != null) player.prepare()
@@ -756,8 +708,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
                                 queue[index].position ?: C.TIME_UNSET
                             )
                             player.prepare()
-
-                            goForeground()
                         }
                     } finally {
                         queueRestored.complete(Unit)
@@ -896,26 +846,6 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         }
     }
 
-    private fun maybeShowSongCoverInLockScreen() = handler.post {
-        val bitmap = bitmapProvider.bitmap
-        val uri = player.mediaMetadata.artworkUri?.toString()?.thumbnail(512)
-
-        metadataBuilder.putBitmap(MediaMetadata.METADATA_KEY_ART, bitmap)
-        metadataBuilder.putString(MediaMetadata.METADATA_KEY_ART_URI, uri)
-
-        metadataBuilder.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, bitmap)
-        metadataBuilder.putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, uri)
-
-        if (isAtLeastAndroid13 && player.currentMediaItemIndex == 0) {
-            metadataBuilder.putText(
-                MediaMetadata.METADATA_KEY_TITLE,
-                "${player.mediaMetadata.title} "
-            )
-        }
-
-        mediaSession.setMetadata(metadataBuilder.build())
-    }
-
     private fun maybeResumePlaybackWhenDeviceConnected() {
         if (!isAtLeastAndroid6) return
 
@@ -951,230 +881,58 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         audioManager?.registerAudioDeviceCallback(audioDeviceCallback, handler)
     }
 
-    private fun openEqualizer() =
+    private fun openEqualizer() {
+        if (equalizerOpen) return
+        equalizerOpen = true
         EqualizerIntentBundleAccessor.sendOpenEqualizer(player.audioSessionId)
-
-    private fun closeEqualizer() =
-        EqualizerIntentBundleAccessor.sendCloseEqualizer(player.audioSessionId)
-
-    private fun updatePlaybackState() = coroutineScope.launch {
-        playbackStateMutex.withLock {
-            withContext(Dispatchers.Main) {
-                mediaSession.setPlaybackState(
-                    stateBuilder
-                        .setActiveQueueItemId(player.currentMediaItemIndex.toLong())
-                        .setState(
-                            player.androidPlaybackState,
-                            player.currentPosition,
-                            player.playbackParameters.speed,
-                            SystemClock.elapsedRealtime()
-                        )
-                        .setBufferedPosition(player.bufferedPosition)
-                        .build()
-                )
-            }
-        }
     }
 
-    private val Player.androidPlaybackState
-        get() = when (playbackState) {
-            Player.STATE_BUFFERING -> if (playWhenReady) PlaybackState.STATE_BUFFERING else PlaybackState.STATE_PAUSED
-            Player.STATE_READY -> if (playWhenReady) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
-            Player.STATE_ENDED -> PlaybackState.STATE_STOPPED
-            Player.STATE_IDLE -> PlaybackState.STATE_NONE
-            else -> PlaybackState.STATE_NONE
-        }
+    private fun closeEqualizer() {
+        if (!equalizerOpen) return
+        equalizerOpen = false
+        EqualizerIntentBundleAccessor.sendCloseEqualizer(player.audioSessionId)
+    }
 
-    // legacy behavior may cause inconsistencies, but not available on sdk 24 or lower
-    @Suppress("DEPRECATION")
     override fun onEvents(player: Player, events: Player.Events) {
         if (player.playbackState == Player.STATE_READY) {
             failedInARow = 0
             networkWait.clear()
         }
-
-        if (player.duration != C.TIME_UNSET) {
-            mediaSession.setMetadata(
-                metadataBuilder
-                    .putText(
-                        MediaMetadata.METADATA_KEY_TITLE,
-                        player.mediaMetadata.title?.toString().orEmpty()
-                    )
-                    .putText(
-                        MediaMetadata.METADATA_KEY_ARTIST,
-                        player.mediaMetadata.artist?.toString().orEmpty()
-                    )
-                    .putText(
-                        MediaMetadata.METADATA_KEY_ALBUM,
-                        player.mediaMetadata.albumTitle?.toString().orEmpty()
-                    )
-                    .putLong(MediaMetadata.METADATA_KEY_DURATION, player.duration)
-                    .build()
-            )
-        }
-
-        updatePlaybackState()
-
-        if (
-            !events.containsAny(
-                Player.EVENT_PLAYBACK_STATE_CHANGED,
-                Player.EVENT_PLAY_WHEN_READY_CHANGED,
-                Player.EVENT_IS_PLAYING_CHANGED,
-                Player.EVENT_POSITION_DISCONTINUITY,
-                Player.EVENT_IS_LOADING_CHANGED,
-                Player.EVENT_MEDIA_METADATA_CHANGED
-            )
-        ) {
-            return
-        }
-
-        val notification = notification()
-
-        if (notification == null) {
-            foregroundHold.cancel()
-            leaveForeground()
-            ServiceNotifications.default.cancel(this)
-            return
-        }
-
-        // After a refusal only a new queue, a new play or the app coming to the front asks again (foregroundRefused)
-        if (player.shouldBePlaying && !isNotificationStarted && !foregroundRefused) {
-            foregroundHold.cancel()
-            goForeground()
-            openEqualizer()
-        } else {
-            when {
-                player.shouldBePlaying -> foregroundHold.cancel()
-
-                // The queue played to its end: nothing goes on by itself, the foreground is left now
-                player.playbackState == Player.STATE_ENDED -> {
-                    foregroundHold.cancel()
-                    leaveForeground()
-                }
-
-                // A pause: the foreground stays a while, so the music can go on without asking for it from the
-                // background — Android 17 refuses that and silences the audio (ForegroundHold)
-                isNotificationStarted -> foregroundHold.stopped {
-                    if (!player.shouldBePlaying) {
-                        leaveForeground()
-                        updateNotification()
-                    }
-                }
-            }
-            updateNotification()
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun leaveForeground() {
-        isNotificationStarted = false
-        stopForeground(false)
-        closeEqualizer()
-    }
-
-    private fun notification(): (NotificationCompat.Builder.() -> NotificationCompat.Builder)? {
-        if (player.currentMediaItem == null) return null
-
-        val mediaMetadata = player.mediaMetadata
-
-        bitmapProvider.load(mediaMetadata.artworkUri) {
-            maybeShowSongCoverInLockScreen()
-            updateNotification()
-        }
-
-        return {
-            @Suppress("DEPRECATION")
-            this
-                .setContentTitle(mediaMetadata.title?.toString().orEmpty())
-                .setContentText(mediaMetadata.artist?.toString().orEmpty())
-                .setSubText(player.playerError?.message)
-                .setLargeIcon(bitmapProvider.bitmap)
-                .setAutoCancel(false)
-                .setOnlyAlertOnce(true)
-                .setShowWhen(false)
-                .setSmallIcon(
-                    player.playerError?.let { R.drawable.alert_circle } ?: R.drawable.app_icon
-                )
-                .setOngoing(false)
-                .setContentIntent(
-                    activityPendingIntent<MainActivity>(flags = PendingIntent.FLAG_UPDATE_CURRENT)
-                )
-                .setDeleteIntent(broadcastPendingIntent<NotificationDismissReceiver>())
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-                .addAction(
-                    R.drawable.play_skip_back,
-                    getString(R.string.skip_back),
-                    notificationActionReceiver.previous.pendingIntent
-                )
-                .let {
-                    if (player.shouldBePlaying) {
-                        it.addAction(
-                            R.drawable.pause,
-                            getString(R.string.pause),
-                            notificationActionReceiver.pause.pendingIntent
-                        )
-                    } else {
-                        it.addAction(
-                            R.drawable.play,
-                            getString(R.string.play),
-                            notificationActionReceiver.play.pendingIntent
-                        )
-                    }
-                }
-                .addAction(
-                    R.drawable.play_skip_forward,
-                    getString(R.string.skip_forward),
-                    notificationActionReceiver.next.pendingIntent
-                )
-                .addAction(
-                    if (isLikedState.value) R.drawable.heart else R.drawable.heart_outline,
-                    getString(R.string.like),
-                    notificationActionReceiver.like.pendingIntent
-                )
-                .addAction(
-                    if (PlayerPreferences.trackLoopEnabled) R.drawable.repeat_on else R.drawable.repeat,
-                    getString(R.string.queue_loop),
-                    notificationActionReceiver.loop.pendingIntent
-                )
-                .setStyle(
-                    androidx.media.app.NotificationCompat.MediaStyle()
-                        .setShowActionsInCompactView(0, 1, 2)
-                        .setMediaSession(MediaSessionCompat.Token.fromToken(mediaSession.sessionToken))
-                )
-        }
-    }
-
-    private fun updateNotification() = runCatching {
-        handler.post {
-            notification()?.let { ServiceNotifications.default.sendNotification(this, it) }
-        }
+        // Nothing to play any more: the equalizer of the system lets the audio session go
+        if (player.currentMediaItem == null) closeEqualizer()
     }
 
     /**
-     * Should strictly be called on the main thread!
+     * ♡ and the track loop next to the transport buttons: in the notification and the system media controls; Media3
+     * gives them to the session of the system as custom actions too.
      */
-    private fun startForeground() {
-        notification()
-            ?.let { ServiceNotifications.default.startForeground(this, it, onFailure = ::refuseForeground) }
+    private fun mediaButtons(): List<CommandButton> = listOf(
+        CommandButton.Builder(
+            if (isLikedState.value) CommandButton.ICON_HEART_FILLED else CommandButton.ICON_HEART_UNFILLED
+        )
+            .setDisplayName(getString(R.string.like))
+            .setSessionCommand(LIKE_COMMAND)
+            .setSlots(CommandButton.SLOT_OVERFLOW)
+            .build(),
+        CommandButton.Builder(
+            if (PlayerPreferences.trackLoopEnabled) CommandButton.ICON_REPEAT_ONE else CommandButton.ICON_REPEAT_OFF
+        )
+            .setDisplayName(getString(R.string.queue_loop))
+            .setSessionCommand(LOOP_COMMAND)
+            .setSlots(CommandButton.SLOT_OVERFLOW)
+            .build()
+    )
+
+    private fun updateMediaButtons() = handler.post {
+        if (::mediaSession.isInitialized) mediaSession.setMediaButtonPreferences(mediaButtons())
     }
 
-    /**
-     * Starts the service and puts it in the foreground with its notification. Started from the background (an
-     * agent, Android 12+), the system refuses: that must not crash the app, the voice commands report it.
-     */
-    private fun goForeground() {
-        isNotificationStarted = true
-        foregroundRefused = false
-        runCatching { startForegroundService(this@PlayerService, intent<PlayerService>()) }
-            .onSuccess { startForeground() }
-            .onFailure(::refuseForeground)
-    }
-
-    private fun refuseForeground(error: Throwable) {
-        Log.w(TAG, "The system refused the foreground service", error)
+    /** The system refused the foreground (Media3 asked from the background, Android 12+). */
+    private fun refuseForeground() {
+        if (!foregroundRefused) {
+            Log.w(TAG, "The system refused the foreground service for ${player.currentMediaItem?.mediaId}")
+        }
         foregroundRefused = true
-        isNotificationStarted = false
         pauseForRefusedForeground()
     }
 
@@ -1424,58 +1182,69 @@ class PlayerService : Service(), Player.Listener, PlaybackStatsListener.Callback
         PlayerPreferences.trackLoopEnabled = !PlayerPreferences.trackLoopEnabled
     }
 
-    private inner class SessionCallback : MediaSession.Callback() {
-        override fun onPlay() = player.play()
-        override fun onPause() = player.pause()
-        override fun onSkipToPrevious() = runCatching(player::forceSeekToPrevious).let { }
-        override fun onSkipToNext() = runCatching(player::forceSeekToNext).let { }
-        override fun onSeekTo(pos: Long) = player.seekTo(pos)
-        override fun onStop() = player.pause()
-        override fun onRewind() = player.seekToDefaultPosition()
-        override fun onSkipToQueueItem(id: Long) =
-            runCatching { player.seekToDefaultPosition(id.toInt()) }.let { }
+    /**
+     * What the media controllers may do beyond the player and what they ask of it: ♡ and the track loop; «play X»
+     * (Google Assistant, Android Auto); the lists of Android Auto by their ids ([PlayerMediaBrowserService]).
+     */
+    private inner class SessionCallback : MediaSession.Callback {
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo
+        ): MediaSession.ConnectionResult = MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+            .setAvailableSessionCommands(
+                MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                    .add(LIKE_COMMAND)
+                    .add(LOOP_COMMAND)
+                    .build()
+            )
+            .build()
 
-        override fun onSetPlaybackSpeed(speed: Float) {
-            PlayerPreferences.speed = speed.coerceIn(0.01f..2f)
-        }
-
-        override fun onPlayFromSearch(query: String?, extras: Bundle?) = binder.playFromSearch(query, extras)
-
-        override fun onCustomAction(action: String, extras: Bundle?) {
-            super.onCustomAction(action, extras)
-            when (action) {
-                LIKE_ACTION -> likeAction()
-                LOOP_ACTION -> loopAction()
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle
+        ): ListenableFuture<SessionResult> {
+            when (customCommand.customAction) {
+                LIKE_COMMAND.customAction -> likeAction()
+                LOOP_COMMAND.customAction -> loopAction()
+                else -> return Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
             }
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
         }
-    }
 
-    inner class NotificationActionReceiver internal constructor() :
-        ActionReceiver("app.melogold.android") {
-        val pause by action { _, _ ->
-            player.pause()
-        }
-        val play by action { _, _ ->
-            player.play()
-        }
-        val next by action { _, _ ->
-            player.forceSeekToNext()
-        }
-        val previous by action { _, _ ->
-            player.forceSeekToPrevious()
-        }
-        val like by action { _, _ ->
-            likeAction()
-        }
-        val loop by action { _, _ ->
-            loopAction()
-        }
-    }
+        override fun onSetMediaItems(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            mediaItems: MutableList<MediaItem>,
+            startIndex: Int,
+            startPositionMs: Long
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val request = mediaItems.singleOrNull()?.takeIf { it.localConfiguration == null }
+                ?: return super.onSetMediaItems(mediaSession, controller, mediaItems, startIndex, startPositionMs)
 
-    class NotificationDismissReceiver : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) = with(context) {
-            stopService(intent<PlayerService>())
-            Unit
+            // «включи X» (no id, maybe a query): the voice commands play by themselves (VoiceQueryResolver), so
+            // Media3 is told there is nothing to set — it ignores a failed request of this kind
+            if (request.mediaId.isEmpty()) {
+                binder.playFromSearch(request.requestMetadata.searchQuery, request.requestMetadata.extras)
+                return Futures.immediateFailedFuture(UnsupportedOperationException("played by the voice commands"))
+            }
+
+            // A list of Android Auto by its id: its tracks, from the one asked for
+            val result = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
+            coroutineScope.launch {
+                runCatching { PlayerMediaBrowserService.queueOf(request.mediaId) }
+                    .onSuccess { queue ->
+                        if (queue == null || queue.first.isEmpty()) {
+                            result.setException(UnsupportedOperationException("nothing to play for ${request.mediaId}"))
+                        } else {
+                            val [items, index] = queue
+                            result.set(MediaSession.MediaItemsWithStartPosition(items, index, C.TIME_UNSET))
+                        }
+                    }
+                    .onFailure(result::setException)
+            }
+            return result
         }
     }
 
@@ -1713,3 +1482,40 @@ data class StreamMeta(val contentLength: Long?, val userAgent: String?)
 /** The User-Agent googlevideo wants for this address (ANDROID_VR); without one the player's own stays. */
 private fun DataSpec.withMediaUserAgent(userAgent: String?) =
     userAgent?.let { withAdditionalHeaders(mapOf("User-Agent" to it)) } ?: this
+
+/**
+ * The player as the media controllers see it (headphones, the notification, Android Auto): «next» and «previous»
+ * as the app's own buttons (round the queue, past hidden explicit tracks), «stop» pauses, the speed is the setting.
+ */
+@OptIn(UnstableApi::class)
+private class SessionPlayer(player: Player) : ForwardingPlayer(player) {
+    override fun seekToNext() = wrappedPlayer.forceSeekToNext()
+
+    override fun seekToNextMediaItem() = wrappedPlayer.forceSeekToNext()
+
+    override fun seekToPrevious() = wrappedPlayer.forceSeekToPrevious()
+
+    override fun seekToPreviousMediaItem() = wrappedPlayer.forceSeekToPrevious(seekToStart = false)
+
+    override fun stop() = wrappedPlayer.pause()
+
+    override fun setPlaybackSpeed(speed: Float) {
+        PlayerPreferences.speed = speed.coerceIn(0.01f..2f)
+    }
+
+    override fun setPlaybackParameters(playbackParameters: PlaybackParameters) =
+        setPlaybackSpeed(playbackParameters.speed)
+}
+
+/**
+ * The cover of the notification and the lock screen: YouTube's thumbnail asked in [ARTWORK_SIZE] dp (the queue
+ * keeps the small one of the lists).
+ */
+@OptIn(UnstableApi::class)
+private class ArtworkBitmapLoader(context: Context, private val loader: BitmapLoader) : BitmapLoader by loader {
+    private val size = (ARTWORK_SIZE * context.resources.displayMetrics.density)
+        .roundToInt()
+        .coerceAtMost(MAX_THUMBNAIL_SIZE)
+
+    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> = loader.loadBitmap(uri.thumbnail(size))
+}

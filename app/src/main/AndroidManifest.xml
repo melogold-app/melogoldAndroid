@@ -196,6 +196,11 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback">
 
+            <!-- Media3 MediaSessionService: the session, the notification and the foreground (tasks/0034) -->
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+
             <intent-filter>
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -205,11 +210,6 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </service>
-
-        <receiver
-            android:name=".service.PlayerService$NotificationActionReceiver"
-            android:exported="true"
-            tools:ignore="ExportedReceiver,Instantiatable" />
 
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"
@@ -235,10 +235,6 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
-
-        <receiver
-            android:name=".service.PlayerService$NotificationDismissReceiver"
-            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.gms.car.application"

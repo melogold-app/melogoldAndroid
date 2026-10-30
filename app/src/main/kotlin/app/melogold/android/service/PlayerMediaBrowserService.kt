@@ -3,15 +3,13 @@ package app.melogold.android.service
 import android.content.ComponentName
 import android.content.ContentResolver
 import android.content.ServiceConnection
-import android.media.session.MediaSession
 import android.net.Uri
 import android.os.Bundle
 import android.os.IBinder
 import android.service.media.MediaBrowserService
 import androidx.annotation.DrawableRes
-import androidx.annotation.OptIn
 import androidx.core.net.toUri
-import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.MediaItem
 import app.melogold.android.data.repo.applying
 import app.melogold.android.data.repo.pendingMutations
 import app.melogold.android.Database
@@ -21,26 +19,18 @@ import app.melogold.android.models.PlaylistPreview
 import app.melogold.android.models.Song
 import app.melogold.android.preferences.TOP_LIST_LENGTH
 import app.melogold.android.utils.asMediaItem
-import app.melogold.android.utils.forcePlayAtIndex
-import app.melogold.android.utils.forceSeekToNext
-import app.melogold.android.utils.forceSeekToPrevious
 import app.melogold.android.utils.intent
 import app.melogold.core.data.utils.CallValidator
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.util.stream.IntStream
 import android.media.MediaDescription as BrowserMediaDescription
 import android.media.browse.MediaBrowser.MediaItem as BrowserMediaItem
 
 class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
-    private var lastSongs = emptyList<Song>()
 
     private var bound = false
 
@@ -53,11 +43,14 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
         super.onDestroy()
     }
 
+    /**
+     * Android Auto controls the Media3 session of the player through its token: play, pause, the queue, «play X»
+     * and the lists here by their ids ([queueOf], called from the session's callback in [PlayerService]).
+     */
     override fun onServiceConnected(className: ComponentName, service: IBinder) {
         if (service !is PlayerService.Binder) return
         bound = true
-        sessionToken = service.mediaSession.sessionToken
-        service.mediaSession.setCallback(SessionCallback(service))
+        sessionToken = service.mediaSession.platformToken
     }
 
     override fun onServiceDisconnected(name: ComponentName) = Unit
@@ -88,9 +81,8 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
 
                 MediaId.SONGS ->
                     Database
-                        .songsByPlayTimeDesc(limit = 30)
+                        .songsByPlayTimeDesc(limit = SONGS_LIMIT)
                         .first()
-                        .also { lastSongs = it }
                         .map { it.asBrowserMediaItem }
                         .toMutableList()
                         .apply {
@@ -243,76 +235,54 @@ class PlayerMediaBrowserService : MediaBrowserService(), ServiceConnection {
             BrowserMediaItem.FLAG_PLAYABLE
         )
 
-    private inner class SessionCallback(
-        private val binder: PlayerService.Binder
-    ) : MediaSession.Callback() {
-        override fun onPlay() = binder.player.play()
-        override fun onPause() = binder.player.pause()
-        override fun onSkipToPrevious() = binder.player.forceSeekToPrevious()
-        override fun onSkipToNext() = binder.player.forceSeekToNext()
-        override fun onSeekTo(pos: Long) = binder.player.seekTo(pos)
-        override fun onSkipToQueueItem(id: Long) = binder.player.seekToDefaultPosition(id.toInt())
-        override fun onPlayFromSearch(query: String?, extras: Bundle?) = binder.playFromSearch(query, extras)
+    companion object {
+        /** The songs of the «Songs» list: the most played. */
+        private const val SONGS_LIMIT = 30
 
-        @Suppress("CyclomaticComplexMethod")
-        @OptIn(UnstableApi::class)
-        override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
-            val data = mediaId?.split('/') ?: return
+        /**
+         * The queue for an id of this browser and the index to start from; `null` — not one of its ids. «Shuffle» and
+         * a song of «Songs» are the list as it is shown; favorites, offline and playlists play shuffled.
+         */
+        suspend fun queueOf(mediaId: String): Pair<List<MediaItem>, Int>? {
+            val data = mediaId.split('/')
             var index = 0
+            val songs = when (data.getOrNull(0)?.let { MediaId(it) }) {
+                MediaId.SHUFFLE -> Database.songsByPlayTimeDesc(limit = SONGS_LIMIT).first().shuffled()
 
-            coroutineScope.launch {
-                val mediaItems = when (data.getOrNull(0)?.let { MediaId(it) }) {
-                    MediaId.SHUFFLE -> lastSongs
-
-                    MediaId.SONGS -> data.getOrNull(1)?.let { songId ->
-                        index = lastSongs.indexOfFirst { it.id == songId }
-                        lastSongs
-                    }
-
-                    MediaId.FAVORITES ->
-                        Database
-                            .favorites()
-                            .first()
-                            .shuffled()
-
-                    MediaId.OFFLINE ->
-                        Database
-                            .downloadedSongs()
-                            .first()
-                            .shuffled()
-
-                    MediaId.TOP ->
-                        Database
-                            .songsByPlayTimeDesc(limit = TOP_LIST_LENGTH)
-                            .distinctUntilChanged()
-                            .cancellable()
-                            .first()
-
-                    MediaId.PLAYLISTS ->
-                        data
-                            .getOrNull(1)
-                            ?.toLongOrNull()
-                            ?.let(Database::playlistWithSongs)
-                            ?.first()
-                            ?.songs
-                            ?.shuffled()
-
-                    MediaId.ALBUMS ->
-                        data
-                            .getOrNull(1)
-                            ?.let(Database::albumSongs)
-                            ?.first()
-
-                    else -> emptyList()
-                }?.map(Song::asMediaItem) ?: return@launch
-
-                withContext(Dispatchers.Main) {
-                    binder.player.forcePlayAtIndex(
-                        items = mediaItems,
-                        index = index.coerceIn(0, mediaItems.size)
-                    )
+                MediaId.SONGS -> data.getOrNull(1)?.let { songId ->
+                    Database.songsByPlayTimeDesc(limit = SONGS_LIMIT).first()
+                        .also { songs -> index = songs.indexOfFirst { it.id == songId }.coerceAtLeast(0) }
                 }
-            }
+
+                MediaId.FAVORITES -> Database.favorites().first().shuffled()
+
+                MediaId.OFFLINE -> Database.downloadedSongs().first().shuffled()
+
+                MediaId.TOP ->
+                    Database
+                        .songsByPlayTimeDesc(limit = TOP_LIST_LENGTH)
+                        .distinctUntilChanged()
+                        .cancellable()
+                        .first()
+
+                MediaId.PLAYLISTS ->
+                    data
+                        .getOrNull(1)
+                        ?.toLongOrNull()
+                        ?.let(Database::playlistWithSongs)
+                        ?.first()
+                        ?.songs
+                        ?.shuffled()
+
+                MediaId.ALBUMS ->
+                    data
+                        .getOrNull(1)
+                        ?.let(Database::albumSongs)
+                        ?.first()
+
+                else -> return null
+            } ?: return null
+            return songs.map(Song::asMediaItem) to index.coerceIn(0, (songs.size - 1).coerceAtLeast(0))
         }
     }
 
