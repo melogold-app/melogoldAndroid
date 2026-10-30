@@ -115,7 +115,8 @@ import app.melogold.android.utils.get
 import app.melogold.android.utils.handleUnknownErrors
 import app.melogold.android.utils.mediaItems
 import app.melogold.android.utils.shouldBePlaying
-import app.melogold.android.utils.thumbnail
+import app.melogold.android.utils.centerSquare
+import app.melogold.android.utils.squareThumbnail
 import app.melogold.android.utils.timer
 import app.melogold.android.utils.toast
 import app.melogold.compose.preferences.SharedPreferencesProperty
@@ -136,6 +137,10 @@ import app.melogold.providers.sponsorblock.SponsorBlock
 import app.melogold.providers.sponsorblock.models.Action
 import app.melogold.providers.sponsorblock.models.Category
 import app.melogold.providers.sponsorblock.requests.segments
+import coil3.imageLoader
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
+import coil3.toBitmap
 import java.util.UUID
 import java.io.IOException
 import kotlin.math.roundToInt
@@ -1508,14 +1513,32 @@ private class SessionPlayer(player: Player) : ForwardingPlayer(player) {
 }
 
 /**
- * The cover of the notification and the lock screen: YouTube's thumbnail asked in [ARTWORK_SIZE] dp (the queue
- * keeps the small one of the lists).
+ * The cover of the notification and the lock screen, as the screens get it: through the app's image loader (Coil)
+ * and its disk cache, a square of [ARTWORK_SIZE] dp (a video frame's middle). Loaded anew over the network (Media3's
+ * own loader), it was missing where YouTube's images do not open but the cache has them (30.10.2026, a Pixel on a
+ * network without a VPN). [decoder] decodes the covers that come as bytes.
  */
 @OptIn(UnstableApi::class)
-private class ArtworkBitmapLoader(context: Context, private val loader: BitmapLoader) : BitmapLoader by loader {
+private class ArtworkBitmapLoader(context: Context, private val decoder: BitmapLoader) : BitmapLoader by decoder {
+    private val context = context.applicationContext
     private val size = (ARTWORK_SIZE * context.resources.displayMetrics.density)
         .roundToInt()
         .coerceAtMost(MAX_THUMBNAIL_SIZE)
 
-    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> = loader.loadBitmap(uri.thumbnail(size))
+    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> {
+        val result = SettableFuture.create<Bitmap>()
+        context.imageLoader.enqueue(
+            ImageRequest.Builder(context)
+                .data(uri.squareThumbnail(size))
+                .allowHardware(false)
+                .listener(
+                    onError = { _, error -> result.setException(error.throwable) },
+                    onSuccess = { _, success ->
+                        result.set(success.image.run { toBitmap(width, height) }.centerSquare())
+                    }
+                )
+                .build()
+        )
+        return result
+    }
 }
