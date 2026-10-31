@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,10 +38,11 @@ import app.melogold.android.R
 import app.melogold.android.ui.kit.CollectionScaffold
 import app.melogold.android.ui.screens.GlobalRoutes
 import app.melogold.android.ui.screens.Route
+import app.melogold.android.utils.LogFiles
 import app.melogold.android.utils.Logcat
 import app.melogold.android.utils.logcat
 import app.melogold.compose.routing.RouteHandler
-import app.melogold.core.ui.utils.ActivityIntentBundleAccessor
+import kotlinx.coroutines.launch
 
 /** The app's log, newest at the bottom, to share with a bug report. */
 @Route
@@ -51,6 +53,7 @@ fun LogsScreen() = RouteHandler {
     Content {
         val logs = logcat()
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         val listState = rememberLazyListState()
 
         // Follow the newest lines while the list is at the bottom
@@ -63,7 +66,8 @@ fun LogsScreen() = RouteHandler {
             subtitle = null,
             onBack = pop,
             actions = {
-                IconButton(onClick = { context.shareLogs(logs) }, enabled = logs.isNotEmpty()) {
+                // A file with the run before too (LogFiles): the screen shows only the process that runs now
+                IconButton(onClick = { scope.launch { LogFiles.share(context) } }) {
                     Icon(painter = painterResource(R.drawable.ms_share), contentDescription = stringResource(R.string.menu_share))
                 }
             },
@@ -138,25 +142,4 @@ private fun Logcat.FormattedLine.Level.look(): Pair<Int, Color> = when (this) {
     Logcat.FormattedLine.Level.Debug -> R.drawable.ms_bug_report to MaterialTheme.colorScheme.primary
     Logcat.FormattedLine.Level.Info -> R.drawable.ms_info to MaterialTheme.colorScheme.onSurfaceVariant
     Logcat.FormattedLine.Level.Unknown -> R.drawable.ms_help to MaterialTheme.colorScheme.outline
-}
-
-private fun Context.shareLogs(logs: List<Logcat>) {
-    val extras = ActivityIntentBundleAccessor.bundle {
-        text = logs.joinToString(separator = "\n") {
-            when (it) {
-                is Logcat.FormattedLine -> "[${it.timestamp}] ${it.level.name} (${it.pid}) ${it.tag} - ${it.message}"
-                is Logcat.RawLine -> it.raw
-            }
-        }
-    }
-
-    startActivity(
-        Intent.createChooser(
-            Intent(Intent.ACTION_SEND).apply {
-                putExtras(extras)
-                type = "text/plain"
-            },
-            null
-        )
-    )
 }

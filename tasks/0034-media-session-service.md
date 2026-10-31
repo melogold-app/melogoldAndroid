@@ -1,6 +1,6 @@
 # Плеер на MediaSessionService из Media3: звук не глушится в фоне на Android 17
 
-Статус: сделано (30.10.2026), проверено на Pixel 7 Pro с Android 17 (бета), выпущено в 0.1.22; ждём проверки Романа на One UI 9 с «Audio hardening level» = MID. `PlayerService` — `MediaSessionService`, `PlayerMediaBrowserService.queueOf`; удалены `ForegroundHold`,
+Статус: сделано (30.10.2026), проверено на Pixel 7 Pro с Android 17 (бета), выпущено в 0.1.22. **На One UI 9 с MID не помогло** (Роман, 31.10: экран заблокирован, обрыв примерно на третьей минуте; LOW — без обрыва); журнал момента обрыва — задание 0035. `PlayerService` — `MediaSessionService`, `PlayerMediaBrowserService.queueOf`; удалены `ForegroundHold`,
 `NotificationActionReceiver`, `NotificationDismissReceiver`.
 
 ## Почему

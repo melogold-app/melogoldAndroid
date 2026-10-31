@@ -81,6 +81,7 @@ import app.melogold.android.ui.shell.rememberPermissionRequester
 import app.melogold.android.ui.shell.rememberShellLayout
 import app.melogold.android.ui.theme.rememberMelogoldColorScheme
 import app.melogold.android.utils.DisposableListener
+import app.melogold.android.utils.LogFiles
 import app.melogold.android.utils.VideoFrames
 import app.melogold.android.utils.intent
 import app.melogold.android.utils.rememberEffectiveMotionLevel
@@ -382,6 +383,8 @@ val LocalPlayerAwareWindowInsets =
 private const val LYRICS_RECHECK = "lyricsRecheck1"
 class MainApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
     override fun onCreate() {
+        // The log in files from the very start: it outlives the process (LogFiles)
+        LogFiles.start(this)
         StrictMode.setVmPolicy(
             VmPolicy.Builder()
                 .let {

@@ -1,5 +1,6 @@
 package app.melogold.android.service
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -17,6 +18,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.text.format.DateUtils
 import android.util.Log
 import androidx.annotation.OptIn
@@ -63,6 +65,7 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
+import androidx.media3.exoplayer.util.EventLogger
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.session.CacheBitmapLoader
 import androidx.media3.session.CommandButton
@@ -266,6 +269,9 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
      * Media3 asks for the foreground again.
      */
     private val appVisibility = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_STOP) {
+            logState(if (event == Lifecycle.Event.ON_START) "App on the screen" else "App in the background")
+        }
         if (event != Lifecycle.Event.ON_START || !foregroundRefused) return@LifecycleEventObserver
         foregroundRefused = false
         if (resumeWhenVisible) {
@@ -359,6 +365,8 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
             .build()
             .apply {
                 addListener(this@PlayerService)
+                // The player's own events in the log (LogFiles): AudioTrack made and released, underruns, load errors
+                addAnalyticsListener(EventLogger("Player"))
                 addAnalyticsListener(
                     PlaybackStatsListener(
                         /* keepHistory = */
@@ -450,7 +458,46 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
         }
     }
 
+    /**
+     * Every [HEARTBEAT_MS] while the music should play: what the system makes of the app, in the log (LogFiles). A song
+     * that went silent on One UI 9 after three minutes with the screen locked left no trace (31.10.2026).
+     */
+    private val heartbeat = object : Runnable {
+        override fun run() {
+            logState("Heartbeat")
+            handler.postDelayed(this, HEARTBEAT_MS)
+        }
+    }
+
+    /** The player, the foreground service and the process as the system sees them, in one line of the log. */
+    private fun logState(what: String) {
+        val process = ActivityManager.RunningAppProcessInfo().also(ActivityManager::getMyMemoryState)
+        val power = getSystemService<PowerManager>()
+        // Doze and its light form: the phone lies still with the screen off — the case of One UI 9
+        val idle = when {
+            power?.isDeviceIdleMode == true -> "deep"
+            isAtLeastAndroid13 && power?.isDeviceLightIdleMode == true -> "light"
+            else -> "no"
+        }
+        Log.i(
+            TAG,
+            "$what: playing=${player.isPlaying} playWhenReady=${player.playWhenReady} state=${player.playbackState} " +
+                "suppressed=${player.playbackSuppressionReason} at=${player.currentPosition / 1000}s " +
+                "foreground=${if (isAtLeastAndroid10) foregroundServiceType else -1} " +
+                "importance=${process.importance} screen=${power?.isInteractive} idle=$idle " +
+                "item=${player.currentMediaItem?.mediaId}"
+        )
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) = logState(if (isPlaying) "Plays" else "Stopped playing")
+
+    override fun onPlaybackSuppressionReasonChanged(playbackSuppressionReason: Int) =
+        logState("Suppression $playbackSuppressionReason")
+
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        logState("playWhenReady=$playWhenReady (reason $reason)")
+        handler.removeCallbacks(heartbeat)
+        if (playWhenReady) handler.postDelayed(heartbeat, HEARTBEAT_MS)
         // A new play may ask for the foreground again
         if (playWhenReady) {
             foregroundRefused = false
@@ -470,6 +517,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
             maybeSavePlayerQueue()
 
             networkWait.clear()
+            handler.removeCallbacks(heartbeat)
             networkCallback?.let { callback ->
                 runCatching { getSystemService<ConnectivityManager>()?.unregisterNetworkCallback(callback) }
             }
@@ -1259,6 +1307,9 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
         /** Where the cache was before: the system's cache directory, which cleaners wipe as junk. */
         private const val OLD_CACHE_DIRECTORY = "exoplayer"
         private const val MAX_FAILED_IN_A_ROW = 3
+
+        /** How often the log says what the system makes of the playing app ([heartbeat]). */
+        private const val HEARTBEAT_MS = 30_000L
         private const val DEFAULT_CHUNK_LENGTH = 512 * 1024L
 
         fun createDatabaseProvider(context: Context) = StandaloneDatabaseProvider(context)
