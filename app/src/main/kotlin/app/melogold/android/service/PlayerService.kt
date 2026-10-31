@@ -102,6 +102,7 @@ import app.melogold.android.preferences.PlayerPreferences
 import app.melogold.android.query
 import app.melogold.android.transaction
 import app.melogold.android.utils.ConditionalCacheDataSourceFactory
+import app.melogold.android.utils.LogFiles
 import app.melogold.android.utils.MAX_THUMBNAIL_SIZE
 import app.melogold.android.utils.TimerJob
 import app.melogold.android.utils.YouTubeDLResponse
@@ -365,8 +366,19 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
             .build()
             .apply {
                 addListener(this@PlayerService)
-                // The player's own events in the log (LogFiles): AudioTrack made and released, underruns, load errors
-                addAnalyticsListener(EventLogger("Player"))
+                // The player's own events in the log (LogFiles): AudioTrack made and released, underruns, load errors;
+                // with «Log» off — silent
+                addAnalyticsListener(
+                    object : EventLogger("Player") {
+                        override fun logd(msg: String) {
+                            if (LogFiles.enabled) super.logd(msg)
+                        }
+
+                        override fun loge(msg: String) {
+                            if (LogFiles.enabled) super.loge(msg)
+                        }
+                    }
+                )
                 addAnalyticsListener(
                     PlaybackStatsListener(
                         /* keepHistory = */
@@ -471,6 +483,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
 
     /** The player, the foreground service and the process as the system sees them, in one line of the log. */
     private fun logState(what: String) {
+        if (!LogFiles.enabled) return
         val process = ActivityManager.RunningAppProcessInfo().also(ActivityManager::getMyMemoryState)
         val power = getSystemService<PowerManager>()
         // Doze and its light form: the phone lies still with the screen off — the case of One UI 9

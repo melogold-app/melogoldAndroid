@@ -13,9 +13,13 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
 import app.melogold.android.BuildConfig
+import app.melogold.android.preferences.DataPreferences
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.Writer
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.concurrent.thread
@@ -23,71 +27,154 @@ import kotlin.concurrent.thread
 private const val TAG = "LogFiles"
 
 /**
- * The app's log in files, like the desktop clients (31.10.2026): `logs/current.log` of this run, the run before in
- * `previous.log`, and past 2 MB the lines so far move to `older.log`. The screen «Logs» reads only the process
- * that runs now: a song that broke off and restarted the app took its log with it (One UI 9, the third minute).
+ * The app's log in files, like the desktop clients (tasks/0035, 0036): every run writes `logs/melogold-<start>.log`,
+ * a new file past 2 MB or with a new date; a crash also goes to `last-crash.txt`. The screen «Logs» reads only the
+ * process that runs now: a song that broke off and restarted the app took its log with it (One UI 9, the third minute).
  *
- * A thread reads `logcat` of this process and writes it out line by line, so the lines up to a kill are on disk.
- * [export] makes one file to send: what the phone is and how it treats the app, then the three logs.
+ * «Log» off — nothing is written and the folder is emptied at once; «Keep» — a day, 3 days, a week or a month, and the
+ * whole folder at most 50 MB. [export] makes one file to send: the phone and how it treats the app, then the files.
  */
 object LogFiles {
     private const val MAX_BYTES = 2L * 1024 * 1024
+    private const val MAX_TOTAL_BYTES = 50L * 1024 * 1024
+    private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
+    private const val CRASH_FILE = "last-crash.txt"
+    private val stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-    private fun directory(context: Context) = File(context.filesDir, "logs")
+    /** «Keep» in days: a day, 3 days, a week, a month. */
+    val retentionDays = persistentListOf(1, 3, 7, 30)
 
-    /** Moves the last run's log aside and starts writing this one; once per process, on start. */
+    private lateinit var directory: File
+    private var logcat: java.lang.Process? = null
+    private var writing: File? = null
+
+    /** Turned on again in this run: the lines from before «off» stay in the system's buffer and must not come back. */
+    private var since: Long? = null
+
+    /** Is the log written — «Log» in the settings; off, the player does not log its state either. */
+    val enabled get() = DataPreferences.logEnabled
+
+    private val keepMillis get() = DataPreferences.logRetentionDays.coerceIn(1, 365) * DAY_MILLIS
+
+    /** On start, once per process: the old files go, and this run's log starts (or the folder empties, when off). */
     fun start(context: Context) {
-        val directory = directory(context).apply { mkdirs() }
-        val current = File(directory, "current.log")
-        val previous = File(directory, "previous.log")
-        val older = File(directory, "older.log")
-        runCatching {
-            older.delete()
-            if (current.exists()) {
-                previous.delete()
-                current.renameTo(previous)
+        directory = File(context.filesDir, "logs").apply { mkdirs() }
+        val crashes = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            if (enabled) runCatching {
+                File(directory, CRASH_FILE).writeText(
+                    "Melogold ${BuildConfig.VERSION_NAME}\n${ZonedDateTime.now()}\n\n${throwable.stackTraceToString()}"
+                )
             }
+            crashes?.uncaughtException(thread, throwable)
         }
-        thread(name = "log-files", isDaemon = true) {
-            runCatching {
-                val logcat = Runtime.getRuntime().exec(arrayOf("logcat", "-v", "time,year", "--pid=${Process.myPid()}"))
-                var writer = current.outputStream().bufferedWriter()
-                var written = 0L
-                logcat.inputStream.bufferedReader().forEachLine { line ->
-                    if (written > MAX_BYTES) {
-                        writer.close()
-                        older.delete()
-                        current.renameTo(older)
-                        writer = current.outputStream().bufferedWriter()
-                        written = 0
+        apply()
+    }
+
+    /** «Log»: off — the file closes and the folder empties at once; on — a new file at once. */
+    fun setEnabled(value: Boolean) {
+        if (!value) Log.i(TAG, "The log is off")
+        DataPreferences.logEnabled = value
+        apply()
+        if (value) Log.i(TAG, "The log is on: Melogold ${BuildConfig.VERSION_NAME}")
+    }
+
+    /** «Keep»: the new term works at once — what is older goes. */
+    fun setRetention(days: Int) {
+        DataPreferences.logRetentionDays = days
+        synchronized(this) { cleanup(directory, System.currentTimeMillis(), keepMillis, writing) }
+    }
+
+    @Synchronized
+    private fun apply() {
+        if (!enabled) {
+            logcat?.destroy()
+            logcat = null
+            writing = null
+            since = System.currentTimeMillis()
+            files(directory).forEach { it.delete() }
+            return
+        }
+        cleanup(directory, System.currentTimeMillis(), keepMillis, writing)
+        if (logcat != null) return
+        val command = listOf("logcat", "-v", "time,year", "--pid=${Process.myPid()}") +
+            since?.let { listOf("-T", "%d.%03d".format(it / 1000, it % 1000)) }.orEmpty()
+        val process = runCatching { Runtime.getRuntime().exec(command.toTypedArray()) }.getOrElse {
+            Log.w(TAG, "The log is not written to files", it)
+            return
+        }
+        logcat = process
+        thread(name = "log-files", isDaemon = true) { pump(process) }
+    }
+
+    /** Writes the lines of [process] one by one, so the lines up to a kill are on disk. */
+    private fun pump(process: java.lang.Process) {
+        var writer: Writer? = null
+        var written = 0L
+        var day: LocalDate? = null
+        runCatching {
+            process.inputStream.bufferedReader().useLines { lines ->
+                for (line in lines) {
+                    synchronized(this) {
+                        // Turned off (or on again with a new process): this one writes nothing more
+                        if (logcat !== process) return@runCatching
+                        val today = LocalDate.now()
+                        if (writer == null || written > MAX_BYTES || today != day) {
+                            writer?.close()
+                            val file = File(directory, "melogold-${ZonedDateTime.now().format(stamp)}.log")
+                            writer = file.outputStream().bufferedWriter()
+                            written = 0
+                            day = today
+                            writing = file
+                            cleanup(directory, System.currentTimeMillis(), keepMillis, file)
+                        }
+                        writer?.run {
+                            write(line)
+                            write("\n")
+                            // Line by line: the last moments before a kill are the ones that matter
+                            flush()
+                        }
+                        written += line.length + 1
                     }
-                    writer.write(line)
-                    writer.newLine()
-                    // Line by line: the last moments before a kill are the ones that matter
-                    writer.flush()
-                    written += line.length + 1
                 }
-            }.onFailure { Log.w(TAG, "The log is not written to files", it) }
+            }
+        }.onFailure { Log.w(TAG, "The log stopped", it) }
+        runCatching { writer?.close() }
+    }
+
+    /** The log's files — `*.log` and the crash — from old to new by the time they were changed. */
+    private fun files(directory: File) = directory.listFiles { file ->
+        file.isFile && (file.extension == "log" || file.name == CRASH_FILE)
+    }.orEmpty().sortedWith(compareBy<File> { it.lastModified() }.thenBy { it.name })
+
+    /**
+     * Older than the term — deleted; then, while the folder is over 50 MB, the oldest. The file being written stays;
+     * `current.log`, `previous.log` and `older.log` of 0.1.22 are `*.log` too and go by the term.
+     */
+    internal fun cleanup(directory: File, now: Long, keepMillis: Long, writing: File?) {
+        val kept = files(directory).filter { file ->
+            val old = now - file.lastModified() > keepMillis
+            !(old && file != writing && file.delete())
+        }
+        var total = kept.sumOf { it.length() }
+        for (file in kept) {
+            if (total <= MAX_TOTAL_BYTES) break
+            val size = file.length()
+            if (file != writing && file.delete()) total -= size
         }
     }
 
-    /** One file to send: the phone and the app's standing with it, the run before, then this one. */
+    /** One file to send: the phone and the app's standing with it, the crash, then the files from old to new. */
     fun export(context: Context): File {
-        val directory = directory(context)
         val share = File(context.cacheDir, "share").apply { mkdirs() }
         val now = ZonedDateTime.now()
         val file = File(share, "melogold-log-${now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))}.txt")
+        val all = files(File(context.filesDir, "logs"))
         file.bufferedWriter().use { out ->
             out.write(summary(context, now))
-            val parts = listOf(
-                "previous.log" to "Прошлый запуск",
-                "older.log" to "Этот запуск, раньше",
-                "current.log" to "Этот запуск"
-            )
-            for (part in parts) {
-                val log = File(directory, part.first)
-                if (!log.exists()) continue
-                out.write("\n===== ${part.second} (${part.first}) =====\n")
+            for (log in all.filter { it.name == CRASH_FILE } + all.filter { it.name != CRASH_FILE }) {
+                val title = if (log.name == CRASH_FILE) "Падение (${log.name})" else log.name
+                out.write("\n===== $title =====\n")
                 log.bufferedReader().use { it.copyTo(out) }
             }
         }
@@ -115,6 +202,7 @@ object LogFiles {
         val connectivity = context.getSystemService<ConnectivityManager>()
         appendLine("Melogold ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
         appendLine("Время: ${now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)}")
+        appendLine("Журнал: хранить ${DataPreferences.logRetentionDays} дн.")
         appendLine("Телефон: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
         appendLine("Android: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT}), сборка ${Build.DISPLAY}")
         systemProperty("ro.build.version.oneui")?.let { appendLine("One UI: $it") }

@@ -18,6 +18,12 @@ object DataPreferences : GlobalPreferencesHolder() {
     /** Downloads wait for Wi-Fi (REWRITE §3.5.6). */
     var downloadsWifiOnly by boolean(false, name = "downloads.wifiOnly")
 
+    /** The log in files (`LogFiles`, tasks/0036): off — nothing is written and the logs folder is empty. */
+    var logEnabled by boolean(true, name = "logs.enabled")
+
+    /** How many days the log is kept: 1, 3, 7 or 30 (`LogFiles.retentionDays`). */
+    var logRetentionDays by int(7, name = "logs.retentionDays")
+
     /** YouTube's `visitorData` of this install, for stream requests (`StreamVisitor`): not the one all copies share. */
     var youtubeVisitorData by string(defaultValue = "", name = "youtube.visitorData")
 }

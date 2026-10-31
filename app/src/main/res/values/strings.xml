@@ -254,6 +254,13 @@
     <string name="kill_app">Kill app</string>
     <string name="show_logs">View debug logs</string>
     <string name="logs">Logs</string>
+    <string name="log_enabled">Log</string>
+    <string name="log_enabled_description">Write what the app does to files — useful if something breaks</string>
+    <string name="log_keep">Keep</string>
+    <string name="log_keep_day">A day</string>
+    <string name="log_keep_3_days">3 days</string>
+    <string name="log_keep_week">A week</string>
+    <string name="log_keep_month">A month</string>
     <string name="show_troubleshoot_section">Show troubleshoot section</string>
     <string name="persistent_queue">Persistent queue</string>
     <string name="persistent_queue_description">Save and restore playing songs</string>

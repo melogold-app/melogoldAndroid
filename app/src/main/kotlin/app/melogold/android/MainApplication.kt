@@ -383,8 +383,6 @@ val LocalPlayerAwareWindowInsets =
 private const val LYRICS_RECHECK = "lyricsRecheck1"
 class MainApplication : Application(), SingletonImageLoader.Factory, Configuration.Provider {
     override fun onCreate() {
-        // The log in files from the very start: it outlives the process (LogFiles)
-        LogFiles.start(this)
         StrictMode.setVmPolicy(
             VmPolicy.Builder()
                 .let {
@@ -401,6 +399,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory, Configurati
                 .build()
         )
         Dependencies.init(this)
+        // The log in files from the very start (it outlives the process); the settings are there from here on
+        LogFiles.start(this)
         super.onCreate()
 
         ServiceNotifications.createAll()

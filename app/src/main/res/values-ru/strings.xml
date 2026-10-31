@@ -246,6 +246,14 @@
     <string name="need_help_description">В большинстве случаев проблема не связана с разработчиком (даже если включен "Невозможно остановить"), что приложение перестает нормально работать в фоне.\nПроверьте, не убивает ли производитель вашего устройства приложения (клик для перехода)</string>
     <string name="service_lifetime_report_issue">Если вы действительно думаете, что проблема в самом приложении, загляните в раздел "О приложении"</string>
     <string name="troubleshooting">Поиск и устранение неисправностей</string>
+    <string name="show_logs">Показать журнал</string>
+    <string name="log_enabled">Журнал</string>
+    <string name="log_enabled_description">Записывать работу приложения в файлы — пригодится, если что-то сломается</string>
+    <string name="log_keep">Хранить</string>
+    <string name="log_keep_day">День</string>
+    <string name="log_keep_3_days">3 дня</string>
+    <string name="log_keep_week">Неделя</string>
+    <string name="log_keep_month">Месяц</string>
     <string name="troubleshooting_warning">Внимание: используйте эти кнопки в последнюю очередь, когда воспроизведение аудио не работает</string>
     <string name="reload_app_internals">Перезагрузить внутренности приложения</string>
     <string name="kill_app">Завершить приложение</string>

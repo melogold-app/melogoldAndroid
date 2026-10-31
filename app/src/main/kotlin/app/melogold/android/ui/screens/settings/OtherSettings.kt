@@ -28,6 +28,7 @@ import app.melogold.android.query
 import app.melogold.android.service.PlayerMediaBrowserService
 import app.melogold.android.ui.screens.Route
 import app.melogold.android.ui.screens.logsRoute
+import app.melogold.android.utils.LogFiles
 import app.melogold.android.utils.isIgnoringBatteryOptimizations
 import app.melogold.android.utils.toast
 import app.melogold.core.ui.utils.isAtLeastAndroid6
@@ -157,9 +158,34 @@ fun OtherSettings() {
         }
 
         SettingsGroup(title = stringResource(R.string.troubleshooting)) {
+            // «Log» and «Keep» (tasks/0036): off — nothing is written, the files are deleted at once
+            SwitchSettingsEntry(
+                title = stringResource(R.string.log_enabled),
+                text = stringResource(R.string.log_enabled_description),
+                isChecked = DataPreferences.logEnabled,
+                onCheckedChange = LogFiles::setEnabled
+            )
+            ValueSelectorSettingsEntry(
+                title = stringResource(R.string.log_keep),
+                selectedValue = DataPreferences.logRetentionDays,
+                values = LogFiles.retentionDays,
+                onValueSelect = LogFiles::setRetention,
+                isEnabled = DataPreferences.logEnabled,
+                valueText = { days ->
+                    stringResource(
+                        when (days) {
+                            1 -> R.string.log_keep_day
+                            3 -> R.string.log_keep_3_days
+                            30 -> R.string.log_keep_month
+                            else -> R.string.log_keep_week
+                        }
+                    )
+                }
+            )
             SettingsEntry(
                 title = stringResource(R.string.show_logs),
-                onClick = { logsRoute.global() }
+                onClick = { logsRoute.global() },
+                isEnabled = DataPreferences.logEnabled
             )
         }
     }
