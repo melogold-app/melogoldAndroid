@@ -271,7 +271,11 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
      */
     private val appVisibility = LifecycleEventObserver { _, event ->
         if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_STOP) {
-            logState(if (event == Lifecycle.Event.ON_START) "App on the screen" else "App in the background")
+            val visible = event == Lifecycle.Event.ON_START
+            // The bars and the living backdrop are not seen in the background: no analysis of the sound there (0037)
+            audioLevels.active = visible
+            spectrumTap.appVisible = visible
+            logState(if (visible) "App on the screen" else "App in the background")
         }
         if (event != Lifecycle.Event.ON_START || !foregroundRefused) return@LifecycleEventObserver
         foregroundRefused = false
@@ -350,9 +354,10 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
         cache = Dependencies.application.container.playerCache
         player = ExoPlayer.Builder(this, createRendersFactory(), createMediaSourceFactory())
             .setHandleAudioBecomingNoisy(true)
-            // Сетевой режим: кроме процессора держит и Wi‑Fi — с погашенным экраном Wi‑Fi не засыпает посреди трека
-            // (иначе буфер кончается, а плеер «играет» без звука; поток идёт кусками по 512 КБ)
-            .setWakeMode(C.WAKE_MODE_NETWORK)
+            // Only the processor, as ViTune (tasks/0037): on One UI 9 ViTune plays on with the screen locked, and we were
+            // silenced in the 4th minute. WAKE_MODE_NETWORK (also the Wi‑Fi, since 30.09 — a guess for tasks/0019 that
+            // was never confirmed) is the first difference to drop; a track loads whole in seconds anyway
+            .setWakeMode(C.WAKE_MODE_LOCAL)
             .setAudioAttributes(
                 /* audioAttributes = */
                 AudioAttributes.Builder()

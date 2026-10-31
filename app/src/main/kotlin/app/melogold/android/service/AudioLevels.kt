@@ -54,6 +54,13 @@ class AudioLevels : TeeAudioProcessor.AudioBufferSink {
     private var lowAndMid = 0f
     private val peaks = FloatArray(AUDIO_BANDS) { 1e-4f }
 
+    /**
+     * Set while the app is on the screen ([PlayerService]): with the screen off the bars are not seen, and the audio
+     * thread does no work for them (tasks/0037: One UI 9 silences the player in the background, ViTune it does not).
+     */
+    @Volatile
+    var active = false
+
     override fun flush(sampleRateHz: Int, channelCount: Int, encoding: Int) {
         sampleRate = sampleRateHz.takeIf { it > 0 } ?: 44_100
         this.channelCount = channelCount.coerceAtLeast(1)
@@ -66,6 +73,7 @@ class AudioLevels : TeeAudioProcessor.AudioBufferSink {
 
     @Suppress("CyclomaticComplexMethod")
     override fun handleBuffer(buffer: ByteBuffer) {
+        if (!active) return
         val data = buffer.duplicate().order(ByteOrder.nativeOrder())
         val bytesPerSample = when (encoding) {
             C.ENCODING_PCM_16BIT -> 2

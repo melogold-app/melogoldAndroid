@@ -59,6 +59,13 @@ class SpectrumTap : TeeAudioProcessor.AudioBufferSink {
     @Volatile
     var listening = false
 
+    /**
+     * Set while the app is on the screen ([PlayerService]). The backdrop's [listening] stays on when the screen goes off
+     * with "Now playing" open: its frames stop before it can turn it off (tasks/0037).
+     */
+    @Volatile
+    var appVisible = false
+
     override fun flush(sampleRateHz: Int, channelCount: Int, encoding: Int) {
         sampleRate = sampleRateHz.takeIf { it > 0 } ?: 44_100
         this.channelCount = channelCount.coerceAtLeast(1)
@@ -89,7 +96,7 @@ class SpectrumTap : TeeAudioProcessor.AudioBufferSink {
     }
 
     override fun handleBuffer(buffer: ByteBuffer) {
-        val listens = listening
+        val listens = listening && appVisible
         if (!listens) {
             wasListening = false
             return

@@ -26,6 +26,7 @@ class SpectrumTapTest {
 
     private fun tap() = SpectrumTap().apply {
         listening = true
+        appVisible = true
         flush(rate, 2, C.ENCODING_PCM_16BIT)
     }
 
@@ -77,6 +78,15 @@ class SpectrumTapTest {
         val tap = tap()
         tap.play(0.5)
         tap.flush(rate, 2, C.ENCODING_PCM_16BIT)
+
+        assertEquals(0, tap.drained(untilUs = Long.MAX_VALUE))
+    }
+
+    @Test
+    fun `with the app off the screen nothing is measured though the backdrop listens`() {
+        val tap = tap()
+        tap.appVisible = false
+        tap.play(0.5)
 
         assertEquals(0, tap.drained(untilUs = Long.MAX_VALUE))
     }
