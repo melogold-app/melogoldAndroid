@@ -7,6 +7,8 @@ object PlayerPreferences : GlobalPreferencesHolder() {
     var trackLoopEnabled by trackLoopEnabledProperty
     val queueLoopEnabledProperty = boolean(true)
     var queueLoopEnabled by queueLoopEnabledProperty
+    val crossfadeProperty = boolean(false)
+    var crossfade by crossfadeProperty
     val volumeNormalizationProperty = boolean(false)
     var volumeNormalization by volumeNormalizationProperty
     val volumeNormalizationBaseGainProperty = float(5.00f)

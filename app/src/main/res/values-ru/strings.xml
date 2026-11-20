@@ -272,6 +272,8 @@
     <string name="minimum_silence_length_warning">Для применения изменений плеер нужно перезапустить!</string>
     <string name="restart_service">Перезапустить сервис</string>
     <string name="loudness_normalization">Нормализация громкости</string>
+    <string name="crossfade">Плавная смена треков</string>
+    <string name="crossfade_description">Накладывает конец трека на начало следующего на 3 секунды</string>
     <string name="loudness_normalization_description">Регулирует громкость до фиксированного уровня</string>
     <string name="loudness_base_gain">Базовое усиление громкости</string>
     <string name="loudness_base_gain_description">Целевое усиление для нормализации громкости</string>

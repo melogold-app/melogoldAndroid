@@ -216,6 +216,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
     private lateinit var mediaSession: MediaSession
     private lateinit var cache: Cache
     private lateinit var player: ExoPlayer
+    private lateinit var trackCrossfade: TrackCrossfade
 
     /** This player for the other devices of the account: what it plays, and what they ask of it (tasks/0018). */
     private var remote: PlayerRemote? = null
@@ -394,6 +395,15 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
                 )
             }
 
+        trackCrossfade = TrackCrossfade(player, handler, tailPlayer = { tailItem ->
+            ExoPlayer.Builder(this)
+                .setMediaSourceFactory(createMediaSourceFactory(tailItem))
+                .setAudioAttributes(player.audioAttributes, false)
+                .setUsePlatformDiagnostics(false)
+                .build()
+        }, canPlayNext = { next ->
+            !AppearancePreferences.hideExplicit || next.mediaMetadata.extras?.songBundle?.explicit != true
+        })
         updateRepeatMode()
         maybeRestorePlayerQueue()
         ProcessLifecycleOwner.get().lifecycle.addObserver(appVisibility)
@@ -437,6 +447,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
                 callback: (T) -> Unit
             ) = launch { prop.stateFlow.collectLatest { handler.post { callback(it) } } }
 
+            subscribe(PlayerPreferences.crossfadeProperty) { trackCrossfade.setEnabled(it) }
             subscribe(PlayerPreferences.queueLoopEnabledProperty) { updateRepeatMode() }
             subscribe(PlayerPreferences.resumePlaybackWhenDeviceConnectedProperty) {
                 maybeResumePlaybackWhenDeviceConnected()
@@ -544,6 +555,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
             remote?.release()
             closeEqualizer()
             mediaSession.release()
+            trackCrossfade.release()
             player.removeListener(this)
             player.stop()
             player.release()
@@ -797,7 +809,6 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
             loudnessEnhancer = null
             volumeNormalizationJob?.cancel()
             volumeNormalizationJob?.invokeOnCompletion { volumeNormalizationJob = null }
-            player.volume = 1f
             return
         }
 
@@ -1033,7 +1044,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
         }
     }
 
-    private fun createMediaSourceFactory() = DefaultMediaSourceFactory(
+    private fun createMediaSourceFactory(tailItem: MediaItem? = null) = DefaultMediaSourceFactory(
         /* dataSourceFactory = */
         // Downloads first, read-only: a downloaded track plays without a network (REWRITE §4.7.2)
         CacheDataSource.Factory()
@@ -1044,7 +1055,7 @@ class PlayerService : MediaSessionService(), Player.Listener, PlaybackStatsListe
                 createYouTubeDataSourceResolverFactory(
                     findMediaItem = { videoId ->
                         withContext(Dispatchers.Main) {
-                            player.findNextMediaItemById(videoId)
+                            tailItem?.takeIf { it.mediaId == videoId } ?: player.findNextMediaItemById(videoId)
                         }
                     },
                     context = applicationContext,

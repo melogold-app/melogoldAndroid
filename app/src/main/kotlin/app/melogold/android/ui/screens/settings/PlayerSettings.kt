@@ -90,6 +90,12 @@ fun PlayerSettings() = with(PlayerPreferences) {
         }
         SettingsGroup(title = stringResource(R.string.audio)) {
             SwitchSettingsEntry(
+                title = stringResource(R.string.crossfade),
+                text = stringResource(R.string.crossfade_description),
+                isChecked = crossfade,
+                onCheckedChange = { crossfade = it }
+            )
+            SwitchSettingsEntry(
                 title = stringResource(R.string.loudness_normalization),
                 text = stringResource(R.string.loudness_normalization_description),
                 isChecked = volumeNormalization,

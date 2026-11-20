@@ -278,6 +278,8 @@
     <string name="minimum_silence_length_warning">Player has to be restarted for the changes to be effective!</string>
     <string name="restart_service">Restart service</string>
     <string name="loudness_normalization">Loudness normalization</string>
+    <string name="crossfade">Crossfade</string>
+    <string name="crossfade_description">Overlap tracks for 3 seconds</string>
     <string name="loudness_normalization_description">Adjust the volume to a fixed level</string>
     <string name="loudness_base_gain">Loudness base gain</string>
     <string name="loudness_base_gain_description">The \'target\' gain for the loudness normalization</string>
