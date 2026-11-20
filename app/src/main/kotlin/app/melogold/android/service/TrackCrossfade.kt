@@ -28,7 +28,9 @@ internal class TrackCrossfade(
     private val ticker = Runnable { tick() }
     private var enabled = false
 
-    init { player.addListener(this) }
+    init {
+        player.addListener(this)
+    }
 
     fun setEnabled(value: Boolean) {
         enabled = value
@@ -51,7 +53,9 @@ internal class TrackCrossfade(
         val previous = old.mediaItem
         val destination = new.mediaItem?.mediaId
         val active = transition
-        if (active != null && destination == active.destination && previous?.mediaId != destination) return
+        if (active != null && destination == active.destination &&
+            (previous?.mediaId != destination || reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT)
+        ) return
         if (active != null || previous?.mediaId == destination) {
             clear()
             return
@@ -128,7 +132,11 @@ internal class TrackCrossfade(
         val outgoing = tail?.player ?: return clear()
         val now = SystemClock.elapsedRealtime()
         if (player.currentMediaItem?.mediaId != active.destination || outgoing.playerError != null ||
-            outgoing.playbackState == Player.STATE_ENDED || now - active.requestedAt >= DURATION_MS * 2) return clear()
+            outgoing.playbackState == Player.STATE_ENDED || now - active.requestedAt >= DURATION_MS * 2
+        ) {
+            clear()
+            return
+        }
         if (!outgoing.playWhenReady) {
             // For a manual change, prefer the ordinary switch when the outgoing tail cannot be loaded quickly.
             if (outgoing.playbackState != Player.STATE_READY) {
