@@ -24,26 +24,17 @@ Melogold работает локально. Для синхронизации м
 
 ## Статус
 
-Проект на ранней стадии. Сейчас приложение по функциям совпадает с ViTune; в работе:
-
-- [x] Новая иконка
-- [ ] Новое имя внутри приложения
-- [ ] Автообновление из GitHub Releases
-- [ ] Аккаунт: регистрация и вход по логину и паролю
-- [ ] Синхронизация избранного, библиотеки и плейлистов между устройствами
-- [ ] Список подключённых устройств с возможностью отключить любое
-- [ ] Собственный сервер (self-hosting)
-- [ ] Клиенты для macOS, Windows и Linux
+Android-клиент выпускается в виде подписанного APK. Регистрация, синхронизация и управление устройствами доступны после подключения своего сервера Melogold.
 
 ## Платформы
 
 | Платформа | Репозиторий | Состояние |
 |---|---|---|
-| Android | этот репозиторий | в разработке |
-| Сервер | [melogoldServer](https://github.com/melogold-app/melogoldServer) | в разработке |
-| iOS и macOS | [melogoldiOSmacOS](https://github.com/melogold-app/melogoldiOSmacOS) | запланирован |
-| Windows | [melogoldWindows](https://github.com/melogold-app/melogoldWindows) | запланирован |
-| Linux | [melogoldLinux](https://github.com/melogold-app/melogoldLinux) | запланирован |
+| Android | этот репозиторий | [APK](https://github.com/melogold-app/melogoldAndroid/releases/latest) |
+| Сервер | [melogoldServer](https://github.com/melogold-app/melogoldServer) | для самостоятельной установки |
+| iOS и macOS | [melogoldiOSmacOS](https://github.com/melogold-app/melogoldiOSmacOS) | [DMG для Mac](https://github.com/melogold-app/melogoldiOSmacOS/releases/latest) |
+| Windows | [melogoldWindows](https://github.com/melogold-app/melogoldWindows) | [скачать](https://github.com/melogold-app/melogoldWindows/releases/latest) |
+| Linux | [melogoldLinux](https://github.com/melogold-app/melogoldLinux) | [скачать](https://github.com/melogold-app/melogoldLinux/releases/latest) |
 
 ## Возможности
 
@@ -60,8 +51,7 @@ Melogold работает локально. Для синхронизации м
 
 ## Установка
 
-Первый релиз Melogold ещё не вышел. Сборки будут публиковаться в
-[Releases](https://github.com/melogold-app/melogoldAndroid/releases).
+Скачайте подписанный APK из [последнего выпуска](https://github.com/melogold-app/melogoldAndroid/releases/latest) и откройте на устройстве. Для обновления установите его поверх предыдущей версии.
 
 ## Сборка из исходников
 
