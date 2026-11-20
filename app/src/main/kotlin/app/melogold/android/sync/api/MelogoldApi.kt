@@ -601,6 +601,12 @@ data class MyLyricsPage(val items: List<MyLyrics>, val rev: Long, val more: Bool
  * turns an error envelope into an [ApiException] with its code; transport failures are [ApiException] with status 0.
  */
 class MelogoldApi(private val baseUrl: String) {
+    init {
+        if (app.melogold.domain.server.ServerAddressPolicy.normalize(baseUrl) !is app.melogold.domain.server.ServerAddress.Valid) {
+            throw ApiException(0, "server_not_configured", "Set your server address in Settings")
+        }
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false

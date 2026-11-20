@@ -55,7 +55,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.getSystemService
-import app.melogold.android.BuildConfig
 import app.melogold.android.LocalAppContainer
 import app.melogold.android.R
 import app.melogold.android.sync.AccountState
@@ -91,6 +90,7 @@ val mySharesRoute = Route0("mySharesRoute")
 /** What went wrong, in words (API §2 codes). */
 @StringRes
 internal fun accountError(error: Throwable): Int = when ((error as? ApiException)?.code) {
+    "server_not_configured" -> R.string.server_text
     "invalid_credentials" -> R.string.account_error_credentials
     "login_throttled", "rate_limited", "reauth_throttled" -> R.string.account_error_throttled
     "device_limit_reached" -> R.string.account_error_device_limit
@@ -760,9 +760,6 @@ fun ServerScreen(prefill: String? = null, expectedServerId: String? = null) = Ro
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                if (address != BuildConfig.DEFAULT_SERVER_URL) TextButton(onClick = { address = BuildConfig.DEFAULT_SERVER_URL }) {
-                    Text(text = stringResource(R.string.server_default))
-                }
             }
         }
     }

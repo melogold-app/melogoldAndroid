@@ -134,7 +134,7 @@
 
     <!-- The server page -->
     <string name="server_title">Сервер Melogold</string>
-    <string name="server_text">Библиотека синхронизируется через этот сервер. Можно указать свой — сервер открытый и ставится одной командой</string>
+    <string name="server_text">Для синхронизации укажите адрес своего сервера Melogold в настройках сервера.</string>
     <string name="server_address">Адрес сервера</string>
     <string name="server_check">Проверить</string>
     <string name="server_connect">Подключить</string>

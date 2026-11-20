@@ -37,10 +37,6 @@ android {
 
         multiDexEnabled = true
 
-        // The Melogold server the app offers first (Settings › Server can point it elsewhere). Until the
-        // official domain exists this is the owner's instance behind a sslip.io name (REWRITE §3.5.12)
-        buildConfigField("String", "DEFAULT_SERVER_URL", "\"https://178-250-187-202.sslip.io\"")
-
         // Where the self-update reads the latest release (REWRITE §4.14); empty: the build doesn't
         // update itself. Only the release build does: the others are other packages
         buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")

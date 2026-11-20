@@ -63,6 +63,7 @@ object ServerAddressPolicy {
                 if (uri.rawAuthority?.contains('@') == true) ServerAddress.Reason.CredentialsOrParams else ServerAddress.Reason.Malformed
             )
 
+        if (host == "178.250.187.202" || host == "178-250-187-202.sslip.io") return ServerAddress.Invalid(ServerAddress.Reason.Malformed)
         val insecure = scheme == "http"
         if (insecure && !isPrivateHost(host)) return ServerAddress.Invalid(ServerAddress.Reason.HttpsRequired)
 

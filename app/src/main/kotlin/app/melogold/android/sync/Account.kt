@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Build
 import androidx.core.content.edit
 import app.melogold.android.BuildConfig
+import app.melogold.domain.server.ServerAddress
+import app.melogold.domain.server.ServerAddressPolicy
 import app.melogold.android.sync.api.ApiException
 import app.melogold.android.sync.api.AuthSession
 import app.melogold.android.sync.api.ClaimLinkRequest
@@ -80,11 +82,18 @@ class Account(context: Context) {
     private var cachedApi: Pair<String, MelogoldApi>? = null
     private var cachedInfo: Triple<String, ServerInfo, Long>? = null
 
+    init {
+        val stored = session
+        if (stored != null && ServerAddressPolicy.normalize(stored.serverUrl) !is ServerAddress.Valid) {
+            prefs.edit { remove(KEY_SESSION) }
+        }
+    }
+
     private val mutableState = MutableStateFlow(initialState())
     val state: StateFlow<AccountState> = mutableState.asStateFlow()
 
     /** The server this app talks to (Settings › Server). */
-    val serverUrl: String get() = prefs.getString(KEY_SERVER, null) ?: BuildConfig.DEFAULT_SERVER_URL
+    val serverUrl: String get() = (ServerAddressPolicy.normalize(prefs.getString(KEY_SERVER, null).orEmpty()) as? ServerAddress.Valid)?.url.orEmpty()
 
     /** This install's device id for the server (API §4.1 `Hwid`): 32 random bytes, made once. */
     val hwid: String

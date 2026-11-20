@@ -134,7 +134,7 @@
 
     <!-- The server page -->
     <string name="server_title">Melogold server</string>
-    <string name="server_text">Your library syncs through this server. You can use your own: the server is open source and installs with one command</string>
+    <string name="server_text">To sync, enter your own Melogold server address in server settings.</string>
     <string name="server_address">Server address</string>
     <string name="server_check">Check</string>
     <string name="server_connect">Connect</string>
