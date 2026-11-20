@@ -38,6 +38,7 @@ sealed interface ServerAddress {
 object ServerAddressPolicy {
     private val SCHEME = Regex("^[A-Za-z][A-Za-z0-9+.-]*://")
     private val IPV4 = Regex("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$")
+    private val RETIRED_HOSTS = setOf("178.250.187.202", "178-250-187-202.sslip.io")
     private val PRIVATE_SUFFIXES = listOf(".local", ".lan", ".home.arpa", ".internal")
 
     fun normalize(input: String): ServerAddress {
@@ -58,12 +59,11 @@ object ServerAddressPolicy {
             return ServerAddress.Invalid(ServerAddress.Reason.CredentialsOrParams)
         }
         // A host URI can't parse (an underscore, a bad label) ends up in the authority only
-        val host = uri.host?.lowercase()?.takeIf { it.isNotEmpty() }
+        val host = uri.host?.lowercase()?.takeUnless(RETIRED_HOSTS::contains)?.takeIf { it.isNotEmpty() }
             ?: return ServerAddress.Invalid(
                 if (uri.rawAuthority?.contains('@') == true) ServerAddress.Reason.CredentialsOrParams else ServerAddress.Reason.Malformed
             )
 
-        if (host == "178.250.187.202" || host == "178-250-187-202.sslip.io") return ServerAddress.Invalid(ServerAddress.Reason.Malformed)
         val insecure = scheme == "http"
         if (insecure && !isPrivateHost(host)) return ServerAddress.Invalid(ServerAddress.Reason.HttpsRequired)
 

@@ -1,5 +1,7 @@
 package app.melogold.android.sync.api
 
+import app.melogold.domain.server.ServerAddress
+import app.melogold.domain.server.ServerAddressPolicy
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -602,7 +604,7 @@ data class MyLyricsPage(val items: List<MyLyrics>, val rev: Long, val more: Bool
  */
 class MelogoldApi(private val baseUrl: String) {
     init {
-        if (app.melogold.domain.server.ServerAddressPolicy.normalize(baseUrl) !is app.melogold.domain.server.ServerAddress.Valid) {
+        if (ServerAddressPolicy.normalize(baseUrl) !is ServerAddress.Valid) {
             throw ApiException(0, "server_not_configured", "Set your server address in Settings")
         }
     }
