@@ -98,9 +98,9 @@ Melogold не связан с YouTube, Google LLC или их дочерними
 **Melogold** is a fork of [ViTune](https://github.com/bartoostveen/ViTune) (based on
 [ViMusic](https://github.com/vfsfitvnm/ViMusic)), an Android YouTube Music client. ViTune is no
 longer maintained; Melogold continues it with accounts, cross-device sync of favorites, library and
-playlists through Melogold Server (metadata only — no audio is stored), a connected-devices list,
-self-hosting, in-app auto-updates from GitHub Releases and upcoming macOS, Windows and Linux
-clients. Early stage: the app currently matches ViTune. Licensed under [GPL-3.0](./LICENSE). Not
+playlists through your own Melogold Server, a connected-devices list, and in-app updates from
+GitHub Releases. Playback and the local library work without an account. The public sync server
+retires on November 21, 2026. Clients are also available for Windows, Linux and macOS. Licensed under [GPL-3.0](./LICENSE). Not
 affiliated with YouTube or Google LLC.
 
 </details>
